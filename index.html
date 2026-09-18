@@ -3,7 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HacknFix</title>
+<title>HacknFix — আপনি কতটা সাইবার সচেতন?</title>
+<meta name="description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
+
+<!-- ============================================================
+     Link preview for WhatsApp, Messenger, Facebook, Telegram…
+     These MUST be absolute URLs - a relative path shows no image.
+     If you move to another domain, change the three URLs below
+     and re-share the link.
+     ============================================================ -->
+<link rel="canonical" href="https://hackn-fix-quiz.vercel.app/">
+<meta property="og:type"        content="website">
+<meta property="og:site_name"   content="HacknFix">
+<meta property="og:url"         content="https://hackn-fix-quiz.vercel.app/">
+<meta property="og:title"       content="আপনি কতটা সাইবার সচেতন? — HacknFix">
+<meta property="og:description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
+<meta property="og:image"       content="https://hackn-fix-quiz.vercel.app/og-image.png">
+<meta property="og:image:type"  content="image/png">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt"   content="HacknFix — আপনি কতটা সাইবার সচেতন?">
+<meta property="og:locale"      content="bn_BD">
+<meta property="og:locale:alternate" content="en_US">
+
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="আপনি কতটা সাইবার সচেতন? — HacknFix">
+<meta name="twitter:description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
+<meta name="twitter:image"       content="https://hackn-fix-quiz.vercel.app/og-image.png">
+
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#0F6B4C">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1687,14 +1718,21 @@
     const total = runQuestions.length;
     const level = getLevel(score, total);
     const text = UI[lang].shareText(user?user.name:'', score, total, level.name);
+
+    // Share the link too, otherwise WhatsApp/Messenger have nothing to
+    // build a preview card from. Read it from the canonical tag so this
+    // keeps working if the site moves to another domain.
+    const canonical = document.querySelector('link[rel="canonical"]');
+    const url = (canonical && canonical.href) || (location.origin + location.pathname);
+
     if(navigator.share){
-      try{ await navigator.share({text}); }catch(e){}
+      try{ await navigator.share({ title: 'HacknFix', text, url }); }catch(e){}
     } else {
       try{
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(text + '\n' + url);
         alert(UI[lang].copied);
       }catch(e){
-        alert(text);
+        alert(text + '\n' + url);
       }
     }
   });
