@@ -377,6 +377,130 @@
     animation:confettiFall linear forwards;
   }
 
+  /* ============================================================
+     COUNTDOWN TIMER
+     ============================================================ */
+  .timer{
+    position:relative;width:36px;height:36px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    animation:popIn .4s cubic-bezier(.22,1.2,.36,1) both;
+  }
+  .timer svg{
+    position:absolute;inset:0;width:36px;height:36px;
+    transform:rotate(-90deg);   /* start the sweep at 12 o'clock */
+  }
+  .timer circle{fill:none;stroke-width:3;}
+  .timer-track{stroke:var(--border);}
+  .timer-ring{
+    stroke:var(--primary);
+    stroke-linecap:round;
+    /* 2 * pi * r, r = 15.5 */
+    stroke-dasharray:97.39;
+    stroke-dashoffset:0;
+    transition:stroke-dashoffset 1s linear, stroke .3s ease;
+  }
+  .timer span{
+    position:relative;font-size:0.78rem;font-weight:700;
+    color:var(--primary-strong);font-variant-numeric:tabular-nums;
+  }
+
+  /* last third: amber. last 5 seconds: red and pulsing. */
+  .timer.warn .timer-ring{stroke:#D8A13F;}
+  .timer.warn span{color:#D8A13F;}
+  .timer.danger .timer-ring{stroke:var(--danger);}
+  .timer.danger span{color:var(--danger);}
+  .timer.danger{animation:timerPanic .9s ease-in-out infinite;}
+  @keyframes timerPanic{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.12);}
+  }
+
+  /* the whole card flashes red when the clock runs out */
+  @keyframes timeUpFlash{
+    0%{box-shadow:0 0 0 0 rgba(194,63,63,.45);}
+    100%{box-shadow:0 0 0 18px rgba(194,63,63,0);}
+  }
+  #screen-quiz.time-up{animation:timeUpFlash .7s ease-out;}
+
+  .timeout-note{
+    margin-top:14px;padding:11px 14px;border-radius:var(--radius-md);
+    background:var(--danger-bg);color:var(--danger);
+    font-size:0.86rem;font-weight:600;
+    animation:fadeUp .3s ease-out both;
+  }
+
+  /* how long the attempt took, on the result screen */
+  .time-taken{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:0.82rem;color:var(--muted);margin-bottom:16px;
+  }
+
+  /* ============================================================
+     REGISTER SCREEN - live feedback while typing
+     ============================================================ */
+
+  /* "N people have already taken this" - real number from the server */
+  .live-count{
+    display:flex;align-items:center;gap:8px;
+    padding:9px 13px;margin-bottom:18px;
+    background:var(--chip-bg);border-radius:99px;
+    font-size:0.8rem;color:var(--muted);font-weight:500;
+    animation:fadeUp .5s ease-out both;
+  }
+  .live-count-dot{
+    width:7px;height:7px;border-radius:99px;background:var(--accent);
+    flex-shrink:0;animation:livePulse 1.7s ease-in-out infinite;
+  }
+  .live-count b{color:var(--primary-strong);font-weight:700;}
+
+  .input-wrap{position:relative;}
+  .input-wrap input{padding-right:40px;}
+
+  /* border + lift reacts to focus and to whether the value is valid */
+  .field input{
+    transition:border-color .18s ease, box-shadow .22s ease, background .18s ease;
+  }
+  .field input:focus{
+    outline:none;border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(47,158,110,.14);
+  }
+  .field input.ok{border-color:var(--accent);}
+  .field input.bad{border-color:var(--danger);}
+
+  /* the tick / cross that appears at the right edge of the input */
+  .field-mark{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%) scale(.4);
+    width:20px;height:20px;border-radius:99px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.72rem;font-weight:700;color:#fff;
+    opacity:0;transition:opacity .2s ease, transform .3s cubic-bezier(.22,1.4,.36,1);
+    pointer-events:none;
+  }
+  .field-mark.show{opacity:1;transform:translateY(-50%) scale(1);}
+  .field-mark.ok{background:var(--accent);}
+  .field-mark.bad{background:var(--danger);}
+
+  /* the live line under an input: greeting, operator name, or a warning */
+  .field-live{
+    font-size:0.78rem;margin-top:6px;color:var(--accent);font-weight:600;
+    animation:fadeUp .3s ease-out both;
+  }
+  .field-live.warn{color:var(--danger);}
+  .field-live .op-badge{
+    display:inline-block;padding:2px 8px;border-radius:99px;
+    background:var(--chip-bg);color:var(--primary-strong);
+    font-size:0.72rem;margin-right:6px;
+  }
+
+  /* eleven dots that fill up as the phone number is typed */
+  .digit-dots{display:flex;gap:4px;margin-top:8px;height:4px;}
+  .digit-dots i{
+    flex:1;height:4px;border-radius:99px;background:var(--border);
+    transition:background .25s ease, transform .25s ease;
+  }
+  .digit-dots i.on{background:var(--primary);transform:scaleY(1.5);}
+  .digit-dots i.done{background:var(--accent);transform:scaleY(1.5);}
+
   /* --- buttons --- */
   .btn{transition:transform .12s ease, opacity .15s ease, box-shadow .2s ease;}
   .btn-primary:not(:disabled):hover{
@@ -422,19 +546,67 @@
   }
   .splash.fade-out{opacity:0;visibility:hidden;pointer-events:none;}
   .splash-icon{
+    position:relative;
     width:60px;height:60px;border-radius:999px;background:var(--chip-bg);
     display:flex;align-items:center;justify-content:center;color:var(--primary-strong);
+    animation:splashIconIn .6s cubic-bezier(.22,1.2,.36,1) both;
   }
   .splash-icon svg{width:30px;height:30px;}
+
+  /* the shield draws itself, then the tick lands inside it */
+  .splash-icon .shield{
+    stroke-dasharray:80;stroke-dashoffset:80;
+    animation:drawLine 1s ease-out .2s forwards;
+  }
+  .splash-icon .tick{
+    stroke-dasharray:14;stroke-dashoffset:14;
+    animation:drawLine .45s ease-out 1.05s forwards;
+  }
+
+  /* two rings breathing outward behind the badge */
+  .splash-icon::before,
+  .splash-icon::after{
+    content:"";position:absolute;inset:0;border-radius:999px;
+    border:2px solid var(--primary);
+    animation:splashRing 2.3s ease-out infinite;
+  }
+  .splash-icon::after{animation-delay:1.15s;}
+
   .splash-brand{
-    font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:1.15rem;color:var(--primary-strong);
+    font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:1.15rem;
+    color:var(--primary-strong);
+    animation:fadeUp .5s ease-out .5s both;
   }
-  .splash-spinner{
-    width:22px;height:22px;border-radius:999px;
-    border:3px solid var(--border);border-top-color:var(--primary);
-    animation:splash-spin .8s linear infinite;
+  .splash-tag{
+    font-size:0.76rem;color:var(--muted);letter-spacing:.04em;
+    margin-top:-6px;
+    animation:fadeUp .5s ease-out .68s both;
   }
-  @keyframes splash-spin{ to{ transform:rotate(360deg); } }
+
+  /* a real progress bar - it tracks actual loading, not a fake timer */
+  .splash-bar{
+    width:132px;height:4px;border-radius:99px;background:var(--border);
+    overflow:hidden;animation:fadeUp .5s ease-out .8s both;
+  }
+  .splash-bar i{
+    display:block;height:100%;width:8%;border-radius:99px;
+    background:var(--primary);
+    transition:width .45s cubic-bezier(.22,.9,.3,1);
+  }
+  .splash-status{
+    font-size:0.72rem;color:var(--muted);min-height:1em;
+    animation:fadeUp .5s ease-out .9s both;
+  }
+
+  @keyframes splashIconIn{
+    0%{opacity:0;transform:scale(.5) rotate(-12deg);}
+    100%{opacity:1;transform:none;}
+  }
+  @keyframes drawLine{ to{ stroke-dashoffset:0; } }
+  @keyframes splashRing{
+    0%{transform:scale(1);opacity:.55;}
+    100%{transform:scale(1.85);opacity:0;}
+  }
 
   @media (max-width:400px){
     .card{padding:20px 16px;}
@@ -445,10 +617,12 @@
 <body data-lang="bn">
 <div id="splash" class="splash">
   <div class="splash-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="shield" d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path class="tick" d="M9.5 12l1.8 1.8L14.8 10"/></svg>
   </div>
   <div class="splash-brand" data-t="brand">HacknFix</div>
-  <div class="splash-spinner"></div>
+  <div class="splash-tag" id="splashTag">সাইবার সচেতনতা যাচাই</div>
+  <div class="splash-bar"><i id="splashBar"></i></div>
+  <div class="splash-status" id="splashStatus"></div>
 </div>
 <div class="topbar">
   <div class="brand">
@@ -481,13 +655,27 @@
       <span class="topic-chip" data-t="chip5">পাবলিক ওয়াইফাই</span>
     </div>
 
+    <div class="live-count hidden" id="liveCount">
+      <span class="live-count-dot"></span>
+      <span id="liveCountText"></span>
+    </div>
+
     <div class="field">
       <label data-t="lblName">আপনার নাম</label>
-      <input type="text" id="inpName" data-t-ph="phName" placeholder="যেমন: রাহাত হোসেন">
+      <div class="input-wrap">
+        <input type="text" id="inpName" data-t-ph="phName" placeholder="যেমন: রাহাত হোসেন" autocomplete="name">
+        <span class="field-mark" id="nameMark"></span>
+      </div>
+      <div class="field-live hidden" id="nameLive"></div>
     </div>
     <div class="field">
       <label data-t="lblPhone">মোবাইল নম্বর</label>
-      <input type="tel" id="inpPhone" data-t-ph="phPhone" placeholder="01XXXXXXXXX" inputmode="numeric" pattern="[0-9]*" maxlength="11">
+      <div class="input-wrap">
+        <input type="tel" id="inpPhone" data-t-ph="phPhone" placeholder="01XXXXXXXXX" inputmode="numeric" pattern="[0-9]*" maxlength="11" autocomplete="tel">
+        <span class="field-mark" id="phoneMark"></span>
+      </div>
+      <div class="digit-dots" id="digitDots"></div>
+      <div class="field-live hidden" id="phoneLive"></div>
     </div>
     <div class="field">
       <label data-t="lblEmail">ইমেইল <span data-t="optional">(ঐচ্ছিক)</span></label>
@@ -508,10 +696,18 @@
     <div class="progress-row">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
       <div class="progress-label"><span id="qNum">1</span>/<span id="qTotal">10</span></div>
+      <div class="timer hidden" id="timer">
+        <svg viewBox="0 0 36 36">
+          <circle class="timer-track" cx="18" cy="18" r="15.5"></circle>
+          <circle class="timer-ring"  cx="18" cy="18" r="15.5" id="timerRing"></circle>
+        </svg>
+        <span id="timerText">0</span>
+      </div>
     </div>
     <div class="q-icon" id="qIcon"></div>
     <div class="q-text" id="qText">প্রশ্ন লোড হচ্ছে...</div>
     <div class="options" id="qOptions"></div>
+    <div class="timeout-note hidden" id="timeoutNote"></div>
     <div class="explain hidden" id="qExplain"></div>
     <div class="next-row hidden" id="nextRow">
       <button class="btn btn-primary" id="nextBtn" type="button" data-t="nextBtn">পরবর্তী প্রশ্ন</button>
@@ -526,6 +722,7 @@
     <div class="result-level" id="resultLevel">সচেতন হচ্ছেন</div>
     <div class="result-score" id="resultScore">১০টির মধ্যে ৭টি সঠিক</div>
     <div class="score-bar-track"><div class="score-bar-fill" id="resultBar" style="width:70%"></div></div>
+    <div class="time-taken hidden" id="timeTaken"></div>
 
     <div class="action-row">
       <button class="btn btn-ghost" id="retakeBtn" type="button" data-t="retakeBtn">আবার দিন</button>
@@ -576,6 +773,25 @@
       offlineNote:"এই মুহূর্তে সার্ভারে সংযোগ করা যায়নি, তাই প্রশ্ন ও স্কোর অফলাইন কপি থেকে চলছে। ইন্টারনেট ঠিক হলে স্কোর আবার সবার সাথে যুক্ত হবে।",
       closedDefault:"কুইজটি এই মুহূর্তে বন্ধ আছে। পরে আবার চেষ্টা করুন।",
       setupNote:"ব্যাকএন্ড এখনো যুক্ত হয়নি — config.js ফাইলে আপনার Supabase URL ও anon key বসান। ততক্ষণ কুইজটি অফলাইন প্রশ্ন দিয়ে চলছে।",
+      splashTag:"সাইবার সচেতনতা যাচাই",
+      timeUp:"সময় শেষ! ⏰",
+      timeUpSub:"এই প্রশ্নের সঠিক উত্তরটি দেখুন।",
+      timeTaken:(s)=>`মোট সময় লেগেছে ${fmtTime(s, 'bn')}`,
+      loadStart:"শুরু হচ্ছে...",
+      loadQuestions:"প্রশ্ন আনা হচ্ছে...",
+      loadReady:"প্রস্তুত!",
+      loadOffline:"অফলাইন মোডে চলছে",
+      greet:(n)=>`হ্যালো, ${n}! 👋`,
+      countLive:(n)=>`এখন পর্যন্ত <b>${bnNum(n)}</b> জন কুইজটি দিয়েছেন`,
+      countFirst:"আপনিই প্রথম অংশগ্রহণকারী হতে যাচ্ছেন!",
+      digitsLeft:(n)=>`আর ${bnNum(n)}টি সংখ্যা বাকি`,
+      phoneStart:"নম্বরটি ০১ দিয়ে শুরু হওয়া উচিত",
+      phoneOk:"নম্বরটি ঠিক আছে",
+      operators:{
+        '013':'গ্রামীণফোন', '017':'গ্রামীণফোন',
+        '014':'বাংলালিংক', '019':'বাংলালিংক',
+        '015':'টেলিটক', '016':'এয়ারটেল', '018':'রবি'
+      },
       youTag:"(আপনি)",
       correctWord:"সঠিক", wrongWord:"ভুল",
       scoreOutOf:(s,t)=>`${bnNum(t)}টির মধ্যে ${bnNum(s)}টি সঠিক`,
@@ -614,6 +830,25 @@
       offlineNote:"The server couldn't be reached, so questions and scores are running from the offline copy. Your score will join the shared board again once you're back online.",
       closedDefault:"The quiz is closed right now. Please check back later.",
       setupNote:"Backend not connected yet — put your Supabase URL and anon key in config.js. Until then the quiz runs on the offline questions.",
+      splashTag:"Check your cyber awareness",
+      timeUp:"Time's up! ⏰",
+      timeUpSub:"Here's the correct answer for this one.",
+      timeTaken:(s)=>`Finished in ${fmtTime(s, 'en')}`,
+      loadStart:"Starting up...",
+      loadQuestions:"Fetching questions...",
+      loadReady:"Ready!",
+      loadOffline:"Running in offline mode",
+      greet:(n)=>`Hi, ${n}! 👋`,
+      countLive:(n)=>`<b>${n}</b> ${n === 1 ? 'person has' : 'people have'} taken this quiz so far`,
+      countFirst:"You're about to be the very first to take it!",
+      digitsLeft:(n)=>`${n} more digit${n === 1 ? '' : 's'} to go`,
+      phoneStart:"The number should start with 01",
+      phoneOk:"Number looks good",
+      operators:{
+        '013':'Grameenphone', '017':'Grameenphone',
+        '014':'Banglalink', '019':'Banglalink',
+        '015':'Teletalk', '016':'Airtel', '018':'Robi'
+      },
       youTag:"(You)",
       correctWord:"Correct", wrongWord:"Not quite",
       scoreOutOf:(s,t)=>`${s} out of ${t} correct`,
@@ -630,6 +865,14 @@
       ]
     }
   };
+
+  // 95 -> "1:35" / "১:৩৫"
+  function fmtTime(sec, l){
+    const m = Math.floor(sec / 60), s = sec % 60;
+    const pad = s < 10 ? '0' + s : String(s);
+    const out = m > 0 ? m + ':' + pad : sec + (l === 'bn' ? ' সেকেন্ড' : 's');
+    return l === 'bn' ? bnNum(out) : out;
+  }
 
   function bnNum(n){
     const map={'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
@@ -796,8 +1039,16 @@
   let SETTINGS = {
     quiz_open: true,
     quiz_length: 10,
-    show_leaderboard: true
+    show_leaderboard: true,
+    timer_seconds: 0        // 0 = no countdown
   };
+
+  // ---------- Timer state ----------
+  let tickTimer = null;     // per-question countdown
+  let timeLeft = 0;
+  let quizStartedAt = 0;    // for the total-time figure on the result
+  let timedOut = false;
+  let finalDuration = null; // seconds, frozen when the quiz finishes
 
   const sb = window.HacknFix && window.HacknFix.client;
 
@@ -864,6 +1115,13 @@
     }
     applyClosedState();
     updateNotes();
+    // The live lines are built from strings, so they have to be rewritten
+    // whenever the language flips.
+    if($('splashTag')) $('splashTag').textContent = UI[lang].splashTag;
+    refreshName();
+    refreshPhone();
+    if(tickTimer) paintTimer(parseInt(SETTINGS.timer_seconds, 10) || 1);
+    if(statsTimer) loadStats();
   }
   $('langBtn').addEventListener('click', ()=>{
     lang = lang==='bn' ? 'en' : 'bn';
@@ -882,17 +1140,132 @@
     void card.offsetWidth;
     card.style.animation = '';
 
-    // The leaderboard only polls while you are actually looking at it.
+    // Each screen only polls for what it is actually showing.
     if(id === 'screen-result') startLiveBoard();
     else stopLiveBoard();
+
+    if(id === 'screen-register') startStats();
+    else stopStats();
+
+    if(id !== 'screen-quiz') stopTimer();
 
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  // ---------- Registration ----------
-  $('inpPhone').addEventListener('input', ()=>{
-    $('inpPhone').value = $('inpPhone').value.replace(/\D/g,'').slice(0,11);
-  });
+  // ---------- Registration: live feedback while typing ----------
+
+  // Eleven little bars under the phone field, one per digit.
+  (function buildDigitDots(){
+    const host = $('digitDots');
+    for(let i = 0; i < 11; i++) host.appendChild(document.createElement('i'));
+  })();
+
+  function setMark(markId, state){
+    const m = $(markId);
+    m.className = 'field-mark' + (state ? ' show ' + state : '');
+    m.textContent = state === 'ok' ? '✓' : (state === 'bad' ? '!' : '');
+  }
+
+  function setLive(lineId, html, warn){
+    const el = $(lineId);
+    if(!html){ el.classList.add('hidden'); el.innerHTML = ''; return; }
+    el.classList.remove('hidden');
+    el.classList.toggle('warn', !!warn);
+    el.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // --- name: greet the person as they type ---
+  function refreshName(){
+    const el = $('inpName');
+    const name = el.value.trim();
+    if(!name){
+      el.classList.remove('ok','bad');
+      setMark('nameMark', null);
+      setLive('nameLive', '');
+      return;
+    }
+    const good = name.length >= 2;
+    el.classList.toggle('ok', good);
+    el.classList.toggle('bad', !good);
+    setMark('nameMark', good ? 'ok' : null);
+    // Only the first word, so the greeting stays short.
+    setLive('nameLive', good ? UI[lang].greet(escapeHtml(name.split(/\s+/)[0])) : '');
+  }
+  $('inpName').addEventListener('input', refreshName);
+
+  // --- phone: fill the dots, name the operator, validate live ---
+  function refreshPhone(){
+    const el = $('inpPhone');
+    el.value = el.value.replace(/\D/g,'').slice(0,11);
+    const v = el.value;
+
+    const dots = $('digitDots').children;
+    for(let i = 0; i < dots.length; i++){
+      dots[i].className = i < v.length ? (v.length === 11 ? 'done' : 'on') : '';
+    }
+
+    if(!v){
+      el.classList.remove('ok','bad');
+      setMark('phoneMark', null);
+      setLive('phoneLive', '');
+      return;
+    }
+
+    // Every Bangladeshi mobile number starts 01.
+    if(!/^0/.test(v) || (v.length >= 2 && !/^01/.test(v))){
+      el.classList.remove('ok'); el.classList.add('bad');
+      setMark('phoneMark', 'bad');
+      setLive('phoneLive', UI[lang].phoneStart, true);
+      return;
+    }
+
+    const op = v.length >= 3 ? UI[lang].operators[v.slice(0,3)] : null;
+    const opTag = op ? `<span class="op-badge">${op}</span>` : '';
+
+    if(v.length === 11){
+      el.classList.remove('bad'); el.classList.add('ok');
+      setMark('phoneMark', 'ok');
+      setLive('phoneLive', opTag + UI[lang].phoneOk);
+    } else {
+      el.classList.remove('ok','bad');
+      setMark('phoneMark', null);
+      setLive('phoneLive', opTag + UI[lang].digitsLeft(11 - v.length));
+    }
+  }
+  $('inpPhone').addEventListener('input', refreshPhone);
+
+  // --- live participant counter on the landing page ---
+  let statsTimer = null;
+
+  async function loadStats(){
+    if(!sb) return;
+    try{
+      const { data, error } = await sb.rpc('quiz_stats');
+      if(error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if(!row) return;
+      const n = Number(row.total_attempts) || 0;
+      $('liveCount').classList.remove('hidden');
+      $('liveCountText').innerHTML = n > 0 ? UI[lang].countLive(n) : UI[lang].countFirst;
+    }catch(e){
+      // quiz_stats() missing (schema not re-run yet) or offline - just stay quiet.
+      console.warn('stats unavailable:', e.message || e);
+      $('liveCount').classList.add('hidden');
+    }
+  }
+
+  function startStats(){
+    stopStats();
+    if(!sb) return;
+    loadStats();
+    statsTimer = setInterval(()=>{ if(!document.hidden) loadStats(); }, 20000);
+  }
+  function stopStats(){ clearInterval(statsTimer); statsTimer = null; }
   $('startBtn').addEventListener('click', ()=>{
     const name = $('inpName').value.trim();
     const phone = $('inpPhone').value.trim();
@@ -901,7 +1274,7 @@
     if(!phone || !/^[0-9]{11}$/.test(phone)){ alert(UI[lang].needPhone); $('inpPhone').focus(); return; }
     user = {name, phone, email};
     localStorage.setItem('cq_user', JSON.stringify(user));
-    qIndex = 0; score = 0;
+    qIndex = 0; score = 0; quizStartedAt = Date.now();
     runQuestions = buildShuffledRun();
     showScreen('screen-quiz');
     renderQuestion();
@@ -909,11 +1282,78 @@
 
   $('skipBtn').addEventListener('click', ()=>{
     user = {name: (lang==='bn' ? 'গেস্ট' : 'Guest'), phone:'', email:''};
-    qIndex = 0; score = 0;
+    qIndex = 0; score = 0; quizStartedAt = Date.now();
     runQuestions = buildShuffledRun();
     showScreen('screen-quiz');
     renderQuestion();
   });
+
+  // ---------- Countdown ----------
+  const RING_LEN = 97.39;   // circumference of the r=15.5 circle in the SVG
+
+  function timerOn(){
+    return (parseInt(SETTINGS.timer_seconds, 10) || 0) > 0;
+  }
+
+  function startTimer(){
+    stopTimer();
+    const box = $('timer');
+    if(!timerOn()){ box.classList.add('hidden'); return; }
+
+    const total = parseInt(SETTINGS.timer_seconds, 10);
+    timeLeft = total;
+    box.classList.remove('hidden','warn','danger');
+    paintTimer(total);
+
+    tickTimer = setInterval(()=>{
+      timeLeft--;
+      paintTimer(total);
+      if(timeLeft <= 0){
+        stopTimer();
+        handleTimeout();
+      }
+    }, 1000);
+  }
+
+  function paintTimer(total){
+    const box = $('timer');
+    $('timerText').textContent = lang==='bn' ? bnNum(timeLeft) : timeLeft;
+    // Ring empties as the seconds run down.
+    const frac = Math.max(0, timeLeft) / total;
+    $('timerRing').style.strokeDashoffset = (RING_LEN * (1 - frac)).toFixed(2);
+    box.classList.toggle('warn', timeLeft <= total/3 && timeLeft > 5);
+    box.classList.toggle('danger', timeLeft <= 5);
+  }
+
+  function stopTimer(){
+    clearInterval(tickTimer);
+    tickTimer = null;
+  }
+
+  // Ran out of time: lock the question, show the right answer, move on.
+  function handleTimeout(){
+    if(answered) return;
+    answered = true;
+    timedOut = true;
+
+    const item = runQuestions[qIndex];
+    document.querySelectorAll('#qOptions .option').forEach((el, idx)=>{
+      el.disabled = true;
+      if(item.options[idx].correct) el.classList.add('correct');
+    });
+
+    const note = $('timeoutNote');
+    note.classList.remove('hidden');
+    note.textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
+
+    $('qExplain').innerHTML = `<strong>${UI[lang].wrongWord}.</strong> ${item.explain[lang]}`;
+    $('qExplain').classList.remove('hidden');
+    $('nextRow').classList.remove('hidden');
+
+    const card = $('screen-quiz');
+    card.classList.add('time-up');
+    setTimeout(()=>card.classList.remove('time-up'), 800);
+  }
 
   // ---------- Quiz ----------
   function renderQuestion(){
@@ -943,13 +1383,19 @@
 
     $('qExplain').classList.add('hidden');
     $('qExplain').innerHTML = '';
+    $('timeoutNote').classList.add('hidden');
     $('nextRow').classList.add('hidden');
     $('nextBtn').textContent = (qIndex === runQuestions.length-1) ? UI[lang].finishBtn : UI[lang].nextBtn;
+
+    timedOut = false;
+    startTimer();
   }
 
   function selectOption(i){
     if(answered) return;
     answered = true;
+    stopTimer();                       // answering stops the clock
+    $('timer').classList.remove('danger','warn');
     const item = runQuestions[qIndex];
     const opts = document.querySelectorAll('#qOptions .option');
     opts.forEach((el,idx)=>{
@@ -984,6 +1430,10 @@
   }
 
   function finishQuiz(){
+    stopTimer();
+    // Freeze the clock here, so re-rendering the result (e.g. on a language
+    // switch) keeps reporting the same figure.
+    finalDuration = elapsedSeconds();
     showScreen('screen-result');
     renderResult();
     // Send the score to the server in the background - the user sees
@@ -1006,6 +1456,16 @@
     const bar = $('resultBar');
     bar.style.width = '0%';
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.width = pct+'%'; }));
+
+    // How long the whole attempt took.
+    const secs = finalDuration;
+    const tt = $('timeTaken');
+    if(secs !== null){
+      tt.classList.remove('hidden');
+      tt.textContent = '⏱ ' + UI[lang].timeTaken(secs);
+    } else {
+      tt.classList.add('hidden');
+    }
 
     $('boardSection').classList.toggle('hidden', !SETTINGS.show_leaderboard);
     renderLeaderboard();
@@ -1054,6 +1514,12 @@
     setTimeout(()=>{ host.innerHTML = ''; }, 4600);
   }
 
+  // Whole-attempt duration, in whole seconds.
+  function elapsedSeconds(){
+    if(!quizStartedAt) return null;
+    return Math.max(0, Math.round((Date.now() - quizStartedAt) / 1000));
+  }
+
   // ---------- Sending the score to Supabase ----------
   async function submitAttempt(){
     const total = runQuestions.length;
@@ -1068,7 +1534,8 @@
         p_email: user ? user.email : '',
         p_score: score,
         p_total: total,
-        p_lang:  lang
+        p_lang:  lang,
+        p_duration: finalDuration
       });
       if(error) throw error;
       myAttemptId = data;
@@ -1209,7 +1676,7 @@
   }
 
   $('retakeBtn').addEventListener('click', ()=>{
-    qIndex = 0; score = 0;
+    qIndex = 0; score = 0; quizStartedAt = Date.now();
     myAttemptId = null; serverBoard = null;
     runQuestions = buildShuffledRun();
     showScreen('screen-quiz');
@@ -1238,6 +1705,7 @@
     SETTINGS.quiz_open       = s.quiz_open !== false;
     SETTINGS.quiz_length     = s.quiz_length || 10;
     SETTINGS.show_leaderboard= s.show_leaderboard !== false;
+    SETTINGS.timer_seconds   = parseInt(s.timer_seconds, 10) || 0;
     // Admin-editable copy overrides the text baked into this file.
     if(s.welcome_title_bn) UI.bn.welcomeTitle = s.welcome_title_bn;
     if(s.welcome_title_en) UI.en.welcomeTitle = s.welcome_title_en;
@@ -1248,7 +1716,12 @@
   }
 
   async function loadFromServer(){
-    if(!sb){ applyClosedState(); updateNotes(); return; }
+    if(!sb){
+      splashStep(100, 'loadOffline');
+      applyClosedState(); updateNotes();
+      return;
+    }
+    splashStep(45, 'loadQuestions');
     try{
       const [qRes, sRes] = await Promise.all([
         sb.from('questions').select('*').eq('is_active', true).order('sort_order', {ascending:true}),
@@ -1266,6 +1739,7 @@
       console.warn('Could not load from Supabase:', e.message || e);
       online = false;
     }
+    splashStep(100, online ? 'loadReady' : 'loadOffline');
     applyLang();          // picks up admin-edited welcome text
     applyClosedState();
     updateNotes();
@@ -1287,17 +1761,41 @@
     note.textContent = configured ? UI[lang].offlineNote : UI[lang].setupNote;
   }
 
+  // ---------- Splash ----------
+  // The bar tracks what is actually happening rather than counting down a
+  // fixed timer, but it never disappears so fast that it just flickers.
+  const splashStart = Date.now();
+  const SPLASH_MIN = 1600;    // let the shield finish drawing
+  const SPLASH_MAX = 6000;    // never trap anyone behind a hung request
+  let splashDone = false;
+
+  function splashStep(pct, statusKey){
+    const bar = $('splashBar');
+    const status = $('splashStatus');
+    if(bar) bar.style.width = pct + '%';
+    if(status && statusKey) status.textContent = UI[lang][statusKey] || '';
+    if(pct >= 100) hideSplash();
+  }
+
+  function hideSplash(){
+    if(splashDone) return;
+    splashDone = true;
+    const wait = Math.max(0, SPLASH_MIN - (Date.now() - splashStart));
+    setTimeout(()=>{
+      const splash = $('splash');
+      if(!splash) return;
+      splash.classList.add('fade-out');
+      setTimeout(()=>splash.remove(), 400);
+    }, wait);
+  }
+
   // ---------- Init ----------
   applyTheme();
   applyLang();
+  splashStep(15, 'loadStart');
   loadFromServer();
-  setTimeout(()=>{
-    const splash = document.getElementById('splash');
-    if(splash){
-      splash.classList.add('fade-out');
-      setTimeout(()=>splash.remove(), 400);
-    }
-  }, 1400);
+  startStats();
+  setTimeout(hideSplash, SPLASH_MAX);   // safety net
 })();
 </script>
 </body>

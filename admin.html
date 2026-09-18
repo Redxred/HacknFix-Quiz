@@ -223,6 +223,10 @@
   }
   .modal h2{font-family:'Baloo Da 2',sans-serif;font-size:1.15rem;margin:0 0 16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .timer-presets{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+  .timer-presets .btn.active{
+    background:var(--primary);color:var(--on-primary);border-color:var(--primary);
+  }
   .modal-actions .btn{flex:1;}
 </style>
 </head>
@@ -299,6 +303,7 @@
         <div class="stat"><div class="n" id="stAvg">–</div><div class="l">Average score</div></div>
         <div class="stat"><div class="n" id="stBest">–</div><div class="l">Best score</div></div>
         <div class="stat"><div class="n" id="stToday">–</div><div class="l">Attempts today</div></div>
+        <div class="stat"><div class="n" id="stTime">–</div><div class="l">Average time</div></div>
       </div>
 
       <div class="card">
@@ -312,7 +317,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Score</th><th>Lang</th><th>When</th><th></th></tr>
+              <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Score</th><th>Time</th><th>Lang</th><th>When</th><th></th></tr>
             </thead>
             <tbody id="attemptRows"></tbody>
           </table>
@@ -346,6 +351,25 @@
           <label for="setLength">Questions asked per attempt</label>
           <input type="number" id="setLength" min="1" max="100">
           <div class="sub" style="margin:4px 0 0;">Picked at random from your active questions. If you set this higher than the number of active questions, everyone simply gets all of them.</div>
+        </div>
+
+        <div class="field">
+          <label for="setTimer">Seconds per question</label>
+          <input type="number" id="setTimer" min="0" max="600">
+          <div class="sub" style="margin:4px 0 0;">
+            A countdown ring appears next to the progress bar. It turns amber in
+            the last third and red for the final five seconds. When it hits zero
+            the question locks, the correct answer is revealed and no point is
+            scored. <strong>Set it to 0 to switch the timer off.</strong>
+          </div>
+          <div class="timer-presets" id="timerPresets">
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="0">Off</button>
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="10">10s</button>
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="15">15s</button>
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="20">20s</button>
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="30">30s</button>
+            <button class="btn btn-ghost btn-sm" type="button" data-sec="60">60s</button>
+          </div>
         </div>
 
         <div class="grid2">
@@ -396,6 +420,21 @@
   const sb = window.HacknFix && window.HacknFix.client;
 
   const ICON_KEYS = ['social','gift','call','lock','link','wifi','key','phone','job','alert'];
+
+  // 95 -> "1m 35s"
+  function fmtDuration(sec){
+    if(sec == null) return '—';
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? m + 'm ' + s + 's' : s + 's';
+  }
+
+  // Highlight whichever preset matches the number in the box.
+  function markTimerPreset(){
+    const v = parseInt($('setTimer').value, 10) || 0;
+    document.querySelectorAll('#timerPresets .btn').forEach(b=>{
+      b.classList.toggle('active', parseInt(b.dataset.sec, 10) === v);
+    });
+  }
 
   let attempts = [];
   let questions = [];
@@ -847,6 +886,10 @@
       sc.textContent = a.score + '/' + a.total;
       tr.append(sc);
 
+      const dur = document.createElement('td');
+      dur.textContent = a.duration_seconds != null ? fmtDuration(a.duration_seconds) : '—';
+      tr.append(dur);
+
       const lg = document.createElement('td');
       lg.textContent = a.lang;
       tr.append(lg);
@@ -878,10 +921,16 @@
       $('stToday').textContent = attempts.filter(a=>
         new Date(a.created_at).toDateString() === today
       ).length;
+
+      const timed = attempts.filter(a=>a.duration_seconds != null);
+      $('stTime').textContent = timed.length
+        ? fmtDuration(Math.round(timed.reduce((s,a)=>s + a.duration_seconds, 0) / timed.length))
+        : '—';
     } else {
       $('stAvg').textContent = '–';
       $('stBest').textContent = '–';
       $('stToday').textContent = '0';
+      $('stTime').textContent = '–';
     }
   }
 
@@ -891,7 +940,7 @@
     if(!rows.length) return toast('Nothing to export', true);
 
     const esc = v => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"';
-    const header = ['Name','Phone','Email','Score','Total','Percent','Language','Submitted'];
+    const header = ['Name','Phone','Email','Score','Total','Percent','Seconds','Language','Submitted'];
     const lines = [header.map(esc).join(',')];
 
     rows.forEach(a=>{
@@ -902,6 +951,7 @@
         a.score,
         a.total,
         a.total ? Math.round(a.score / a.total * 100) + '%' : '',
+        a.duration_seconds != null ? a.duration_seconds : '',
         a.lang,
         new Date(a.created_at).toLocaleString()
       ].map(esc).join(','));
@@ -924,6 +974,8 @@
     $('setOpen').checked   = settings.quiz_open;
     $('setBoard').checked  = settings.show_leaderboard;
     $('setLength').value   = settings.quiz_length;
+    $('setTimer').value    = settings.timer_seconds || 0;
+    markTimerPreset();
     $('setTitleBn').value  = settings.welcome_title_bn || '';
     $('setTitleEn').value  = settings.welcome_title_en || '';
     $('setSubBn').value    = settings.welcome_sub_bn || '';
@@ -931,6 +983,14 @@
     $('setClosedBn').value = settings.closed_msg_bn || '';
     $('setClosedEn').value = settings.closed_msg_en || '';
   }
+
+  document.querySelectorAll('#timerPresets .btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      $('setTimer').value = b.dataset.sec;
+      markTimerPreset();
+    });
+  });
+  $('setTimer').addEventListener('input', markTimerPreset);
 
   $('saveSettingsBtn').addEventListener('click', async ()=>{
     const len = parseInt($('setLength').value, 10);
@@ -940,6 +1000,7 @@
       quiz_open: $('setOpen').checked,
       show_leaderboard: $('setBoard').checked,
       quiz_length: len,
+      timer_seconds: Math.max(0, Math.min(parseInt($('setTimer').value, 10) || 0, 600)),
       welcome_title_bn: $('setTitleBn').value.trim(),
       welcome_title_en: $('setTitleEn').value.trim(),
       welcome_sub_bn: $('setSubBn').value.trim(),
@@ -956,7 +1017,9 @@
     if(error) return toast(error.message, true);
     settings = Object.assign({}, settings, payload);
     renderQuestionStats();
-    toast('Settings saved');
+    toast(payload.timer_seconds
+      ? 'Saved — ' + payload.timer_seconds + 's per question'
+      : 'Saved — timer off');
   });
 
   init();

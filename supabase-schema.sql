@@ -64,6 +64,20 @@ create table if not exists public.settings (
 insert into public.settings (id) values (1) on conflict (id) do nothing;
 
 -- ------------------------------------------------------------
+-- 1b. UPGRADES
+--     These bring an already-created database up to date. They are
+--     no-ops on a fresh install, and safe to run again any time.
+-- ------------------------------------------------------------
+
+-- Countdown per question, in seconds. 0 turns the timer off entirely.
+alter table public.settings
+  add column if not exists timer_seconds int not null default 0;
+
+-- How long the whole attempt took, in seconds.
+alter table public.attempts
+  add column if not exists duration_seconds int;
+
+-- ------------------------------------------------------------
 -- 2. ROW LEVEL SECURITY
 --    The anon key is public - anyone can read it out of your HTML.
 --    These policies are what actually keep the data safe.
@@ -116,13 +130,19 @@ create policy "settings_admin_write" on public.settings
 
 -- Save a finished quiz. Returns the new row id so the browser can
 -- highlight "you" on the leaderboard without ever reading the table.
+--
+-- The older 6-argument version is dropped first: adding a parameter
+-- would otherwise leave two overloads behind and make the call ambiguous.
+drop function if exists public.submit_attempt(text, text, text, int, int, text);
+
 create or replace function public.submit_attempt(
-  p_name  text,
-  p_phone text,
-  p_email text,
-  p_score int,
-  p_total int,
-  p_lang  text
+  p_name     text,
+  p_phone    text,
+  p_email    text,
+  p_score    int,
+  p_total    int,
+  p_lang     text,
+  p_duration int default null
 ) returns uuid
 language plpgsql
 security definer
@@ -141,14 +161,16 @@ begin
     raise exception 'invalid_score';
   end if;
 
-  insert into public.attempts (name, phone, email, score, total, lang)
+  insert into public.attempts (name, phone, email, score, total, lang, duration_seconds)
   values (
     left(coalesce(nullif(trim(p_name), ''), 'Guest'), 60),
     left(nullif(trim(p_phone), ''), 20),
     left(nullif(trim(p_email), ''), 120),
     p_score,
     p_total,
-    case when p_lang in ('bn', 'en') then p_lang else 'bn' end
+    case when p_lang in ('bn', 'en') then p_lang else 'bn' end,
+    -- ignore nonsense durations rather than storing them
+    case when p_duration between 0 and 86400 then p_duration else null end
   )
   returning id into v_id;
 
@@ -170,10 +192,30 @@ as $fn$
   limit greatest(1, least(coalesce(p_limit, 10), 50));
 $fn$;
 
-revoke all on function public.submit_attempt(text, text, text, int, int, text) from public;
+-- Aggregate counters for the landing page. Counts only - no rows, no names,
+-- so this is safe to expose to everyone.
+create or replace function public.quiz_stats()
+returns table (total_attempts bigint, avg_percent int, best_score int)
+language sql
+stable
+security definer
+set search_path = public
+as $fn$
+  select
+    count(*)::bigint,
+    coalesce(round(avg(case when a.total > 0
+                            then a.score::numeric / a.total * 100
+                            else 0 end))::int, 0),
+    coalesce(max(a.score), 0)
+  from public.attempts a;
+$fn$;
+
+revoke all on function public.submit_attempt(text, text, text, int, int, text, int) from public;
 revoke all on function public.leaderboard(int) from public;
-grant execute on function public.submit_attempt(text, text, text, int, int, text) to anon, authenticated;
+revoke all on function public.quiz_stats() from public;
+grant execute on function public.submit_attempt(text, text, text, int, int, text, int) to anon, authenticated;
 grant execute on function public.leaderboard(int) to anon, authenticated;
+grant execute on function public.quiz_stats() to anon, authenticated;
 
 -- ------------------------------------------------------------
 -- 4. SEED - your original 10 questions.
