@@ -206,12 +206,19 @@
 
   /* ---------- toast ---------- */
   #toast{
-    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120%);
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);
     background:var(--primary);color:var(--on-primary);
     padding:12px 20px;border-radius:99px;font-size:0.88rem;font-weight:600;
-    box-shadow:var(--shadow);transition:transform .25s ease;z-index:60;max-width:90vw;
+    box-shadow:var(--shadow);z-index:60;max-width:90vw;
+    /* hidden outright when idle: sliding alone left a sliver of the empty
+       pill peeking above the bottom edge on short screens */
+    opacity:0;visibility:hidden;
+    transition:transform .25s ease, opacity .2s ease, visibility .2s;
   }
-  #toast.show{transform:translateX(-50%) translateY(0);}
+  #toast.show{
+    transform:translateX(-50%) translateY(0);
+    opacity:1;visibility:visible;
+  }
   #toast.err{background:var(--danger);color:#fff;}
 
   /* ---------- modal ---------- */
@@ -227,6 +234,80 @@
   }
   .modal h2{font-family:'Baloo Da 2',sans-serif;font-size:1.15rem;margin:0 0 16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;}
+
+  /* ============================================================
+     MOBILE
+     The admin panel is used on phones at events, not just desktops.
+     ============================================================ */
+  @media (max-width: 700px){
+    main{padding:16px 14px;}
+    .card{padding:16px 14px;}
+
+    /* two stat tiles per row instead of one very tall column */
+    .stats{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .stat{padding:12px;}
+    .stat .n{font-size:1.35rem;}
+
+    /* topbar: keep it to two tidy rows */
+    .topbar{padding:12px 14px;gap:8px;}
+    .who{
+      max-width:150px;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap;font-size:0.76rem;
+    }
+
+    /* tabs scroll sideways rather than wrapping onto three lines */
+    .tabs{
+      flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;
+      scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    }
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex:0 0 auto;}
+
+    /* ---- the participants table becomes a list of cards ----
+       a 9-column table cannot be read on a 320px screen */
+    .table-wrap{overflow-x:visible;}
+    table{min-width:0;display:block;}
+    thead{display:none;}
+    tbody,tr,td{display:block;width:100%;}
+    tr{
+      border:1px solid var(--border);border-radius:var(--radius-md);
+      padding:12px 14px;margin-bottom:10px;background:var(--bg-soft);
+    }
+    tbody tr:hover{background:var(--bg-soft);}
+    td{
+      border:none;padding:3px 0;white-space:normal;
+      display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+    }
+    /* the label that the hidden <th> used to provide */
+    td::before{
+      content:attr(data-label);
+      font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;
+      color:var(--muted);font-weight:700;flex:0 0 auto;
+    }
+    td[data-label="#"]{
+      font-weight:700;color:var(--primary-strong);
+      border-bottom:1px solid var(--border);padding-bottom:7px;margin-bottom:5px;
+    }
+    td:last-child{justify-content:flex-end;padding-top:9px;}
+    td:last-child::before{content:none;}
+
+    /* ---- option editor: stack instead of squeezing three columns ---- */
+    .modal{padding:18px 15px;}
+    .opt-row{flex-wrap:wrap;gap:8px;}
+    .opt-radio{flex-direction:row;gap:7px;padding-top:0;align-items:center;}
+    .opt-fields{flex:1 1 100%;order:3;}
+    .opt-row > .btn{margin-left:auto;}
+
+    textarea{min-height:92px;}
+  }
+
+  /* very narrow phones - two tiles still fit, so keep the grid */
+  @media (max-width: 380px){
+    .stat .n{font-size:1.2rem;}
+    .stat .l{font-size:0.72rem;}
+    .who{display:none;}          /* the email is not worth a whole row here */
+  }
+
   .timer-presets{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
   .timer-presets .btn.active{
     background:var(--primary);color:var(--on-primary);border-color:var(--primary);
@@ -874,31 +955,38 @@
 
     rows.forEach((a, i)=>{
       const tr = document.createElement('tr');
+      // data-label feeds the stacked card layout on phones, where the
+      // table header is hidden (see the mobile block in the CSS).
       [
-        i + 1,
-        a.name || '',
-        a.phone || '—',
-        a.email || '—'
-      ].forEach(v=>{
+        ['#',     i + 1],
+        ['Name',  a.name || ''],
+        ['Phone', a.phone || '—'],
+        ['Email', a.email || '—']
+      ].forEach(([label, v])=>{
         const td = document.createElement('td');
+        td.dataset.label = label;
         td.textContent = v;
         tr.append(td);
       });
 
       const sc = document.createElement('td');
       sc.className = 'score-cell';
+      sc.dataset.label = 'Score';
       sc.textContent = a.score + '/' + a.total;
       tr.append(sc);
 
       const dur = document.createElement('td');
+      dur.dataset.label = 'Time';
       dur.textContent = a.duration_seconds != null ? fmtDuration(a.duration_seconds) : '—';
       tr.append(dur);
 
       const lg = document.createElement('td');
+      lg.dataset.label = 'Lang';
       lg.textContent = a.lang;
       tr.append(lg);
 
       const when = document.createElement('td');
+      when.dataset.label = 'When';
       when.textContent = new Date(a.created_at).toLocaleString();
       tr.append(when);
 
