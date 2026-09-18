@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HacknFix Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6F1;
+    --bg-soft:#EAF0E7;
+    --card:#FFFFFF;
+    --text:#1B2420;
+    --muted:#5B6B60;
+    --border:#DEE5DD;
+    --primary:#0F6B4C;
+    --primary-strong:#0B4F38;
+    --on-primary:#FFFFFF;
+    --accent:#2F9E6E;
+    --danger:#C23F3F;
+    --danger-bg:#FBEAEA;
+    --success-bg:#E9F7EF;
+    --chip-bg:#EAF0E7;
+    --shadow: 0 1px 2px rgba(15,40,28,0.06), 0 8px 24px rgba(15,40,28,0.07);
+    --radius-lg:18px;
+    --radius-md:12px;
+    --radius-sm:9px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1B15; --bg-soft:#122019; --card:#16261F; --text:#E9F2EC;
+      --muted:#93A89C; --border:#25382F; --primary:#4FD8A0; --primary-strong:#7CE6B8;
+      --on-primary:#0B2016; --accent:#4FD8A0; --danger:#FF8A8A; --danger-bg:#3A1F1F;
+      --success-bg:#153627; --chip-bg:#1C2C24;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1B15; --bg-soft:#122019; --card:#16261F; --text:#E9F2EC;
+    --muted:#93A89C; --border:#25382F; --primary:#4FD8A0; --primary-strong:#7CE6B8;
+    --on-primary:#0B2016; --accent:#4FD8A0; --danger:#FF8A8A; --danger-bg:#3A1F1F;
+    --success-bg:#153627; --chip-bg:#1C2C24;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Hind Siliguri','Inter',sans-serif;
+    min-height:100vh;-webkit-font-smoothing:antialiased;
+  }
+  .hidden{display:none !important;}
+
+  /* ---------- shell ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 22px;background:var(--card);border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:20;flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;align-items:center;gap:9px;
+    font-family:'Baloo Da 2',sans-serif;font-weight:700;
+    font-size:1.02rem;color:var(--primary-strong);
+  }
+  .brand svg{width:24px;height:24px;}
+  .brand .tag{
+    font-family:'Hind Siliguri',sans-serif;font-size:0.7rem;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;
+    background:var(--chip-bg);color:var(--muted);
+    padding:3px 8px;border-radius:99px;
+  }
+  .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .who{font-size:0.82rem;color:var(--muted);}
+
+  main{max-width:1000px;margin:0 auto;padding:22px;}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{
+    padding:9px 16px;border-radius:99px;border:1px solid var(--border);
+    background:var(--card);color:var(--muted);font-family:inherit;
+    font-size:0.9rem;font-weight:600;cursor:pointer;
+  }
+  .tab.active{background:var(--primary);color:var(--on-primary);border-color:var(--primary);}
+
+  /* ---------- pieces ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-family:'Baloo Da 2',sans-serif;font-size:1.1rem;font-weight:600;
+    margin:0 0 4px;
+  }
+  .card .sub{font-size:0.84rem;color:var(--muted);margin:0 0 16px;line-height:1.55;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+  .stat{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .stat .n{font-family:'Baloo Da 2',sans-serif;font-size:1.6rem;font-weight:700;color:var(--primary-strong);line-height:1.1;}
+  .stat .l{font-size:0.78rem;color:var(--muted);margin-top:3px;}
+
+  label{display:block;font-size:0.84rem;color:var(--muted);margin-bottom:5px;font-weight:500;}
+  input[type=text],input[type=email],input[type=password],input[type=number],textarea,select{
+    width:100%;padding:10px 12px;border-radius:var(--radius-sm);
+    border:1.5px solid var(--border);background:var(--bg-soft);color:var(--text);
+    font-family:inherit;font-size:0.95rem;
+  }
+  textarea{resize:vertical;min-height:70px;line-height:1.55;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);}
+  .field{margin-bottom:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){ .grid2{grid-template-columns:1fr;} }
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:10px 16px;border-radius:var(--radius-md);border:none;
+    font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;
+    transition:opacity .15s ease,transform .1s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-primary{background:var(--primary);color:var(--on-primary);}
+  .btn-ghost{background:transparent;color:var(--primary-strong);border:1.5px solid var(--border);}
+  .btn-danger{background:var(--danger-bg);color:var(--danger);border:1.5px solid transparent;}
+  .btn-sm{padding:6px 11px;font-size:0.82rem;border-radius:var(--radius-sm);}
+  .btn-block{width:100%;}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+  /* ---------- question list ---------- */
+  .q-item{
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:14px 16px;margin-bottom:10px;background:var(--bg-soft);
+  }
+  .q-item.inactive{opacity:.55;}
+  .q-head{display:flex;align-items:flex-start;gap:12px;}
+  .q-ord{
+    width:28px;height:28px;border-radius:99px;background:var(--card);
+    border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+    font-size:0.8rem;font-weight:700;color:var(--primary-strong);flex-shrink:0;
+  }
+  .q-body{flex:1;min-width:0;}
+  .q-bn{font-weight:600;font-size:0.95rem;line-height:1.55;}
+  .q-en{font-size:0.85rem;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .q-meta{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap;}
+  .pill{
+    font-size:0.72rem;font-weight:600;padding:3px 9px;border-radius:99px;
+    background:var(--chip-bg);color:var(--muted);
+  }
+  .pill.on{background:var(--success-bg);color:var(--accent);}
+  .pill.off{background:var(--danger-bg);color:var(--danger);}
+
+  /* ---------- option editor ---------- */
+  .opt-row{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+    margin-bottom:9px;background:var(--bg-soft);
+  }
+  .opt-row.is-correct{border-color:var(--accent);background:var(--success-bg);}
+  .opt-radio{display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:6px;}
+  .opt-radio input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;}
+  .opt-radio span{font-size:0.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;}
+  .opt-fields{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0;}
+
+  /* ---------- table ---------- */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{width:100%;border-collapse:collapse;font-size:0.88rem;min-width:640px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;}
+  tbody tr:hover{background:var(--bg-soft);}
+  .score-cell{font-weight:700;color:var(--primary-strong);}
+
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:0.9rem;}
+
+  /* ---------- login ---------- */
+  .login-wrap{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;
+  }
+  .login-card{
+    width:100%;max-width:380px;background:var(--card);
+    border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:30px 26px;box-shadow:var(--shadow);
+  }
+  .login-card h1{
+    font-family:'Baloo Da 2',sans-serif;font-size:1.3rem;font-weight:700;
+    margin:16px 0 5px;
+  }
+  .login-card .sub{font-size:0.86rem;color:var(--muted);margin:0 0 20px;line-height:1.55;}
+
+  .msg{
+    padding:11px 14px;border-radius:var(--radius-sm);font-size:0.85rem;
+    margin-bottom:14px;line-height:1.5;
+  }
+  .msg.err{background:var(--danger-bg);color:var(--danger);}
+  .msg.ok{background:var(--success-bg);color:var(--accent);}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120%);
+    background:var(--primary);color:var(--on-primary);
+    padding:12px 20px;border-radius:99px;font-size:0.88rem;font-weight:600;
+    box-shadow:var(--shadow);transition:transform .25s ease;z-index:60;max-width:90vw;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0);}
+  #toast.err{background:var(--danger);color:#fff;}
+
+  /* ---------- modal ---------- */
+  .modal-back{
+    position:fixed;inset:0;background:rgba(10,20,15,.55);
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:22px;overflow-y:auto;z-index:50;
+  }
+  .modal{
+    width:100%;max-width:640px;background:var(--card);
+    border-radius:var(--radius-lg);border:1px solid var(--border);
+    padding:22px;box-shadow:var(--shadow);margin:auto;
+  }
+  .modal h2{font-family:'Baloo Da 2',sans-serif;font-size:1.15rem;margin:0 0 16px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions .btn{flex:1;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+      <span>HacknFix</span><span class="tag">Admin</span>
+    </div>
+    <h1>Sign in</h1>
+    <p class="sub">Use the admin account you created in Supabase (Authentication &rsaquo; Users).</p>
+
+    <div class="msg err hidden" id="loginMsg"></div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="username" placeholder="admin@example.com">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary btn-block" id="loginBtn" type="button">Sign in</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appScreen" class="hidden">
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+      <span>HacknFix</span><span class="tag">Admin</span>
+    </div>
+    <div class="topbar-right">
+      <span class="who" id="whoAmI"></span>
+      <a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">View site</a>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="tabs">
+      <button class="tab active" data-tab="questions" type="button">Questions</button>
+      <button class="tab" data-tab="results" type="button">Results</button>
+      <button class="tab" data-tab="settings" type="button">Site settings</button>
+    </div>
+
+    <!-- ---------- QUESTIONS ---------- -->
+    <section id="tab-questions">
+      <div class="stats">
+        <div class="stat"><div class="n" id="stTotalQ">–</div><div class="l">Questions total</div></div>
+        <div class="stat"><div class="n" id="stActiveQ">–</div><div class="l">Live in the quiz</div></div>
+        <div class="stat"><div class="n" id="stPerQuiz">–</div><div class="l">Asked per attempt</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Questions</h2>
+        <p class="sub">
+          These are what visitors actually see. Only <strong>active</strong> questions are served,
+          and each attempt gets a random selection of them — the count is set under Site settings.
+        </p>
+        <button class="btn btn-primary" id="addQBtn" type="button">+ Add question</button>
+        <div id="qList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
+      </div>
+    </section>
+
+    <!-- ---------- RESULTS ---------- -->
+    <section id="tab-results" class="hidden">
+      <div class="stats">
+        <div class="stat"><div class="n" id="stAttempts">–</div><div class="l">Total attempts</div></div>
+        <div class="stat"><div class="n" id="stAvg">–</div><div class="l">Average score</div></div>
+        <div class="stat"><div class="n" id="stBest">–</div><div class="l">Best score</div></div>
+        <div class="stat"><div class="n" id="stToday">–</div><div class="l">Attempts today</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Participants</h2>
+        <p class="sub">Everyone who finished the quiz. Phone and email are visible here only — the public leaderboard shows name and score alone.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <input type="text" id="searchBox" placeholder="Search name, phone or email…" style="flex:1;min-width:200px;">
+          <button class="btn btn-ghost" id="refreshBtn" type="button">Refresh</button>
+          <button class="btn btn-primary" id="csvBtn" type="button">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Score</th><th>Lang</th><th>When</th><th></th></tr>
+            </thead>
+            <tbody id="attemptRows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="attemptsEmpty">No attempts yet.</div>
+      </div>
+    </section>
+
+    <!-- ---------- SETTINGS ---------- -->
+    <section id="tab-settings" class="hidden">
+      <div class="card">
+        <h2>Site settings</h2>
+        <p class="sub">Changes take effect the next time someone loads the quiz page.</p>
+
+        <div class="field">
+          <label>
+            <input type="checkbox" id="setOpen" style="width:auto;margin-right:7px;vertical-align:-2px;">
+            Quiz is open
+          </label>
+          <div class="sub" style="margin:4px 0 0;">Turn this off to close the quiz. Visitors see the closed message below and cannot submit a score.</div>
+        </div>
+
+        <div class="field">
+          <label>
+            <input type="checkbox" id="setBoard" style="width:auto;margin-right:7px;vertical-align:-2px;">
+            Show the leaderboard on the result screen
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="setLength">Questions asked per attempt</label>
+          <input type="number" id="setLength" min="1" max="100">
+          <div class="sub" style="margin:4px 0 0;">Picked at random from your active questions. If you set this higher than the number of active questions, everyone simply gets all of them.</div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="setTitleBn">Welcome title (বাংলা)</label>
+            <textarea id="setTitleBn"></textarea>
+          </div>
+          <div class="field">
+            <label for="setTitleEn">Welcome title (English)</label>
+            <textarea id="setTitleEn"></textarea>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="setSubBn">Welcome subtitle (বাংলা)</label>
+            <textarea id="setSubBn"></textarea>
+          </div>
+          <div class="field">
+            <label for="setSubEn">Welcome subtitle (English)</label>
+            <textarea id="setSubEn"></textarea>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="setClosedBn">"Quiz closed" message (বাংলা)</label>
+            <textarea id="setClosedBn"></textarea>
+          </div>
+          <div class="field">
+            <label for="setClosedEn">"Quiz closed" message (English)</label>
+            <textarea id="setClosedEn"></textarea>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="saveSettingsBtn" type="button">Save settings</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+<div id="modalHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const sb = window.HacknFix && window.HacknFix.client;
+
+  const ICON_KEYS = ['social','gift','call','lock','link','wifi','key','phone','job','alert'];
+
+  let attempts = [];
+  let questions = [];
+  let settings = null;
+
+  // ---------------- toast ----------------
+  let toastTimer = null;
+  function toast(text, isError){
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.toggle('err', !!isError);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  // ---------------- auth ----------------
+  async function init(){
+    if(!sb){
+      $('loginMsg').textContent =
+        'config.js is not filled in yet. Add your Supabase URL and anon key, then reload.';
+      $('loginMsg').classList.remove('hidden');
+      $('loginBtn').disabled = true;
+      return;
+    }
+    const { data } = await sb.auth.getSession();
+    if(data.session) enterApp(data.session);
+  }
+
+  $('loginBtn').addEventListener('click', signIn);
+  $('password').addEventListener('keydown', e=>{ if(e.key === 'Enter') signIn(); });
+  $('email').addEventListener('keydown', e=>{ if(e.key === 'Enter') $('password').focus(); });
+
+  async function signIn(){
+    const msg = $('loginMsg');
+    msg.classList.add('hidden');
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    if(!email || !password){
+      msg.textContent = 'Enter your email and password.';
+      msg.classList.remove('hidden');
+      return;
+    }
+    $('loginBtn').disabled = true;
+    $('loginBtn').textContent = 'Signing in…';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    $('loginBtn').disabled = false;
+    $('loginBtn').textContent = 'Sign in';
+    if(error){
+      msg.textContent = error.message;
+      msg.classList.remove('hidden');
+      return;
+    }
+    enterApp(data.session);
+  }
+
+  function enterApp(session){
+    $('loginScreen').classList.add('hidden');
+    $('appScreen').classList.remove('hidden');
+    $('whoAmI').textContent = session.user.email;
+    loadEverything();
+  }
+
+  $('logoutBtn').addEventListener('click', async ()=>{
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  // ---------------- tabs ----------------
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-tab');
+      ['questions','results','settings'].forEach(t=>{
+        $('tab-'+t).classList.toggle('hidden', t !== target);
+      });
+    });
+  });
+
+  // ---------------- loading ----------------
+  async function loadEverything(){
+    await Promise.all([loadQuestions(), loadAttempts(), loadSettings()]);
+  }
+
+  async function loadQuestions(){
+    const { data, error } = await sb.from('questions')
+      .select('*').order('sort_order', {ascending:true});
+    if(error){ toast('Could not load questions: ' + error.message, true); return; }
+    questions = data || [];
+    renderQuestions();
+    renderQuestionStats();
+  }
+
+  async function loadAttempts(){
+    const { data, error } = await sb.from('attempts')
+      .select('*').order('created_at', {ascending:false}).limit(1000);
+    if(error){ toast('Could not load results: ' + error.message, true); return; }
+    attempts = data || [];
+    renderAttempts();
+  }
+
+  async function loadSettings(){
+    const { data, error } = await sb.from('settings').select('*').eq('id',1).single();
+    if(error){ toast('Could not load settings: ' + error.message, true); return; }
+    settings = data;
+    fillSettingsForm();
+    renderQuestionStats();
+  }
+
+  // ---------------- questions ----------------
+  function renderQuestionStats(){
+    $('stTotalQ').textContent = questions.length;
+    const active = questions.filter(q=>q.is_active).length;
+    $('stActiveQ').textContent = active;
+    const want = settings ? settings.quiz_length : 10;
+    $('stPerQuiz').textContent = Math.max(1, Math.min(want, active || 1));
+  }
+
+  function renderQuestions(){
+    const wrap = $('qList');
+    wrap.innerHTML = '';
+    if(!questions.length){
+      wrap.innerHTML = '<div class="empty">No questions yet. Add your first one above.</div>';
+      return;
+    }
+    questions.forEach((q, i)=>{
+      const correct = (q.options || []).find(o=>o.correct);
+      const item = document.createElement('div');
+      item.className = 'q-item' + (q.is_active ? '' : ' inactive');
+
+      const head = document.createElement('div');
+      head.className = 'q-head';
+
+      const ord = document.createElement('div');
+      ord.className = 'q-ord';
+      ord.textContent = i + 1;
+
+      const body = document.createElement('div');
+      body.className = 'q-body';
+
+      const bn = document.createElement('div');
+      bn.className = 'q-bn';
+      bn.textContent = q.q_bn;
+
+      const en = document.createElement('div');
+      en.className = 'q-en';
+      en.textContent = q.q_en;
+
+      const meta = document.createElement('div');
+      meta.className = 'q-meta';
+
+      const st = document.createElement('span');
+      st.className = 'pill ' + (q.is_active ? 'on' : 'off');
+      st.textContent = q.is_active ? 'Active' : 'Hidden';
+
+      const ic = document.createElement('span');
+      ic.className = 'pill';
+      ic.textContent = q.icon;
+
+      const oc = document.createElement('span');
+      oc.className = 'pill';
+      oc.textContent = (q.options || []).length + ' options';
+
+      const ans = document.createElement('span');
+      ans.className = 'pill';
+      ans.textContent = 'Answer: ' + (correct ? correct.en : 'none set!');
+
+      meta.append(st, ic, oc, ans);
+
+      const actions = document.createElement('div');
+      actions.className = 'row-actions';
+      actions.style.marginTop = '10px';
+      actions.append(
+        mkBtn('Edit', 'btn-ghost', ()=>openEditor(q)),
+        mkBtn(q.is_active ? 'Hide' : 'Show', 'btn-ghost', ()=>toggleActive(q)),
+        mkBtn('▲', 'btn-ghost', ()=>move(i, -1)),
+        mkBtn('▼', 'btn-ghost', ()=>move(i, 1)),
+        mkBtn('Delete', 'btn-danger', ()=>removeQuestion(q))
+      );
+
+      body.append(bn, en, meta, actions);
+      head.append(ord, body);
+      item.append(head);
+      wrap.append(item);
+    });
+  }
+
+  function mkBtn(label, cls, onClick){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-sm ' + cls;
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  async function toggleActive(q){
+    const { error } = await sb.from('questions')
+      .update({ is_active: !q.is_active, updated_at: new Date().toISOString() })
+      .eq('id', q.id);
+    if(error) return toast(error.message, true);
+    toast(q.is_active ? 'Question hidden' : 'Question is live');
+    loadQuestions();
+  }
+
+  async function removeQuestion(q){
+    if(!confirm('Delete this question permanently?\n\n' + q.q_en)) return;
+    const { error } = await sb.from('questions').delete().eq('id', q.id);
+    if(error) return toast(error.message, true);
+    toast('Question deleted');
+    loadQuestions();
+  }
+
+  // Swap sort_order with the neighbour, then persist both rows.
+  async function move(index, dir){
+    const target = index + dir;
+    if(target < 0 || target >= questions.length) return;
+    const a = questions[index], b = questions[target];
+    const updates = [
+      sb.from('questions').update({ sort_order: b.sort_order }).eq('id', a.id),
+      sb.from('questions').update({ sort_order: a.sort_order }).eq('id', b.id)
+    ];
+    // If both rows share an order value, swapping is a no-op — renumber instead.
+    if(a.sort_order === b.sort_order){
+      updates[0] = sb.from('questions').update({ sort_order: target + 1 }).eq('id', a.id);
+      updates[1] = sb.from('questions').update({ sort_order: index + 1 }).eq('id', b.id);
+    }
+    const res = await Promise.all(updates);
+    const bad = res.find(r=>r.error);
+    if(bad) return toast(bad.error.message, true);
+    loadQuestions();
+  }
+
+  // ---------------- question editor ----------------
+  function openEditor(q){
+    const isNew = !q;
+    const draft = q ? JSON.parse(JSON.stringify(q)) : {
+      sort_order: questions.length + 1,
+      icon: 'alert',
+      q_bn: '', q_en: '',
+      explain_bn: '', explain_en: '',
+      is_active: true,
+      options: [
+        {bn:'', en:'', correct:true},
+        {bn:'', en:'', correct:false},
+        {bn:'', en:'', correct:false}
+      ]
+    };
+
+    const back = document.createElement('div');
+    back.className = 'modal-back';
+    back.innerHTML = `
+      <div class="modal">
+        <h2>${isNew ? 'Add question' : 'Edit question'}</h2>
+
+        <div class="grid2">
+          <div class="field">
+            <label>Icon</label>
+            <select id="edIcon">${ICON_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('')}</select>
+          </div>
+          <div class="field">
+            <label>Order</label>
+            <input type="number" id="edOrder" min="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Question (বাংলা)</label>
+          <textarea id="edQbn"></textarea>
+        </div>
+        <div class="field">
+          <label>Question (English)</label>
+          <textarea id="edQen"></textarea>
+        </div>
+
+        <label style="margin-bottom:8px;">Options — pick the correct one on the left</label>
+        <div id="edOptions"></div>
+        <button class="btn btn-ghost btn-sm" type="button" id="edAddOpt">+ Add option</button>
+
+        <div class="field" style="margin-top:18px;">
+          <label>Explanation (বাংলা)</label>
+          <textarea id="edExBn"></textarea>
+        </div>
+        <div class="field">
+          <label>Explanation (English)</label>
+          <textarea id="edExEn"></textarea>
+        </div>
+
+        <div class="field">
+          <label>
+            <input type="checkbox" id="edActive" style="width:auto;margin-right:7px;vertical-align:-2px;">
+            Active (visible in the quiz)
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" type="button" id="edCancel">Cancel</button>
+          <button class="btn btn-primary" type="button" id="edSave">${isNew ? 'Create' : 'Save changes'}</button>
+        </div>
+      </div>`;
+    $('modalHost').append(back);
+
+    $('edIcon').value = draft.icon;
+    $('edOrder').value = draft.sort_order;
+    $('edQbn').value = draft.q_bn;
+    $('edQen').value = draft.q_en;
+    $('edExBn').value = draft.explain_bn || '';
+    $('edExEn').value = draft.explain_en || '';
+    $('edActive').checked = !!draft.is_active;
+
+    let opts = draft.options && draft.options.length ? draft.options : [{bn:'',en:'',correct:true}];
+
+    function renderOptions(){
+      const host = $('edOptions');
+      host.innerHTML = '';
+      opts.forEach((o, i)=>{
+        const row = document.createElement('div');
+        row.className = 'opt-row' + (o.correct ? ' is-correct' : '');
+
+        const radioWrap = document.createElement('div');
+        radioWrap.className = 'opt-radio';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'edCorrect';
+        radio.checked = !!o.correct;
+        radio.addEventListener('change', ()=>{
+          opts.forEach((x, xi)=>{ x.correct = (xi === i); });
+          renderOptions();
+        });
+        const radioLabel = document.createElement('span');
+        radioLabel.textContent = 'right';
+        radioWrap.append(radio, radioLabel);
+
+        const fields = document.createElement('div');
+        fields.className = 'opt-fields';
+
+        const bn = document.createElement('input');
+        bn.type = 'text';
+        bn.placeholder = 'Option (বাংলা)';
+        bn.value = o.bn || '';
+        bn.addEventListener('input', ()=>{ o.bn = bn.value; });
+
+        const en = document.createElement('input');
+        en.type = 'text';
+        en.placeholder = 'Option (English)';
+        en.value = o.en || '';
+        en.addEventListener('input', ()=>{ o.en = en.value; });
+
+        fields.append(bn, en);
+
+        const del = mkBtn('✕', 'btn-danger', ()=>{
+          if(opts.length <= 2) return toast('A question needs at least 2 options', true);
+          const wasCorrect = opts[i].correct;
+          opts.splice(i, 1);
+          if(wasCorrect) opts[0].correct = true;
+          renderOptions();
+        });
+        del.style.alignSelf = 'center';
+
+        row.append(radioWrap, fields, del);
+        host.append(row);
+      });
+    }
+    renderOptions();
+
+    $('edAddOpt').addEventListener('click', ()=>{
+      if(opts.length >= 6) return toast('6 options is plenty', true);
+      opts.push({bn:'', en:'', correct:false});
+      renderOptions();
+    });
+
+    function close(){ back.remove(); }
+    $('edCancel').addEventListener('click', close);
+    back.addEventListener('click', e=>{ if(e.target === back) close(); });
+
+    $('edSave').addEventListener('click', async ()=>{
+      const payload = {
+        sort_order: parseInt($('edOrder').value, 10) || 0,
+        icon: $('edIcon').value,
+        q_bn: $('edQbn').value.trim(),
+        q_en: $('edQen').value.trim(),
+        explain_bn: $('edExBn').value.trim(),
+        explain_en: $('edExEn').value.trim(),
+        is_active: $('edActive').checked,
+        options: opts.map(o=>({ bn:(o.bn||'').trim(), en:(o.en||'').trim(), correct: !!o.correct })),
+        updated_at: new Date().toISOString()
+      };
+
+      if(!payload.q_bn || !payload.q_en)
+        return toast('Fill in the question in both languages', true);
+      if(payload.options.length < 2)
+        return toast('Add at least 2 options', true);
+      if(payload.options.some(o=>!o.bn || !o.en))
+        return toast('Every option needs both বাংলা and English text', true);
+      if(payload.options.filter(o=>o.correct).length !== 1)
+        return toast('Mark exactly one option as correct', true);
+
+      $('edSave').disabled = true;
+      const { error } = isNew
+        ? await sb.from('questions').insert(payload)
+        : await sb.from('questions').update(payload).eq('id', q.id);
+      $('edSave').disabled = false;
+
+      if(error) return toast(error.message, true);
+      toast(isNew ? 'Question added' : 'Question saved');
+      close();
+      loadQuestions();
+    });
+  }
+
+  $('addQBtn').addEventListener('click', ()=>openEditor(null));
+
+  // ---------------- results ----------------
+  $('searchBox').addEventListener('input', renderAttempts);
+  $('refreshBtn').addEventListener('click', ()=>{ loadAttempts(); toast('Refreshed'); });
+
+  function filteredAttempts(){
+    const term = $('searchBox').value.trim().toLowerCase();
+    if(!term) return attempts;
+    return attempts.filter(a=>
+      (a.name || '').toLowerCase().includes(term) ||
+      (a.phone || '').toLowerCase().includes(term) ||
+      (a.email || '').toLowerCase().includes(term)
+    );
+  }
+
+  function renderAttempts(){
+    const rows = filteredAttempts();
+    const tbody = $('attemptRows');
+    tbody.innerHTML = '';
+    $('attemptsEmpty').classList.toggle('hidden', rows.length > 0);
+
+    rows.forEach((a, i)=>{
+      const tr = document.createElement('tr');
+      [
+        i + 1,
+        a.name || '',
+        a.phone || '—',
+        a.email || '—'
+      ].forEach(v=>{
+        const td = document.createElement('td');
+        td.textContent = v;
+        tr.append(td);
+      });
+
+      const sc = document.createElement('td');
+      sc.className = 'score-cell';
+      sc.textContent = a.score + '/' + a.total;
+      tr.append(sc);
+
+      const lg = document.createElement('td');
+      lg.textContent = a.lang;
+      tr.append(lg);
+
+      const when = document.createElement('td');
+      when.textContent = new Date(a.created_at).toLocaleString();
+      tr.append(when);
+
+      const act = document.createElement('td');
+      act.append(mkBtn('Delete', 'btn-danger', async ()=>{
+        if(!confirm('Delete this attempt by ' + (a.name || 'Guest') + '?')) return;
+        const { error } = await sb.from('attempts').delete().eq('id', a.id);
+        if(error) return toast(error.message, true);
+        toast('Attempt deleted');
+        loadAttempts();
+      }));
+      tr.append(act);
+
+      tbody.append(tr);
+    });
+
+    // stats always reflect everything, not the current search
+    $('stAttempts').textContent = attempts.length;
+    if(attempts.length){
+      const pct = attempts.reduce((s,a)=> s + (a.total ? a.score/a.total : 0), 0) / attempts.length;
+      $('stAvg').textContent = Math.round(pct * 100) + '%';
+      $('stBest').textContent = Math.max.apply(null, attempts.map(a=>a.score));
+      const today = new Date().toDateString();
+      $('stToday').textContent = attempts.filter(a=>
+        new Date(a.created_at).toDateString() === today
+      ).length;
+    } else {
+      $('stAvg').textContent = '–';
+      $('stBest').textContent = '–';
+      $('stToday').textContent = '0';
+    }
+  }
+
+  // ---------------- CSV ----------------
+  $('csvBtn').addEventListener('click', ()=>{
+    const rows = filteredAttempts();
+    if(!rows.length) return toast('Nothing to export', true);
+
+    const esc = v => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"';
+    const header = ['Name','Phone','Email','Score','Total','Percent','Language','Submitted'];
+    const lines = [header.map(esc).join(',')];
+
+    rows.forEach(a=>{
+      lines.push([
+        a.name,
+        a.phone || '',
+        a.email || '',
+        a.score,
+        a.total,
+        a.total ? Math.round(a.score / a.total * 100) + '%' : '',
+        a.lang,
+        new Date(a.created_at).toLocaleString()
+      ].map(esc).join(','));
+    });
+
+    // The BOM makes Excel open বাংলা names correctly.
+    const blob = new Blob(['﻿' + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hacknfix-results-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Exported ' + rows.length + ' rows');
+  });
+
+  // ---------------- settings ----------------
+  function fillSettingsForm(){
+    if(!settings) return;
+    $('setOpen').checked   = settings.quiz_open;
+    $('setBoard').checked  = settings.show_leaderboard;
+    $('setLength').value   = settings.quiz_length;
+    $('setTitleBn').value  = settings.welcome_title_bn || '';
+    $('setTitleEn').value  = settings.welcome_title_en || '';
+    $('setSubBn').value    = settings.welcome_sub_bn || '';
+    $('setSubEn').value    = settings.welcome_sub_en || '';
+    $('setClosedBn').value = settings.closed_msg_bn || '';
+    $('setClosedEn').value = settings.closed_msg_en || '';
+  }
+
+  $('saveSettingsBtn').addEventListener('click', async ()=>{
+    const len = parseInt($('setLength').value, 10);
+    if(!len || len < 1) return toast('Questions per attempt must be at least 1', true);
+
+    const payload = {
+      quiz_open: $('setOpen').checked,
+      show_leaderboard: $('setBoard').checked,
+      quiz_length: len,
+      welcome_title_bn: $('setTitleBn').value.trim(),
+      welcome_title_en: $('setTitleEn').value.trim(),
+      welcome_sub_bn: $('setSubBn').value.trim(),
+      welcome_sub_en: $('setSubEn').value.trim(),
+      closed_msg_bn: $('setClosedBn').value.trim(),
+      closed_msg_en: $('setClosedEn').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+
+    $('saveSettingsBtn').disabled = true;
+    const { error } = await sb.from('settings').update(payload).eq('id', 1);
+    $('saveSettingsBtn').disabled = false;
+
+    if(error) return toast(error.message, true);
+    settings = Object.assign({}, settings, payload);
+    renderQuestionStats();
+    toast('Settings saved');
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HacknFix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6F1;
+    --bg-soft:#EAF0E7;
+    --card:#FFFFFF;
+    --text:#1B2420;
+    --muted:#5B6B60;
+    --border:#DEE5DD;
+    --primary:#0F6B4C;
+    --primary-strong:#0B4F38;
+    --on-primary:#FFFFFF;
+    --accent:#2F9E6E;
+    --danger:#C23F3F;
+    --danger-bg:#FBEAEA;
+    --success-bg:#E9F7EF;
+    --chip-bg:#EAF0E7;
+    --shadow: 0 1px 2px rgba(15,40,28,0.06), 0 8px 24px rgba(15,40,28,0.07);
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1B15;
+      --bg-soft:#122019;
+      --card:#16261F;
+      --text:#E9F2EC;
+      --muted:#93A89C;
+      --border:#25382F;
+      --primary:#4FD8A0;
+      --primary-strong:#7CE6B8;
+      --on-primary:#0B2016;
+      --accent:#4FD8A0;
+      --danger:#FF8A8A;
+      --danger-bg:#3A1F1F;
+      --success-bg:#153627;
+      --chip-bg:#1C2C24;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1B15;
+    --bg-soft:#122019;
+    --card:#16261F;
+    --text:#E9F2EC;
+    --muted:#93A89C;
+    --border:#25382F;
+    --primary:#4FD8A0;
+    --primary-strong:#7CE6B8;
+    --on-primary:#0B2016;
+    --accent:#4FD8A0;
+    --danger:#FF8A8A;
+    --danger-bg:#3A1F1F;
+    --success-bg:#153627;
+    --chip-bg:#1C2C24;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Hind Siliguri','Inter',sans-serif;
+    min-height:100vh;
+    transition:background .25s ease, color .25s ease;
+    -webkit-font-smoothing:antialiased;
+  }
+  body[data-lang="en"]{ font-family:'Hind Siliguri','Inter',sans-serif; }
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    max-width:520px;margin:0 auto;padding:18px 20px 0;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:'Baloo Da 2',sans-serif;
+    font-weight:700;font-size:1.05rem;color:var(--primary-strong);
+  }
+  .brand svg{width:26px;height:26px;flex-shrink:0;}
+  .controls{display:flex;gap:8px;}
+  .icon-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border-radius:999px;
+    background:var(--card);border:1px solid var(--border);
+    color:var(--text);cursor:pointer;box-shadow:var(--shadow);
+  }
+  .icon-btn svg{width:18px;height:18px;}
+  .lang-btn{
+    width:auto;padding:0 14px;font-family:'Hind Siliguri',sans-serif;
+    font-weight:600;font-size:0.85rem;
+  }
+
+  main{
+    max-width:520px;margin:0 auto;padding:18px 20px 60px;
+  }
+
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:26px 22px;box-shadow:var(--shadow);
+  }
+
+  .hero-title{
+    font-family:'Baloo Da 2',sans-serif;font-weight:700;
+    font-size:1.6rem;line-height:1.3;margin:22px 0 8px;color:var(--text);
+  }
+  .hero-sub{
+    color:var(--muted);font-size:0.98rem;line-height:1.6;margin-bottom:22px;
+  }
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;font-size:0.88rem;color:var(--muted);margin-bottom:6px;font-weight:500;
+  }
+  .field input{
+    width:100%;padding:12px 14px;border-radius:var(--radius-sm);
+    border:1.5px solid var(--border);background:var(--bg-soft);
+    color:var(--text);font-family:inherit;font-size:1rem;
+    transition:border-color .15s ease;
+  }
+  .field input:focus{outline:none;border-color:var(--primary);}
+  .field .hint{font-size:0.78rem;color:var(--muted);margin-top:5px;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px 18px;border-radius:var(--radius-md);
+    border:none;font-family:'Hind Siliguri',sans-serif;font-weight:600;font-size:1rem;
+    cursor:pointer;transition:transform .1s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--primary);color:var(--on-primary);}
+  .btn-primary:disabled{opacity:0.45;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--primary-strong);border:1.5px solid var(--border);}
+
+  .progress-row{
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;
+  }
+  .progress-track{
+    flex:1;height:7px;border-radius:99px;background:var(--bg-soft);overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;background:var(--primary);border-radius:99px;transition:width .3s ease;
+  }
+  .progress-label{font-size:0.82rem;color:var(--muted);white-space:nowrap;font-weight:600;}
+
+  .q-icon{
+    width:44px;height:44px;border-radius:999px;background:var(--chip-bg);
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--primary-strong);
+  }
+  .q-icon svg{width:22px;height:22px;}
+
+  .q-text{font-size:1.12rem;line-height:1.6;margin-bottom:20px;font-weight:600;}
+
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .option{
+    text-align:left;padding:13px 16px;border-radius:var(--radius-md);
+    border:1.5px solid var(--border);background:var(--bg-soft);color:var(--text);
+    font-family:inherit;font-size:0.98rem;line-height:1.5;cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .option:hover{border-color:var(--primary);}
+  .option.correct{
+    border-color:var(--accent);background:var(--success-bg);
+  }
+  .option.incorrect{
+    border-color:var(--danger);background:var(--danger-bg);
+  }
+  .option[disabled]{cursor:default;}
+
+  .explain{
+    margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);
+    background:var(--bg-soft);border:1px solid var(--border);
+    font-size:0.92rem;line-height:1.6;color:var(--text);
+  }
+  .explain strong{color:var(--primary-strong);}
+
+  .next-row{margin-top:18px;}
+
+  .result-level{
+    font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:1.5rem;
+    color:var(--primary-strong);margin:14px 0 4px;
+  }
+  .result-score{color:var(--muted);font-size:0.95rem;margin-bottom:18px;}
+  .score-bar-track{
+    height:10px;border-radius:99px;background:var(--bg-soft);overflow:hidden;margin-bottom:22px;
+  }
+  .score-bar-fill{height:100%;background:var(--primary);border-radius:99px;}
+
+  .action-row{display:flex;gap:10px;margin-top:4px;margin-bottom:26px;}
+  .action-row .btn{width:auto;flex:1;padding:12px 14px;font-size:0.92rem;}
+
+  .section-title{
+    font-family:'Baloo Da 2',sans-serif;font-weight:600;font-size:1.05rem;
+    margin:0 0 4px;
+  }
+  .section-note{font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+
+  .board-row{
+    display:flex;align-items:center;gap:12px;padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-rank{
+    width:26px;height:26px;border-radius:999px;background:var(--chip-bg);
+    display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;
+    color:var(--primary-strong);flex-shrink:0;
+  }
+  .board-name{flex:1;font-size:0.92rem;font-weight:500;}
+  .board-name .you-tag{
+    font-size:0.7rem;color:var(--primary-strong);font-weight:700;margin-left:6px;
+  }
+  .board-score{font-size:0.92rem;font-weight:700;color:var(--text);}
+
+  .backend-note{
+    margin-top:18px;padding:12px 14px;border-radius:var(--radius-md);
+    background:var(--chip-bg);font-size:0.8rem;color:var(--muted);line-height:1.55;
+  }
+  .closed-note{
+    margin-bottom:18px;padding:12px 14px;border-radius:var(--radius-md);
+    background:var(--danger-bg);color:var(--danger);
+    font-size:0.88rem;line-height:1.55;font-weight:600;
+  }
+  .board-empty{
+    padding:14px 0;font-size:0.86rem;color:var(--muted);text-align:center;
+  }
+
+  .welcome-icon{
+    width:56px;height:56px;border-radius:999px;background:var(--chip-bg);
+    display:flex;align-items:center;justify-content:center;color:var(--primary-strong);
+  }
+  .welcome-icon svg{width:28px;height:28px;}
+
+  .topics{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px;}
+  .topic-chip{
+    padding:7px 13px;border-radius:999px;background:var(--chip-bg);
+    font-size:0.8rem;color:var(--text);font-weight:500;
+  }
+
+  .hidden{display:none !important;}
+
+  .splash{
+    position:fixed;inset:0;z-index:999;
+    background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    transition:opacity .35s ease, visibility .35s ease;
+  }
+  .splash.fade-out{opacity:0;visibility:hidden;pointer-events:none;}
+  .splash-icon{
+    width:60px;height:60px;border-radius:999px;background:var(--chip-bg);
+    display:flex;align-items:center;justify-content:center;color:var(--primary-strong);
+  }
+  .splash-icon svg{width:30px;height:30px;}
+  .splash-brand{
+    font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:1.15rem;color:var(--primary-strong);
+  }
+  .splash-spinner{
+    width:22px;height:22px;border-radius:999px;
+    border:3px solid var(--border);border-top-color:var(--primary);
+    animation:splash-spin .8s linear infinite;
+  }
+  @keyframes splash-spin{ to{ transform:rotate(360deg); } }
+
+  @media (max-width:400px){
+    .card{padding:20px 16px;}
+    .hero-title{font-size:1.4rem;}
+  }
+</style>
+</head>
+<body data-lang="bn">
+<div id="splash" class="splash">
+  <div class="splash-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+  </div>
+  <div class="splash-brand" data-t="brand">HacknFix</div>
+  <div class="splash-spinner"></div>
+</div>
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+    <span data-t="brand">HacknFix</span>
+  </div>
+  <div class="controls">
+    <button class="icon-btn lang-btn" id="langBtn" type="button">EN</button>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle theme">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</div>
+
+<main>
+
+  <!-- SCREEN 1: REGISTER -->
+  <section id="screen-register" class="card">
+    <div class="welcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
+    </div>
+    <h1 class="hero-title" data-t="welcomeTitle">আপনি কতটা সাইবার সচেতন?</h1>
+    <p class="hero-sub" data-t="welcomeSub">ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপ ব্যবহার করেন? দেখুন প্রতারণা থেকে নিজেকে বাঁচাতে আপনি কতটা প্রস্তুত — মাত্র ১০টি সহজ প্রশ্ন।</p>
+
+    <div class="topics">
+      <span class="topic-chip" data-t="chip1">ফেসবুক</span>
+      <span class="topic-chip" data-t="chip2">আইএমও</span>
+      <span class="topic-chip" data-t="chip3">বিকাশ</span>
+      <span class="topic-chip" data-t="chip4">ব্যাংক অ্যাপ</span>
+      <span class="topic-chip" data-t="chip5">পাবলিক ওয়াইফাই</span>
+    </div>
+
+    <div class="field">
+      <label data-t="lblName">আপনার নাম</label>
+      <input type="text" id="inpName" data-t-ph="phName" placeholder="যেমন: রাহাত হোসেন">
+    </div>
+    <div class="field">
+      <label data-t="lblPhone">মোবাইল নম্বর</label>
+      <input type="tel" id="inpPhone" data-t-ph="phPhone" placeholder="01XXXXXXXXX" inputmode="numeric" pattern="[0-9]*" maxlength="11">
+    </div>
+    <div class="field">
+      <label data-t="lblEmail">ইমেইল <span data-t="optional">(ঐচ্ছিক)</span></label>
+      <input type="email" id="inpEmail" data-t-ph="phEmail" placeholder="you@example.com">
+      <div class="hint" data-t="privacyHint">আপনার নাম ও নম্বর নিরাপদে সংরক্ষণ করা হবে এবং শুধু ফলাফল ও লিডারবোর্ডের জন্য ব্যবহৃত হবে। লিডারবোর্ডে শুধু নাম ও স্কোর দেখা যাবে।</div>
+    </div>
+
+    <div class="closed-note hidden" id="closedNote"></div>
+
+    <div id="startRow">
+      <button class="btn btn-primary" id="startBtn" type="button" data-t="startBtn">কুইজ শুরু করুন</button>
+      <button class="btn btn-ghost" id="skipBtn" type="button" data-t="skipBtn" style="margin-top:10px;">তথ্য ছাড়াই কুইজ শুরু করুন</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: QUIZ -->
+  <section id="screen-quiz" class="card hidden">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+      <div class="progress-label"><span id="qNum">1</span>/<span id="qTotal">10</span></div>
+    </div>
+    <div class="q-icon" id="qIcon"></div>
+    <div class="q-text" id="qText">প্রশ্ন লোড হচ্ছে...</div>
+    <div class="options" id="qOptions"></div>
+    <div class="explain hidden" id="qExplain"></div>
+    <div class="next-row hidden" id="nextRow">
+      <button class="btn btn-primary" id="nextBtn" type="button" data-t="nextBtn">পরবর্তী প্রশ্ন</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: RESULT -->
+  <section id="screen-result" class="card hidden">
+    <div class="welcome-icon" id="resultIcon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+    </div>
+    <div class="result-level" id="resultLevel">সচেতন হচ্ছেন</div>
+    <div class="result-score" id="resultScore">১০টির মধ্যে ৭টি সঠিক</div>
+    <div class="score-bar-track"><div class="score-bar-fill" id="resultBar" style="width:70%"></div></div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="retakeBtn" type="button" data-t="retakeBtn">আবার দিন</button>
+      <button class="btn btn-primary" id="shareBtn" type="button" data-t="shareBtn">শেয়ার করুন</button>
+    </div>
+
+    <div id="boardSection">
+      <div class="section-title" data-t="boardTitle">লিডারবোর্ড</div>
+      <div class="section-note" id="boardNote"></div>
+      <div id="boardList"></div>
+    </div>
+
+    <div class="backend-note hidden" id="offlineNote"></div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  // ---------- i18n ----------
+  const UI = {
+    bn:{
+      brand:"HacknFix",
+      welcomeTitle:"আপনি কতটা সাইবার সচেতন?",
+      welcomeSub:"ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপ ব্যবহার করেন? দেখুন প্রতারণা থেকে নিজেকে বাঁচাতে আপনি কতটা প্রস্তুত — মাত্র ১০টি সহজ প্রশ্ন।",
+      chip1:"ফেসবুক", chip2:"আইএমও", chip3:"বিকাশ", chip4:"ব্যাংক অ্যাপ", chip5:"পাবলিক ওয়াইফাই",
+      lblName:"আপনার নাম", lblPhone:"মোবাইল নম্বর", lblEmail:"ইমেইল",
+      optional:"(ঐচ্ছিক)",
+      phName:"যেমন: রাহাত হোসেন", phPhone:"01XXXXXXXXX", phEmail:"you@example.com",
+      privacyHint:"আপনার নাম ও নম্বর নিরাপদে সংরক্ষণ করা হবে এবং শুধু ফলাফল ও লিডারবোর্ডের জন্য ব্যবহৃত হবে। লিডারবোর্ডে শুধু নাম ও স্কোর দেখা যাবে।",
+      startBtn:"কুইজ শুরু করুন",
+      skipBtn:"তথ্য ছাড়াই কুইজ শুরু করুন",
+      nextBtn:"পরবর্তী প্রশ্ন",
+      finishBtn:"ফলাফল দেখুন",
+      retakeBtn:"আবার দিন",
+      shareBtn:"শেয়ার করুন",
+      boardTitle:"লিডারবোর্ড",
+      boardLive:"সবার সেরা স্কোর — সরাসরি সার্ভার থেকে।",
+      boardLocal:"সার্ভারে সংযোগ করা যায়নি, তাই শুধু আপনার ডিভাইসের স্কোর দেখানো হচ্ছে।",
+      boardEmpty:"এখনো কেউ কুইজ শেষ করেনি। আপনিই প্রথম হোন!",
+      boardLoading:"লিডারবোর্ড লোড হচ্ছে...",
+      offlineNote:"এই মুহূর্তে সার্ভারে সংযোগ করা যায়নি, তাই প্রশ্ন ও স্কোর অফলাইন কপি থেকে চলছে। ইন্টারনেট ঠিক হলে স্কোর আবার সবার সাথে যুক্ত হবে।",
+      closedDefault:"কুইজটি এই মুহূর্তে বন্ধ আছে। পরে আবার চেষ্টা করুন।",
+      setupNote:"ব্যাকএন্ড এখনো যুক্ত হয়নি — config.js ফাইলে আপনার Supabase URL ও anon key বসান। ততক্ষণ কুইজটি অফলাইন প্রশ্ন দিয়ে চলছে।",
+      youTag:"(আপনি)",
+      correctWord:"সঠিক", wrongWord:"ভুল",
+      scoreOutOf:(s,t)=>`${bnNum(t)}টির মধ্যে ${bnNum(s)}টি সঠিক`,
+      needName:"অনুগ্রহ করে আপনার নাম লিখুন।",
+      needPhone:"অনুগ্রহ করে সঠিক মোবাইল নম্বর দিন।",
+      shareText:(name,score,total,level)=>`আমি "HacknFix" কুইজ দিয়েছি এবং ${total}টির মধ্যে ${score}টি সঠিক উত্তর দিয়েছি — লেভেল: ${level}! আপনিও নিজের সাইবার সচেতনতা যাচাই করুন।`,
+      copied:"টেক্সট কপি হয়েছে!",
+      // Thresholds are percentages, so the levels still work if you
+      // change the number of questions from the admin panel.
+      levels:[
+        {min:0,  name:"সবে শুরু করলেন"},
+        {min:50, name:"সচেতন হচ্ছেন"},
+        {min:80, name:"সাইবার প্রস্তুত"}
+      ]
+    },
+    en:{
+      brand:"HacknFix",
+      welcomeTitle:"How cyber aware are you?",
+      welcomeSub:"You use Facebook, IMO, bKash and bank apps every day. See how ready you are to spot a scam — just 10 quick questions.",
+      chip1:"Facebook", chip2:"IMO", chip3:"bKash", chip4:"Bank apps", chip5:"Public wifi",
+      lblName:"Your name", lblPhone:"Phone number", lblEmail:"Email",
+      optional:"(optional)",
+      phName:"e.g. Rahat Hossain", phPhone:"01XXXXXXXXX", phEmail:"you@example.com",
+      privacyHint:"Your name and number are stored securely and used only for your result and the leaderboard. Only your name and score are ever shown publicly.",
+      startBtn:"Start the quiz",
+      skipBtn:"Start without giving details",
+      nextBtn:"Next question",
+      finishBtn:"See result",
+      retakeBtn:"Retake",
+      shareBtn:"Share",
+      boardTitle:"Leaderboard",
+      boardLive:"Top scores from everyone, live from the server.",
+      boardLocal:"Couldn't reach the server, so this only shows scores from your device.",
+      boardEmpty:"Nobody has finished the quiz yet. Be the first!",
+      boardLoading:"Loading leaderboard...",
+      offlineNote:"The server couldn't be reached, so questions and scores are running from the offline copy. Your score will join the shared board again once you're back online.",
+      closedDefault:"The quiz is closed right now. Please check back later.",
+      setupNote:"Backend not connected yet — put your Supabase URL and anon key in config.js. Until then the quiz runs on the offline questions.",
+      youTag:"(You)",
+      correctWord:"Correct", wrongWord:"Not quite",
+      scoreOutOf:(s,t)=>`${s} out of ${t} correct`,
+      needName:"Please enter your name.",
+      needPhone:"Please enter a valid phone number.",
+      shareText:(name,score,total,level)=>`I took the "HacknFix" quiz and got ${score}/${total} — level: ${level}! Check your own cyber awareness too.`,
+      copied:"Copied to clipboard!",
+      // Thresholds are percentages, so the levels still work if you
+      // change the number of questions from the admin panel.
+      levels:[
+        {min:0,  name:"Just Starting Out"},
+        {min:50, name:"Getting Cyber Smart"},
+        {min:80, name:"Cyber Ready"}
+      ]
+    }
+  };
+
+  function bnNum(n){
+    const map={'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+    return String(n).split('').map(c=>map[c]!==undefined?map[c]:c).join('');
+  }
+
+  // ---------- Question icons (inline SVG paths, stroke style) ----------
+  const ICONS = {
+    social: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+    gift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M12 8c-1.5 0-3-1-3-2.5A2.5 2.5 0 0 1 11.5 3C13 3 12 6 12 8zM12 8c1.5 0 3-1 3-2.5A2.5 2.5 0 0 0 12.5 3C11 3 12 6 12 8z"/></svg>`,
+    call: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg>`,
+    lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+    link: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.4l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.4l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>`,
+    wifi: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a11.5 11.5 0 0 1 14 0"/><path d="M8.3 16a7 7 0 0 1 7.4 0"/><path d="M11.6 19.4a2 2 0 0 1 .8 0"/></svg>`,
+    key: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 19 4l2 2-1.5 1.5L21 9l-2 2-1.5-1.5L16 11"/></svg>`,
+    phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>`,
+    job: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>`,
+    alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>`
+  };
+
+  // ---------- Questions ----------
+  // These are the OFFLINE FALLBACK only. The live questions come from
+  // Supabase (see loadFromServer below) and are edited in admin.html.
+  // This copy is what keeps the quiz working if the internet drops.
+  const FALLBACK_QUESTIONS = [
+    {
+      icon:'social',
+      q:{bn:"আপনি চেনেন না এমন একজন ফেসবুকে ফ্রেন্ড রিকোয়েস্ট পাঠিয়ে সাথে সাথে আপনার এনআইডি নম্বর ও ঠিকানা চাইছে। আপনি কী করবেন?",
+         en:"A stranger sends you a Facebook friend request and immediately asks for your NID number and address. What should you do?"},
+      options:[
+        {bn:"তথ্য দিয়ে দিন, সে বন্ধুত্বপূর্ণ মনে হচ্ছে", en:"Share the info, they seem friendly", correct:false},
+        {bn:"অচেনা মানুষের সাথে ব্যক্তিগত তথ্য শেয়ার করবেন না", en:"Don't share personal details with strangers", correct:true},
+        {bn:"আগে ফ্রেন্ড রিকোয়েস্ট গ্রহণ করুন, পরে ভাবা যাবে", en:"Accept the request first, decide later", correct:false}
+      ],
+      explain:{bn:"সত্যিকারের বন্ধুরা প্রথমেই এনআইডি বা ঠিকানা চায় না। অচেনা মানুষকে ব্যক্তিগত তথ্য দেওয়া থেকে বিরত থাকুন।",
+               en:"Real friends don't ask for your NID or address right away. Never share personal details with strangers online."}
+    },
+    {
+      icon:'gift',
+      q:{bn:"ফেসবুকে একটা মেসেজ আসলো, 'অভিনন্দন! আপনি একটি ফ্রি স্মার্টফোন জিতেছেন, লিংকে ক্লিক করুন।' আপনি কী করবেন?",
+         en:"You get a Facebook message: 'Congratulations! You won a free smartphone, click this link to claim it.' What do you do?"},
+      options:[
+        {bn:"অফার শেষ হওয়ার আগে দ্রুত ক্লিক করুন", en:"Click quickly before the offer expires", correct:false},
+        {bn:"ক্লিক করবেন না — এটি একটি সাধারণ প্রতারণার কৌশল", en:"Don't click — this is a common scam trick", correct:true},
+        {bn:"বন্ধুকে দিয়ে ক্লিক করাবেন", en:"Ask a friend to click it for you", correct:false}
+      ],
+      explain:{bn:"এ ধরনের 'ফ্রি গিফট' লিংক আসলে আপনার তথ্য বা টাকা চুরি করার ফাঁদ। কখনো বিশ্বাস করবেন না।",
+               en:"These 'free gift' links are traps designed to steal your information or money. Never trust them."}
+    },
+    {
+      icon:'call',
+      q:{bn:"কেউ আইএমও-তে কল করে বলছে সে ব্যাংক থেকে বলছে, এবং আপনাকে সদ্য পাওয়া ওটিপি কোডটি বলতে বলছে। আপনি কী করবেন?",
+         en:"Someone calls you on IMO, claims to be from your bank, and asks you to read out the OTP code you just received. What should you do?"},
+      options:[
+        {bn:"অ্যাকাউন্ট যাচাইয়ের জন্য ওটিপি বলে দিন", en:"Tell them the OTP to verify your account", correct:false},
+        {bn:"কাউকে কখনো ওটিপি শেয়ার করবেন না — কল কেটে দিন", en:"Never share your OTP with anyone — hang up", correct:true},
+        {bn:"শুধু শেষ ২ সংখ্যা বলুন", en:"Share only the last 2 digits", correct:false}
+      ],
+      explain:{bn:"প্রকৃত ব্যাংক কখনো ফোনে ওটিপি চায় না। ওটিপি শেয়ার করলে আপনার অ্যাকাউন্ট থেকে টাকা চুরি হতে পারে।",
+               en:"Real banks never ask for your OTP over the phone. Sharing it can let someone steal money from your account."}
+    },
+    {
+      icon:'key',
+      q:{bn:"একজন কল করে বলছে, 'আমি বিকাশ এজেন্ট, আপনার অ্যাকাউন্টে সমস্যা হয়েছে, ঠিক করতে আপনার পিন নম্বর দিন।' আপনি কী করবেন?",
+         en:"A caller says: 'I'm a bKash agent, there's a problem with your account, send me your PIN to fix it.' What do you do?"},
+      options:[
+        {bn:"সমস্যা ঠিক করতে দ্রুত পিন দিয়ে দিন", en:"Send the PIN quickly to fix the issue", correct:false},
+        {bn:"কাউকে কখনো বিকাশ পিন শেয়ার করবেন না — এজেন্ট কখনো পিন চায় না", en:"Never share your bKash PIN — agents never ask for it", correct:true},
+        {bn:"পিনের অর্ধেক বলুন", en:"Share half the PIN", correct:false}
+      ],
+      explain:{bn:"বিকাশ, নগদ বা কোনো মোবাইল ব্যাংকিং প্রতিষ্ঠান কখনো আপনার পিন চায় না। পিন চাওয়া মানেই প্রতারণা।",
+               en:"bKash, Nagad, or any mobile banking service never asks for your PIN. Anyone asking for it is a scammer."}
+    },
+    {
+      icon:'link',
+      q:{bn:"একটা এসএমএস আসলো: 'আপনার ব্যাংক অ্যাকাউন্ট লক হয়ে গেছে, আনলক করতে লিংকে ক্লিক করুন।' লিংকটা দেখতে ব্যাংকের আসল ওয়েবসাইটের মতো হলেও একটু আলাদা। আপনি কী করবেন?",
+         en:"You get an SMS: 'Your bank account is locked, click this link to unlock it.' The link looks a bit different from your bank's real site. What do you do?"},
+      options:[
+        {bn:"অ্যাকাউন্ট আনলক করতে সাথে সাথে ক্লিক করুন", en:"Click immediately to unlock your account", correct:false},
+        {bn:"ক্লিক করবেন না — সরাসরি ব্যাংক অ্যাপ খুলুন বা অফিসিয়াল নম্বরে কল করুন", en:"Don't click — open your bank app directly or call the official number", correct:true},
+        {bn:"এসএমএস-এর উত্তরে আরও বিস্তারিত জানতে চান", en:"Reply to the SMS asking for more details", correct:false}
+      ],
+      explain:{bn:"প্রতারকরা ব্যাংকের মতো দেখতে ভুয়া লিংক পাঠায়। সন্দেহ হলে লিংকে ক্লিক না করে সরাসরি ব্যাংকে যোগাযোগ করুন।",
+               en:"Scammers send fake links that look like your bank's. If in doubt, don't click — contact the bank directly instead."}
+    },
+    {
+      icon:'wifi',
+      q:{bn:"আপনি একটি দোকানে আছেন যেখানে ফ্রি পাবলিক ওয়াইফাই আছে। এই ওয়াইফাই দিয়ে কি বিকাশ বা ব্যাংক অ্যাপে লগইন করা উচিত?",
+         en:"You're at a shop with free public wifi. Should you log into your bKash or bank app while connected to it?"},
+      options:[
+        {bn:"হ্যাঁ, ওয়াইফাইতে পাসওয়ার্ড থাকলে সমস্যা নেই", en:"Yes, it's fine if the wifi has a password", correct:false},
+        {bn:"পাবলিক ওয়াইফাইতে ব্যাংকিং অ্যাপে লগইন এড়িয়ে চলুন — মোবাইল ডেটা ব্যবহার করুন", en:"Avoid logging into banking apps on public wifi — use mobile data instead", correct:true},
+        {bn:"কয়েক সেকেন্ডের জন্য লগইন করলে সমস্যা নেই", en:"It's fine if you only log in for a few seconds", correct:false}
+      ],
+      explain:{bn:"পাবলিক ওয়াইফাইতে অন্যরা আপনার তথ্য দেখতে পারে। টাকা-পয়সার অ্যাপে লগইনের সময় মোবাইল ডেটা ব্যবহার করা নিরাপদ।",
+               en:"On public wifi, others can potentially see your data. Use mobile data instead when logging into money apps."}
+    },
+    {
+      icon:'lock',
+      q:{bn:"ফেসবুক আর বিকাশ অ্যাকাউন্টে একই পাসওয়ার্ড ব্যবহার করা কি নিরাপদ?",
+         en:"Is it safe to use the same password for your Facebook and bKash accounts?"},
+      options:[
+        {bn:"হ্যাঁ, মনে রাখা সহজ হয়", en:"Yes, it's easier to remember", correct:false},
+        {bn:"না — আলাদা পাসওয়ার্ড ব্যবহার করুন, একটা হ্যাক হলে আরেকটা নিরাপদ থাকবে", en:"No — use different passwords, so one hack doesn't risk everything", correct:true},
+        {bn:"পাসওয়ার্ড লম্বা হলে সমস্যা নেই", en:"It's fine as long as the password is long", correct:false}
+      ],
+      explain:{bn:"একই পাসওয়ার্ড সব জায়গায় ব্যবহার করলে একটা অ্যাকাউন্ট হ্যাক হলে বাকি সব অ্যাকাউন্টও বিপদে পড়ে।",
+               en:"Reusing one password everywhere means one hacked account can put all your other accounts at risk too."}
+    },
+    {
+      icon:'phone',
+      q:{bn:"একজন পরিচিত মানুষ আপনার ফোন 'একটু কল করার জন্য' চাইছে। আপনার বিকাশ অ্যাপ তখন খোলা এবং লগইন করা আছে। নিরাপদ উপায় কোনটি?",
+         en:"An acquaintance asks to borrow your phone for a 'quick call.' Your bKash app is already open and logged in. What's the safer move?"},
+      options:[
+        {bn:"ফোন দিয়ে দিন, শুধু একটা কল তো", en:"Hand it over, it's just a quick call", correct:false},
+        {bn:"আগে বিকাশ অ্যাপটি বন্ধ/লক করুন, খোলা অ্যাপসহ ফোন কাউকে দেবেন না", en:"Close/lock the bKash app first — don't hand over a phone with open apps", correct:true},
+        {bn:"আপনি পাশে থাকলে সমস্যা নেই", en:"It's fine as long as you're watching", correct:false}
+      ],
+      explain:{bn:"খোলা থাকা অ্যাপ দিয়ে কেউ দ্রুত টাকা পাঠিয়ে দিতে পারে। ফোন দেওয়ার আগে সংবেদনশীল অ্যাপ বন্ধ করে নেওয়া ভালো।",
+               en:"An open app can let someone quickly send money without you noticing. Always close sensitive apps before handing over your phone."}
+    },
+    {
+      icon:'job',
+      q:{bn:"একটা মেসেজ আসলো: 'চাকরি আছে, বেতন ২৫,০০০ টাকা, শুধু ৫০০ টাকা রেজিস্ট্রেশন ফি আর এনআইডি কপি পাঠান।' আপনি কী করবেন?",
+         en:"You get a message: 'Job available, salary 25,000 taka, just send a 500 taka registration fee and your NID copy first.' What should you do?"},
+      options:[
+        {bn:"চাকরি পাকা করতে টাকা আর এনআইডি পাঠিয়ে দিন", en:"Send the money and NID to secure the job", correct:false},
+        {bn:"সন্দেহ করুন — প্রকৃত চাকরিতে আগে থেকে টাকা চাওয়া হয় না", en:"Be suspicious — real jobs don't ask for money upfront", correct:true},
+        {bn:"শুধু এনআইডি কপি পাঠান, টাকা না", en:"Send only the NID copy, not money", correct:false}
+      ],
+      explain:{bn:"আগে থেকে টাকা বা ব্যক্তিগত ডকুমেন্ট চাওয়া চাকরির বিজ্ঞাপন প্রায়ই প্রতারণা। প্রতিষ্ঠান ভালোভাবে যাচাই না করে কিছু পাঠাবেন না।",
+               en:"Job offers that ask for money or personal documents upfront are usually scams. Verify the company before sending anything."}
+    },
+    {
+      icon:'alert',
+      q:{bn:"আপনার আত্মীয় ফেসবুকে মেসেজ দিলো: 'আমি বিপদে আছি, এখনই এই বিকাশ নম্বরে ২০০০ টাকা পাঠাও।' মেসেজটা জরুরি আর কিছুটা অস্বাভাবিক লাগছে। সবচেয়ে নিরাপদ উপায় কী?",
+         en:"A relative messages you on Facebook: 'I'm in trouble, send 2000 taka to this bKash number right now.' It feels urgent and a bit unusual. What's the safest move?"},
+      options:[
+        {bn:"সাথে সাথে টাকা পাঠিয়ে দিন, আত্মীয় তো", en:"Send the money immediately, it's family", correct:false},
+        {bn:"টাকা পাঠানোর আগে তার ফোন নম্বরে সরাসরি কল বা মেসেজ করে নিশ্চিত হন", en:"Call or message their actual phone number directly to confirm first", correct:true},
+        {bn:"নিশ্চিত না হয়ে অর্ধেক টাকা পাঠান", en:"Send half the amount just in case", correct:false}
+      ],
+      explain:{bn:"ফেসবুক অ্যাকাউন্ট হ্যাক হয়ে এভাবে টাকা চাওয়া একটি খুবই পরিচিত প্রতারণা। টাকা পাঠানোর আগে সবসময় সরাসরি ফোনে নিশ্চিত হন।",
+               en:"Hacked Facebook accounts asking for urgent money is a very common scam. Always confirm by calling directly before sending money."}
+    }
+  ];
+
+  // ---------- State ----------
+  let lang = localStorage.getItem('cq_lang') || 'bn';
+  let theme = localStorage.getItem('cq_theme') || '';
+  let user = null;
+  let qIndex = 0;
+  let score = 0;
+  let answered = false;
+
+  // Live data, filled in by loadFromServer(). Starts on the fallback copy
+  // so the page is usable immediately, before the network call returns.
+  let QUESTIONS = FALLBACK_QUESTIONS.slice();
+  let runQuestions = QUESTIONS;
+  let online = false;              // did we reach Supabase?
+  let myAttemptId = null;          // id of the attempt we just submitted
+  let serverBoard = null;          // leaderboard rows from the server
+
+  let SETTINGS = {
+    quiz_open: true,
+    quiz_length: 10,
+    show_leaderboard: true
+  };
+
+  const sb = window.HacknFix && window.HacknFix.client;
+
+  const $ = (id)=>document.getElementById(id);
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function buildShuffledRun(){
+    // quiz_length comes from the admin panel; never ask for more
+    // questions than actually exist.
+    const want = parseInt(SETTINGS.quiz_length, 10) || 10;
+    const n = Math.max(1, Math.min(want, QUESTIONS.length));
+    return shuffle(QUESTIONS).slice(0, n).map(item=>({
+      ...item,
+      options: shuffle(item.options)
+    }));
+  }
+
+  // ---------- Theme ----------
+  function applyTheme(){
+    if(theme==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
+    else if(theme==='light'){ document.documentElement.setAttribute('data-theme','light'); }
+    else { document.documentElement.removeAttribute('data-theme'); }
+    updateThemeIcon();
+  }
+  function updateThemeIcon(){
+    const isDark = theme==='dark' || (theme==='' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    $('themeIcon').innerHTML = isDark
+      ? '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  }
+  $('themeBtn').addEventListener('click', ()=>{
+    const curDark = theme==='dark' || (theme==='' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    theme = curDark ? 'light' : 'dark';
+    localStorage.setItem('cq_theme', theme);
+    applyTheme();
+  });
+
+  // ---------- Language ----------
+  function applyLang(){
+    document.body.setAttribute('data-lang', lang);
+    document.documentElement.setAttribute('lang', lang);
+    $('langBtn').textContent = lang==='bn' ? 'EN' : 'বাং';
+    document.querySelectorAll('[data-t]').forEach(el=>{
+      const key = el.getAttribute('data-t');
+      if(UI[lang][key] !== undefined) el.textContent = UI[lang][key];
+    });
+    document.querySelectorAll('[data-t-ph]').forEach(el=>{
+      const key = el.getAttribute('data-t-ph');
+      if(UI[lang][key] !== undefined) el.setAttribute('placeholder', UI[lang][key]);
+    });
+    if(!document.getElementById('screen-quiz').classList.contains('hidden')){
+      renderQuestion();
+    }
+    if(!document.getElementById('screen-result').classList.contains('hidden')){
+      renderResult();
+    }
+    applyClosedState();
+    updateNotes();
+  }
+  $('langBtn').addEventListener('click', ()=>{
+    lang = lang==='bn' ? 'en' : 'bn';
+    localStorage.setItem('cq_lang', lang);
+    applyLang();
+  });
+
+  // ---------- Screens ----------
+  function showScreen(id){
+    ['screen-register','screen-quiz','screen-result'].forEach(s=>{
+      $(s).classList.toggle('hidden', s!==id);
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // ---------- Registration ----------
+  $('inpPhone').addEventListener('input', ()=>{
+    $('inpPhone').value = $('inpPhone').value.replace(/\D/g,'').slice(0,11);
+  });
+  $('startBtn').addEventListener('click', ()=>{
+    const name = $('inpName').value.trim();
+    const phone = $('inpPhone').value.trim();
+    const email = $('inpEmail').value.trim();
+    if(!name){ alert(UI[lang].needName); $('inpName').focus(); return; }
+    if(!phone || !/^[0-9]{11}$/.test(phone)){ alert(UI[lang].needPhone); $('inpPhone').focus(); return; }
+    user = {name, phone, email};
+    localStorage.setItem('cq_user', JSON.stringify(user));
+    qIndex = 0; score = 0;
+    runQuestions = buildShuffledRun();
+    showScreen('screen-quiz');
+    renderQuestion();
+  });
+
+  $('skipBtn').addEventListener('click', ()=>{
+    user = {name: (lang==='bn' ? 'গেস্ট' : 'Guest'), phone:'', email:''};
+    qIndex = 0; score = 0;
+    runQuestions = buildShuffledRun();
+    showScreen('screen-quiz');
+    renderQuestion();
+  });
+
+  // ---------- Quiz ----------
+  function renderQuestion(){
+    answered = false;
+    const item = runQuestions[qIndex];
+    $('progressFill').style.width = ((qIndex+1)/runQuestions.length*100)+'%';
+    $('qNum').textContent = lang==='bn' ? bnNum(qIndex+1) : (qIndex+1);
+    $('qTotal').textContent = lang==='bn' ? bnNum(runQuestions.length) : runQuestions.length;
+    $('qIcon').innerHTML = ICONS[item.icon] || ICONS.alert;
+    $('qText').textContent = item.q[lang];
+
+    const optWrap = $('qOptions');
+    optWrap.innerHTML = '';
+    item.options.forEach((opt, i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.type = 'button';
+      btn.textContent = opt[lang];
+      btn.addEventListener('click', ()=>selectOption(i));
+      optWrap.appendChild(btn);
+    });
+
+    $('qExplain').classList.add('hidden');
+    $('qExplain').innerHTML = '';
+    $('nextRow').classList.add('hidden');
+    $('nextBtn').textContent = (qIndex === runQuestions.length-1) ? UI[lang].finishBtn : UI[lang].nextBtn;
+  }
+
+  function selectOption(i){
+    if(answered) return;
+    answered = true;
+    const item = runQuestions[qIndex];
+    const opts = document.querySelectorAll('#qOptions .option');
+    opts.forEach((el,idx)=>{
+      el.disabled = true;
+      if(item.options[idx].correct) el.classList.add('correct');
+      else if(idx===i) el.classList.add('incorrect');
+    });
+    if(item.options[i].correct) score++;
+
+    const verdict = item.options[i].correct ? UI[lang].correctWord : UI[lang].wrongWord;
+    $('qExplain').innerHTML = `<strong>${verdict}.</strong> ${item.explain[lang]}`;
+    $('qExplain').classList.remove('hidden');
+    $('nextRow').classList.remove('hidden');
+  }
+
+  $('nextBtn').addEventListener('click', ()=>{
+    if(qIndex < runQuestions.length-1){
+      qIndex++;
+      renderQuestion();
+    } else {
+      finishQuiz();
+    }
+  });
+
+  // ---------- Result ----------
+  function getLevel(s, total){
+    const pct = total > 0 ? (s / total) * 100 : 0;
+    const levels = UI[lang].levels;
+    let match = levels[0];
+    levels.forEach(l=>{ if(pct >= l.min) match = l; });
+    return match;
+  }
+
+  function finishQuiz(){
+    showScreen('screen-result');
+    renderResult();
+    // Send the score to the server in the background - the user sees
+    // their result immediately either way.
+    submitAttempt();
+  }
+
+  function renderResult(){
+    const total = runQuestions.length;
+    const level = getLevel(score, total);
+    $('resultLevel').textContent = level.name;
+    $('resultScore').textContent = UI[lang].scoreOutOf(
+      lang==='bn' ? bnNum(score) : score,
+      lang==='bn' ? bnNum(total) : total
+    );
+    $('resultBar').style.width = (total ? score/total*100 : 0)+'%';
+    $('boardSection').classList.toggle('hidden', !SETTINGS.show_leaderboard);
+    renderLeaderboard();
+  }
+
+  // ---------- Sending the score to Supabase ----------
+  async function submitAttempt(){
+    const total = runQuestions.length;
+    saveLocalAttempt(total);          // always keep an offline copy
+
+    if(!sb){ renderLeaderboard(); return; }
+
+    try{
+      const { data, error } = await sb.rpc('submit_attempt', {
+        p_name:  user ? user.name  : 'Guest',
+        p_phone: user ? user.phone : '',
+        p_email: user ? user.email : '',
+        p_score: score,
+        p_total: total,
+        p_lang:  lang
+      });
+      if(error) throw error;
+      myAttemptId = data;
+      online = true;
+      await loadLeaderboard();
+    }catch(e){
+      // Closed quiz, bad network, RLS - either way fall back to local.
+      console.warn('Could not save attempt:', e.message || e);
+      online = false;
+      renderLeaderboard();
+    }
+    updateNotes();
+  }
+
+  async function loadLeaderboard(){
+    if(!sb) return;
+    try{
+      const { data, error } = await sb.rpc('leaderboard', { p_limit: 10 });
+      if(error) throw error;
+      serverBoard = data || [];
+    }catch(e){
+      console.warn('Could not load leaderboard:', e.message || e);
+      serverBoard = null;
+    }
+    renderLeaderboard();
+  }
+
+  // ---------- Leaderboard ----------
+  // Prefers the live board from Supabase. The localStorage copy is only
+  // used when the server can't be reached.
+  function getLocalBoard(){
+    return JSON.parse(localStorage.getItem('cq_board') || '[]');
+  }
+
+  function saveLocalAttempt(total){
+    let board = getLocalBoard();
+    board.forEach(r=>{ delete r.mine; });   // only the newest run is "you"
+    board.push({
+      name: user ? user.name : 'You',
+      score: score,
+      total: total,
+      mine: true
+    });
+    board = board.sort((a,b)=>b.score-a.score).slice(0,10);
+    localStorage.setItem('cq_board', JSON.stringify(board));
+  }
+
+  function renderLeaderboard(){
+    const useServer = Array.isArray(serverBoard);
+    const rows = useServer
+      ? serverBoard.map(r=>({
+          name: r.name,
+          score: r.score,
+          total: r.total,
+          mine: myAttemptId && r.id === myAttemptId
+        }))
+      : getLocalBoard().sort((a,b)=>b.score-a.score).slice(0,10);
+
+    $('boardNote').textContent = useServer ? UI[lang].boardLive : UI[lang].boardLocal;
+
+    const wrap = $('boardList');
+    wrap.innerHTML = '';
+
+    if(!rows.length){
+      const empty = document.createElement('div');
+      empty.className = 'board-empty';
+      empty.textContent = UI[lang].boardEmpty;
+      wrap.appendChild(empty);
+      return;
+    }
+
+    rows.forEach((row,i)=>{
+      const div = document.createElement('div');
+      div.className = 'board-row';
+      const rank = document.createElement('div');
+      rank.className = 'board-rank';
+      rank.textContent = lang==='bn' ? bnNum(i+1) : (i+1);
+      const name = document.createElement('div');
+      name.className = 'board-name';
+      name.textContent = row.name;
+      if(row.mine){
+        const tag = document.createElement('span');
+        tag.className = 'you-tag';
+        tag.textContent = UI[lang].youTag;
+        name.appendChild(tag);
+      }
+      const sc = document.createElement('div');
+      sc.className = 'board-score';
+      const t = row.total || runQuestions.length;
+      sc.textContent = (lang==='bn'?bnNum(row.score):row.score) + '/' + (lang==='bn'?bnNum(t):t);
+      div.appendChild(rank); div.appendChild(name); div.appendChild(sc);
+      wrap.appendChild(div);
+    });
+  }
+
+  $('retakeBtn').addEventListener('click', ()=>{
+    qIndex = 0; score = 0;
+    myAttemptId = null; serverBoard = null;
+    runQuestions = buildShuffledRun();
+    showScreen('screen-quiz');
+    renderQuestion();
+  });
+
+  $('shareBtn').addEventListener('click', async ()=>{
+    const total = runQuestions.length;
+    const level = getLevel(score, total);
+    const text = UI[lang].shareText(user?user.name:'', score, total, level.name);
+    if(navigator.share){
+      try{ await navigator.share({text}); }catch(e){}
+    } else {
+      try{
+        await navigator.clipboard.writeText(text);
+        alert(UI[lang].copied);
+      }catch(e){
+        alert(text);
+      }
+    }
+  });
+
+  // ---------- Live data from Supabase ----------
+  function applySettings(s){
+    if(!s) return;
+    SETTINGS.quiz_open       = s.quiz_open !== false;
+    SETTINGS.quiz_length     = s.quiz_length || 10;
+    SETTINGS.show_leaderboard= s.show_leaderboard !== false;
+    // Admin-editable copy overrides the text baked into this file.
+    if(s.welcome_title_bn) UI.bn.welcomeTitle = s.welcome_title_bn;
+    if(s.welcome_title_en) UI.en.welcomeTitle = s.welcome_title_en;
+    if(s.welcome_sub_bn)   UI.bn.welcomeSub   = s.welcome_sub_bn;
+    if(s.welcome_sub_en)   UI.en.welcomeSub   = s.welcome_sub_en;
+    if(s.closed_msg_bn)    UI.bn.closedMsg    = s.closed_msg_bn;
+    if(s.closed_msg_en)    UI.en.closedMsg    = s.closed_msg_en;
+  }
+
+  async function loadFromServer(){
+    if(!sb){ applyClosedState(); updateNotes(); return; }
+    try{
+      const [qRes, sRes] = await Promise.all([
+        sb.from('questions').select('*').eq('is_active', true).order('sort_order', {ascending:true}),
+        sb.from('settings').select('*').eq('id', 1).single()
+      ]);
+      if(qRes.error) throw qRes.error;
+      if(!sRes.error) applySettings(sRes.data);
+
+      const rows = qRes.data || [];
+      // Only swap in the live set if the admin actually has questions,
+      // otherwise a blank table would leave visitors with nothing to answer.
+      if(rows.length) QUESTIONS = rows.map(window.HacknFix.rowToQuestion);
+      online = true;
+    }catch(e){
+      console.warn('Could not load from Supabase:', e.message || e);
+      online = false;
+    }
+    applyLang();          // picks up admin-edited welcome text
+    applyClosedState();
+    updateNotes();
+  }
+
+  function applyClosedState(){
+    const closed = !SETTINGS.quiz_open;
+    $('startRow').classList.toggle('hidden', closed);
+    const note = $('closedNote');
+    note.classList.toggle('hidden', !closed);
+    note.textContent = UI[lang].closedMsg || UI[lang].closedDefault;
+  }
+
+  function updateNotes(){
+    const note = $('offlineNote');
+    const configured = window.HacknFix && window.HacknFix.configured;
+    const show = !online;
+    note.classList.toggle('hidden', !show);
+    note.textContent = configured ? UI[lang].offlineNote : UI[lang].setupNote;
+  }
+
+  // ---------- Init ----------
+  applyTheme();
+  applyLang();
+  loadFromServer();
+  setTimeout(()=>{
+    const splash = document.getElementById('splash');
+    if(splash){
+      splash.classList.add('fade-out');
+      setTimeout(()=>splash.remove(), 400);
+    }
+  }, 1400);
+})();
+</script>
+</body>
+</html>
