@@ -233,6 +233,173 @@
     padding:14px 0;font-size:0.86rem;color:var(--muted);text-align:center;
   }
 
+  /* ============================================================
+     MOTION
+     Everything below is decoration. The whole block is switched
+     off for anyone who asks for reduced motion - see the bottom.
+     ============================================================ */
+
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:none;}
+  }
+  @keyframes popIn{
+    0%{opacity:0;transform:scale(.7);}
+    60%{opacity:1;transform:scale(1.08);}
+    100%{opacity:1;transform:scale(1);}
+  }
+  @keyframes slideInLeft{
+    from{opacity:0;transform:translateX(-16px);}
+    to{opacity:1;transform:none;}
+  }
+  @keyframes expandDown{
+    from{opacity:0;transform:translateY(-8px);max-height:0;}
+    to{opacity:1;transform:none;max-height:420px;}
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-7px);}
+    40%{transform:translateX(6px);}
+    60%{transform:translateX(-4px);}
+    80%{transform:translateX(2px);}
+  }
+  @keyframes correctPulse{
+    0%{box-shadow:0 0 0 0 rgba(47,158,110,.45);}
+    100%{box-shadow:0 0 0 14px rgba(47,158,110,0);}
+  }
+  @keyframes livePulse{
+    0%{transform:scale(1);opacity:1;}
+    50%{transform:scale(1.55);opacity:.35;}
+    100%{transform:scale(1);opacity:1;}
+  }
+  @keyframes shimmer{
+    from{transform:translateX(-100%);}
+    to{transform:translateX(320%);}
+  }
+  @keyframes floaty{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-5px);}
+  }
+  @keyframes confettiFall{
+    0%{opacity:1;transform:translate3d(0,-10vh,0) rotate(0deg);}
+    100%{opacity:0;transform:translate3d(var(--dx,0),104vh,0) rotate(var(--rot,540deg));}
+  }
+
+  /* --- screen changes --- */
+  .card{animation:fadeUp .42s cubic-bezier(.22,.9,.3,1) both;}
+
+  /* --- register screen, staggered --- */
+  #screen-register .welcome-icon{animation:popIn .5s cubic-bezier(.22,1.2,.36,1) both;}
+  #screen-register .hero-title{animation:fadeUp .45s ease-out .06s both;}
+  #screen-register .hero-sub{animation:fadeUp .45s ease-out .12s both;}
+  #screen-register .topics{animation:fadeUp .45s ease-out .18s both;}
+  #screen-register .field{animation:fadeUp .45s ease-out .24s both;}
+  #screen-register #startRow{animation:fadeUp .45s ease-out .32s both;}
+  .topic-chip{transition:transform .18s ease, background .18s ease;}
+  .topic-chip:hover{transform:translateY(-2px);}
+
+  /* --- question --- */
+  .q-icon{animation:popIn .45s cubic-bezier(.22,1.2,.36,1) both;}
+  .q-icon.idle{animation:popIn .45s cubic-bezier(.22,1.2,.36,1) both, floaty 3.4s ease-in-out 1s infinite;}
+  .q-text{animation:fadeUp .4s ease-out .05s both;}
+
+  /* options slide in one after another; --i is set in JS */
+  .option{
+    animation:slideInLeft .38s ease-out both;
+    animation-delay:calc(.08s * var(--i, 0) + .1s);
+  }
+  .option:not([disabled]):hover{transform:translateX(3px);}
+  .option.correct{animation:correctPulse .7s ease-out forwards;}
+  .option.incorrect{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both;}
+
+  /* dim the options you didn't pick once the answer is locked in */
+  .option[disabled]:not(.correct):not(.incorrect){opacity:.5;}
+
+  .explain{animation:expandDown .4s ease-out both;overflow:hidden;}
+  .next-row{animation:fadeUp .35s ease-out .1s both;}
+
+  /* --- progress bar gets a travelling highlight --- */
+  .progress-track{position:relative;overflow:hidden;}
+  .progress-fill{position:relative;overflow:hidden;}
+  .progress-fill::after{
+    content:"";position:absolute;inset:0;
+    width:40%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+    animation:shimmer 2.1s ease-in-out infinite;
+  }
+
+  /* --- result --- */
+  #screen-result .welcome-icon{animation:popIn .55s cubic-bezier(.22,1.3,.36,1) both;}
+  .result-level{animation:fadeUp .45s ease-out .12s both;}
+  .result-score{animation:fadeUp .45s ease-out .18s both;}
+  .score-bar-fill{
+    transition:width 1.1s cubic-bezier(.22,.9,.3,1);
+    position:relative;overflow:hidden;
+  }
+  .score-bar-fill::after{
+    content:"";position:absolute;inset:0;width:45%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+    animation:shimmer 2.4s ease-in-out infinite;
+  }
+  .action-row{animation:fadeUp .45s ease-out .26s both;}
+
+  /* --- leaderboard --- */
+  .board-head{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+  .board-head .section-title{margin:0;}
+  .live-dot{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:0.64rem;font-weight:700;letter-spacing:.08em;
+    color:var(--accent);text-transform:uppercase;
+  }
+  .live-dot i{
+    width:6px;height:6px;border-radius:99px;background:var(--accent);
+    animation:livePulse 1.7s ease-in-out infinite;
+  }
+  .board-row{
+    animation:fadeUp .34s ease-out both;
+    animation-delay:calc(.05s * var(--i, 0));
+    transition:background .5s ease;
+  }
+  .board-row.is-me{
+    background:var(--success-bg);
+    border-radius:var(--radius-sm);
+    padding-left:8px;padding-right:8px;
+  }
+  /* flashes when a row moves or a new score arrives while you watch */
+  .board-row.just-changed{background:var(--chip-bg);}
+
+  /* --- confetti for a strong score --- */
+  #confetti{
+    position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden;
+  }
+  #confetti span{
+    position:absolute;top:0;width:8px;height:13px;border-radius:2px;
+    animation:confettiFall linear forwards;
+  }
+
+  /* --- buttons --- */
+  .btn{transition:transform .12s ease, opacity .15s ease, box-shadow .2s ease;}
+  .btn-primary:not(:disabled):hover{
+    box-shadow:0 6px 18px rgba(15,107,76,.28);
+    transform:translateY(-1px);
+  }
+  .icon-btn{transition:transform .18s ease;}
+  .icon-btn:hover{transform:translateY(-1px) rotate(-6deg);}
+
+  /* ============================================================
+     Anyone who has asked their system to reduce motion gets the
+     plain, still version of all of the above.
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration:.01ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.01ms !important;
+      scroll-behavior:auto !important;
+    }
+    #confetti{display:none;}
+  }
+
   .welcome-icon{
     width:56px;height:56px;border-radius:999px;background:var(--chip-bg);
     display:flex;align-items:center;justify-content:center;color:var(--primary-strong);
@@ -366,12 +533,16 @@
     </div>
 
     <div id="boardSection">
-      <div class="section-title" data-t="boardTitle">লিডারবোর্ড</div>
+      <div class="board-head">
+        <div class="section-title" data-t="boardTitle">লিডারবোর্ড</div>
+        <span class="live-dot hidden" id="liveDot"><i></i>LIVE</span>
+      </div>
       <div class="section-note" id="boardNote"></div>
       <div id="boardList"></div>
     </div>
 
     <div class="backend-note hidden" id="offlineNote"></div>
+    <div id="confetti" aria-hidden="true"></div>
   </section>
 
 </main>
@@ -705,6 +876,16 @@
     ['screen-register','screen-quiz','screen-result'].forEach(s=>{
       $(s).classList.toggle('hidden', s!==id);
     });
+    // Replay the card entrance instead of having it run only on first paint.
+    const card = $(id);
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = '';
+
+    // The leaderboard only polls while you are actually looking at it.
+    if(id === 'screen-result') startLiveBoard();
+    else stopLiveBoard();
+
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
@@ -742,6 +923,10 @@
     $('qNum').textContent = lang==='bn' ? bnNum(qIndex+1) : (qIndex+1);
     $('qTotal').textContent = lang==='bn' ? bnNum(runQuestions.length) : runQuestions.length;
     $('qIcon').innerHTML = ICONS[item.icon] || ICONS.alert;
+    // restart the pop-in, then let it drift gently while waiting for an answer
+    $('qIcon').className = 'q-icon';
+    void $('qIcon').offsetWidth;
+    $('qIcon').className = 'q-icon idle';
     $('qText').textContent = item.q[lang];
 
     const optWrap = $('qOptions');
@@ -751,6 +936,7 @@
       btn.className = 'option';
       btn.type = 'button';
       btn.textContent = opt[lang];
+      btn.style.setProperty('--i', i);   // drives the stagger in CSS
       btn.addEventListener('click', ()=>selectOption(i));
       optWrap.appendChild(btn);
     });
@@ -805,17 +991,67 @@
     submitAttempt();
   }
 
+  const reducedMotion = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   function renderResult(){
     const total = runQuestions.length;
     const level = getLevel(score, total);
+    const pct = total ? score/total*100 : 0;
+
     $('resultLevel').textContent = level.name;
-    $('resultScore').textContent = UI[lang].scoreOutOf(
-      lang==='bn' ? bnNum(score) : score,
-      lang==='bn' ? bnNum(total) : total
-    );
-    $('resultBar').style.width = (total ? score/total*100 : 0)+'%';
+    countUpScore(score, total);
+
+    // Start the bar at zero so the CSS transition has somewhere to travel from.
+    const bar = $('resultBar');
+    bar.style.width = '0%';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.width = pct+'%'; }));
+
     $('boardSection').classList.toggle('hidden', !SETTINGS.show_leaderboard);
     renderLeaderboard();
+
+    if(pct >= 80) celebrate();
+  }
+
+  // Ticks the score up from zero rather than snapping to the final number.
+  let countTimer = null;
+  function countUpScore(finalScore, total){
+    clearInterval(countTimer);
+    const write = n => {
+      $('resultScore').textContent = UI[lang].scoreOutOf(
+        lang==='bn' ? bnNum(n) : n,
+        lang==='bn' ? bnNum(total) : total
+      );
+    };
+    if(reducedMotion || finalScore === 0){ write(finalScore); return; }
+
+    let n = 0;
+    const step = Math.max(40, Math.round(900 / Math.max(finalScore, 1)));
+    write(0);
+    countTimer = setInterval(()=>{
+      n++;
+      write(n);
+      if(n >= finalScore) clearInterval(countTimer);
+    }, step);
+  }
+
+  function celebrate(){
+    if(reducedMotion) return;
+    const host = $('confetti');
+    if(!host) return;
+    host.innerHTML = '';
+    const colors = ['#2F9E6E','#4FD8A0','#0F6B4C','#7CE6B8','#D8B34F'];
+    for(let i = 0; i < 46; i++){
+      const bit = document.createElement('span');
+      bit.style.left = Math.random()*100 + 'vw';
+      bit.style.background = colors[i % colors.length];
+      bit.style.setProperty('--dx', (Math.random()*160 - 80) + 'px');
+      bit.style.setProperty('--rot', (Math.random()*900 - 300) + 'deg');
+      bit.style.animationDuration = (2.2 + Math.random()*1.6) + 's';
+      bit.style.animationDelay = (Math.random()*0.5) + 's';
+      host.appendChild(bit);
+    }
+    setTimeout(()=>{ host.innerHTML = ''; }, 4600);
   }
 
   // ---------- Sending the score to Supabase ----------
@@ -863,6 +1099,32 @@
   // ---------- Leaderboard ----------
   // Prefers the live board from Supabase. The localStorage copy is only
   // used when the server can't be reached.
+  let lastBoardSig = null;   // previous row order, for the change flash
+  let boardTimer = null;     // live polling handle
+
+  // While the result screen is open, re-fetch the leaderboard every few
+  // seconds so scores from other people appear without a reload.
+  function startLiveBoard(){
+    stopLiveBoard();
+    if(!sb || !SETTINGS.show_leaderboard) return;
+    boardTimer = setInterval(()=>{
+      if(document.hidden) return;        // don't poll a backgrounded tab
+      loadLeaderboard();
+    }, 8000);
+  }
+
+  function stopLiveBoard(){
+    clearInterval(boardTimer);
+    boardTimer = null;
+    const dot = $('liveDot');
+    if(dot) dot.classList.add('hidden');
+  }
+
+  // Catch up immediately when the tab comes back to the foreground.
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden && boardTimer) loadLeaderboard();
+  });
+
   function getLocalBoard(){
     return JSON.parse(localStorage.getItem('cq_board') || '[]');
   }
@@ -893,6 +1155,11 @@
 
     $('boardNote').textContent = useServer ? UI[lang].boardLive : UI[lang].boardLocal;
 
+    // The LIVE badge only claims to be live when it genuinely is: real
+    // server data AND a poll running.
+    const dot = $('liveDot');
+    if(dot) dot.classList.toggle('hidden', !(useServer && boardTimer));
+
     const wrap = $('boardList');
     wrap.innerHTML = '';
 
@@ -904,9 +1171,22 @@
       return;
     }
 
+    // Which rows are new or have moved since the last poll? Those get a flash.
+    const signature = rows.map(r=>(r.id || r.name) + ':' + r.score);
+    const moved = new Set();
+    if(lastBoardSig){
+      signature.forEach((s, i)=>{ if(lastBoardSig[i] !== s) moved.add(i); });
+    }
+    lastBoardSig = signature;
+
     rows.forEach((row,i)=>{
       const div = document.createElement('div');
-      div.className = 'board-row';
+      div.className = 'board-row' + (row.mine ? ' is-me' : '');
+      div.style.setProperty('--i', i);
+      if(moved.has(i)){
+        div.classList.add('just-changed');
+        setTimeout(()=>div.classList.remove('just-changed'), 1400);
+      }
       const rank = document.createElement('div');
       rank.className = 'board-rank';
       rank.textContent = lang==='bn' ? bnNum(i+1) : (i+1);
