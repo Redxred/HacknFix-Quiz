@@ -308,6 +308,195 @@
     .who{display:none;}          /* the email is not worth a whole row here */
   }
 
+  /* ============================================================
+     DASHBOARD
+     ============================================================ */
+
+  /* Chart colours live on .viz so light/dark swap in one place and the
+     charts are written against roles, never raw hex. These steps were
+     run through the palette validator against the card surface in both
+     modes; the light aqua sits under 3:1, which is why every bar in this
+     dashboard carries a visible number rather than relying on hue. */
+  .viz{
+    --series-1:#2a78d6;   /* visitors */
+    --series-2:#eb6834;   /* attempts */
+    --series-3:#1baf7a;   /* feedback */
+    --ord-1:#86b6ef;      /* funnel: widest stage */
+    --ord-2:#3987e5;
+    --ord-3:#184f95;      /* funnel: narrowest stage */
+    --grid:var(--border);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .viz{
+      --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+      --ord-1:#cde2fb; --ord-2:#6da7ec; --ord-3:#256abf;
+    }
+  }
+  :root[data-theme="dark"] .viz{
+    --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+    --ord-1:#cde2fb; --ord-2:#6da7ec; --ord-3:#256abf;
+  }
+
+  /* one filter row above everything it scopes, never inside a chart card */
+  .dash-bar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .seg{
+    display:inline-flex;background:var(--card);border:1px solid var(--border);
+    border-radius:99px;padding:3px;gap:2px;
+  }
+  .seg button{
+    border:none;background:none;font-family:inherit;font-size:0.82rem;
+    font-weight:600;color:var(--muted);padding:6px 13px;border-radius:99px;
+    cursor:pointer;
+  }
+  .seg button.active{background:var(--primary);color:var(--on-primary);}
+  .dash-spacer{flex:1;}
+  .updated{font-size:0.76rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .live-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:0.74rem;font-weight:700;letter-spacing:.05em;
+    padding:5px 11px;border-radius:99px;cursor:pointer;
+    border:1px solid var(--border);background:var(--card);
+    color:var(--muted);font-family:inherit;
+  }
+  .live-pill i{
+    width:7px;height:7px;border-radius:99px;background:var(--muted);display:block;
+  }
+  .live-pill.on{color:var(--accent);border-color:var(--accent);}
+  .live-pill.on i{background:var(--accent);animation:pulseDot 1.8s ease-in-out infinite;}
+  @keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:.25;}}
+  @media (prefers-reduced-motion: reduce){ .live-pill.on i{animation:none;} }
+
+  /* a refresh in flight holds the old render instead of flashing a skeleton */
+  .refreshing{opacity:.55;transition:opacity .15s ease;}
+
+  .stat.wide .n{font-size:1.45rem;}
+  .stat .delta{font-size:0.74rem;color:var(--muted);margin-top:4px;}
+
+  .chart-card h2{margin-bottom:2px;}
+  .chart-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;margin-bottom:12px;
+  }
+  .chart-head .sub{margin:0;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .legend span{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:0.78rem;color:var(--muted);font-weight:600;
+  }
+  .legend i{width:10px;height:10px;border-radius:3px;display:block;}
+  .link-btn{
+    background:none;border:none;font-family:inherit;font-size:0.78rem;
+    font-weight:600;color:var(--primary-strong);cursor:pointer;
+    text-decoration:underline;padding:0;
+  }
+
+  .plot{position:relative;width:100%;}
+  .plot svg{display:block;width:100%;height:auto;}
+  .plot .band{fill:transparent;cursor:default;}
+  .plot .band:hover, .plot .band.hot{fill:var(--bg-soft);}
+  .axis-line{stroke:var(--grid);stroke-width:1;}
+  .grid-line{stroke:var(--grid);stroke-width:1;}
+  .axis-text{
+    fill:var(--muted);font-family:'Hind Siliguri',sans-serif;font-size:11px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .viz-tip{
+    position:absolute;pointer-events:none;z-index:8;
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius-sm);box-shadow:var(--shadow);
+    padding:8px 11px;font-size:0.8rem;line-height:1.5;
+    white-space:nowrap;opacity:0;transition:opacity .12s ease;
+  }
+  .viz-tip.show{opacity:1;}
+  .viz-tip b{display:block;margin-bottom:3px;font-size:0.76rem;color:var(--muted);}
+  .viz-tip .k{display:flex;align-items:center;gap:6px;}
+  .viz-tip .k i{width:9px;height:9px;border-radius:2px;display:block;}
+  .viz-tip .k em{font-style:normal;color:var(--muted);}
+  .viz-tip .k strong{margin-left:auto;padding-left:14px;font-variant-numeric:tabular-nums;}
+
+  /* horizontal breakdown bars - the label and the number are always
+     visible, so the colour is decoration rather than the only encoding */
+  .bars{display:flex;flex-direction:column;gap:10px;}
+  .bar-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;}
+  .bar-label{
+    font-size:0.85rem;font-weight:600;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;
+  }
+  .bar-val{font-size:0.82rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .bar-track{
+    grid-column:1 / -1;height:9px;border-radius:99px;
+    background:var(--bg-soft);overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;border-radius:99px;background:var(--series-1);
+    transition:width .5s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* funnel: ordered stages, so an ordinal ramp rather than category hues */
+  .funnel{display:flex;flex-direction:column;gap:12px;}
+  .funnel .bar-fill.s1{background:var(--ord-1);}
+  .funnel .bar-fill.s2{background:var(--ord-2);}
+  .funnel .bar-fill.s3{background:var(--ord-3);}
+  .funnel .bar-track{height:15px;}
+  .funnel-drop{font-size:0.75rem;color:var(--muted);}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:760px){ .two-col{grid-template-columns:1fr;} }
+
+  .setup-note{
+    padding:14px 16px;border-radius:var(--radius-md);
+    background:var(--danger-bg);color:var(--danger);
+    font-size:0.86rem;line-height:1.6;margin-bottom:16px;
+  }
+  .setup-note code{
+    background:rgba(0,0,0,.07);padding:1px 6px;border-radius:5px;
+    font-size:0.85em;
+  }
+
+  /* ---------- feedback ---------- */
+  .fb-card{
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:14px 16px;margin-bottom:10px;background:var(--bg-soft);
+  }
+  .fb-card.unread{border-left:3px solid var(--primary);}
+  .fb-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px;}
+  .fb-who{font-weight:700;font-size:0.93rem;}
+  .fb-when{font-size:0.76rem;color:var(--muted);margin-left:auto;}
+  .fb-stars{color:#E0A826;letter-spacing:1px;font-size:0.92rem;}
+  .fb-stars .off{color:var(--border);}
+  .fb-text{font-size:0.9rem;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+  .fb-text.empty{color:var(--muted);font-style:italic;}
+  .fb-contact{font-size:0.8rem;color:var(--muted);margin-top:7px;}
+  .fb-actions{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap;}
+
+  .rating-rows{display:flex;flex-direction:column;gap:8px;}
+  .rating-rows .r-label{
+    font-size:0.82rem;color:#E0A826;width:62px;flex-shrink:0;letter-spacing:1px;
+  }
+  .rating-rows .r-line{display:flex;align-items:center;gap:10px;}
+  .rating-rows .bar-track{flex:1;height:9px;}
+  .rating-rows .r-n{
+    font-size:0.8rem;color:var(--muted);width:40px;text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .tab .badge{
+    display:inline-block;margin-left:6px;min-width:17px;padding:0 5px;
+    border-radius:99px;background:var(--danger);color:#fff;
+    font-size:0.68rem;font-weight:700;line-height:17px;text-align:center;
+  }
+  .tab.active .badge{background:var(--on-primary);color:var(--primary);}
+
+  @media (max-width:700px){
+    .dash-bar{gap:8px;}
+    .seg button{padding:6px 11px;font-size:0.78rem;}
+    .updated{width:100%;order:9;}
+  }
+
   .timer-presets{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
   .timer-presets .btn.active{
     background:var(--primary);color:var(--on-primary);border-color:var(--primary);
@@ -357,13 +546,117 @@
 
   <main>
     <div class="tabs">
-      <button class="tab active" data-tab="questions" type="button">Questions</button>
+      <button class="tab active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab" data-tab="questions" type="button">Questions</button>
       <button class="tab" data-tab="results" type="button">Results</button>
+      <button class="tab" data-tab="feedback" type="button">Feedback<span class="badge hidden" id="fbBadge">0</span></button>
       <button class="tab" data-tab="settings" type="button">Site settings</button>
     </div>
 
+    <!-- ---------- DASHBOARD ---------- -->
+    <section id="tab-dashboard" class="viz">
+      <div class="setup-note hidden" id="analyticsSetup"></div>
+
+      <!-- one filter row, above everything it scopes -->
+      <div class="dash-bar">
+        <div class="seg" id="rangeSeg">
+          <button type="button" data-days="7">7 days</button>
+          <button type="button" class="active" data-days="14">14 days</button>
+          <button type="button" data-days="30">30 days</button>
+        </div>
+        <button class="live-pill on" id="liveBtn" type="button"><i></i>LIVE</button>
+        <div class="dash-spacer"></div>
+        <span class="updated" id="dashUpdated"></span>
+        <button class="btn btn-ghost btn-sm" id="dashRefresh" type="button">Refresh</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="n" id="dsVisitors">–</div><div class="l">Visitors</div><div class="delta" id="dsVisitorsSub">unique devices</div></div>
+        <div class="stat"><div class="n" id="dsViews">–</div><div class="l">Page views</div><div class="delta" id="dsViewsSub">&nbsp;</div></div>
+        <div class="stat"><div class="n" id="dsToday">–</div><div class="l">Visitors today</div><div class="delta" id="dsTodaySub">&nbsp;</div></div>
+        <div class="stat"><div class="n" id="dsAttempts">–</div><div class="l">Quiz attempts</div><div class="delta" id="dsAttemptsSub">&nbsp;</div></div>
+        <div class="stat"><div class="n" id="dsComplete">–</div><div class="l">Completion rate</div><div class="delta">finished ÷ visitors</div></div>
+        <div class="stat"><div class="n" id="dsAvgScore">–</div><div class="l">Average score</div><div class="delta" id="dsAvgSub">&nbsp;</div></div>
+        <div class="stat"><div class="n" id="dsFeedback">–</div><div class="l">Feedback</div><div class="delta" id="dsFeedbackSub">&nbsp;</div></div>
+        <div class="stat"><div class="n" id="dsRating">–</div><div class="l">Average rating</div><div class="delta" id="dsRatingSub">&nbsp;</div></div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-head">
+          <div>
+            <h2>Visitors and attempts</h2>
+            <p class="sub">Each day in the selected range. A visitor is one device; an attempt is one finished quiz.</p>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--series-1)"></i>Visitors</span>
+            <span><i style="background:var(--series-2)"></i>Attempts</span>
+            <button class="link-btn" id="trafficTableBtn" type="button">Table</button>
+          </div>
+        </div>
+        <div class="plot" id="trafficPlot"></div>
+        <div class="table-wrap hidden" id="trafficTable"></div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-head">
+          <div>
+            <h2>Where people drop off</h2>
+            <p class="sub">Of everyone who opened the site, how many started the quiz and how many reached the result screen.</p>
+          </div>
+        </div>
+        <div class="funnel" id="funnelBox"></div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-head">
+          <div>
+            <h2>When people visit</h2>
+            <p class="sub">First visit by hour of the day, in your timezone. Useful for picking when to post.</p>
+          </div>
+        </div>
+        <div class="plot" id="hourPlot"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card chart-card">
+          <h2>Devices</h2>
+          <p class="sub">What people are browsing on.</p>
+          <div class="bars" id="deviceBars"></div>
+        </div>
+        <div class="card chart-card">
+          <h2>Browsers</h2>
+          <p class="sub">In-app browsers (Facebook, Messenger) are counted separately.</p>
+          <div class="bars" id="browserBars"></div>
+        </div>
+        <div class="card chart-card">
+          <h2>Where they came from</h2>
+          <p class="sub">A <code>?ref=</code> tag on your link shows up here; otherwise the linking site.</p>
+          <div class="bars" id="referrerBars"></div>
+        </div>
+        <div class="card chart-card">
+          <h2>Operating system</h2>
+          <p class="sub">&nbsp;</p>
+          <div class="bars" id="osBars"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Latest visitors</h2>
+        <p class="sub">The most recent sessions. No names here — visits are anonymous; the Results tab is where participants are.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>When</th><th>Device</th><th>Browser</th><th>From</th><th>Views</th><th>Got to</th></tr>
+            </thead>
+            <tbody id="visitRows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="visitsEmpty">No visits recorded yet.</div>
+      </div>
+    </section>
+
     <!-- ---------- QUESTIONS ---------- -->
-    <section id="tab-questions">
+    <section id="tab-questions" class="hidden">
       <div class="stats">
         <div class="stat"><div class="n" id="stTotalQ">–</div><div class="l">Questions total</div></div>
         <div class="stat"><div class="n" id="stActiveQ">–</div><div class="l">Live in the quiz</div></div>
@@ -408,6 +701,46 @@
           </table>
         </div>
         <div class="empty hidden" id="attemptsEmpty">No attempts yet.</div>
+      </div>
+    </section>
+
+    <!-- ---------- FEEDBACK ---------- -->
+    <section id="tab-feedback" class="hidden viz">
+      <div class="setup-note hidden" id="feedbackSetup"></div>
+
+      <div class="stats">
+        <div class="stat"><div class="n" id="fsTotal">–</div><div class="l">Feedback received</div></div>
+        <div class="stat"><div class="n" id="fsUnread">–</div><div class="l">Unread</div></div>
+        <div class="stat"><div class="n" id="fsAvg">–</div><div class="l">Average rating</div></div>
+        <div class="stat"><div class="n" id="fsWritten">–</div><div class="l">With a comment</div></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Ratings</h2>
+        <p class="sub">How the stars are spread. Only feedback that included a rating is counted.</p>
+        <div class="rating-rows" id="ratingRows"></div>
+      </div>
+
+      <div class="card">
+        <h2>What people said</h2>
+        <p class="sub">Newest first. Marking one read only changes what you see here — nothing is sent to the visitor.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <input type="text" id="fbSearch" placeholder="Search comments or names…" style="flex:1;min-width:190px;">
+          <select id="fbFilter" style="width:auto;min-width:150px;">
+            <option value="all">All feedback</option>
+            <option value="unread">Unread only</option>
+            <option value="written">With a comment</option>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+          <button class="btn btn-ghost" id="fbRefresh" type="button">Refresh</button>
+          <button class="btn btn-primary" id="fbCsvBtn" type="button">Export CSV</button>
+        </div>
+        <div id="fbList"></div>
+        <div class="empty hidden" id="fbEmpty">No feedback yet.</div>
       </div>
     </section>
 
@@ -594,15 +927,25 @@
       document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.getAttribute('data-tab');
-      ['questions','results','settings'].forEach(t=>{
+      ['dashboard','questions','results','feedback','settings'].forEach(t=>{
         $('tab-'+t).classList.toggle('hidden', t !== target);
       });
+
+      // The charts measure their container, which is zero-wide while the
+      // tab is hidden - so they are drawn when the tab actually opens.
+      if(target === 'dashboard'){ loadDashboard(true); startDashLive(); }
+      else stopDashLive();
+      if(target === 'feedback') loadFeedback();
     });
   });
 
   // ---------------- loading ----------------
   async function loadEverything(){
-    await Promise.all([loadQuestions(), loadAttempts(), loadSettings()]);
+    await Promise.all([
+      loadQuestions(), loadAttempts(), loadSettings(),
+      loadDashboard(), loadFeedback()
+    ]);
+    startDashLive();
   }
 
   async function loadQuestions(){
@@ -620,6 +963,7 @@
     if(error){ toast('Could not load results: ' + error.message, true); return; }
     attempts = data || [];
     renderAttempts();
+    renderScoreTile();
   }
 
   async function loadSettings(){
@@ -1113,6 +1457,752 @@
       ? 'Saved — ' + payload.timer_seconds + 's per question'
       : 'Saved — timer off');
   });
+
+  // ============================================================
+  //  DASHBOARD
+  //  Headline numbers come from analytics_totals()/analytics_daily(),
+  //  which count across the whole table. The breakdowns (device,
+  //  browser, hour of day) are worked out in the browser from the most
+  //  recent visit rows, which is plenty for an event-sized site.
+  // ============================================================
+
+  let dashDays = 14;
+  let daily    = [];      // one row per day, from analytics_daily()
+  let totals   = null;    // the single row from analytics_totals()
+  let visits   = [];      // recent raw visit rows
+  let feedback = [];
+  let analyticsReady = true;   // false until the new schema has been run
+  let liveOn   = true;
+  let dashTimer = null;
+
+  // The database stores UTC. Days and hours are shown in your timezone.
+  const TZ = (function(){
+    try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Dhaka'; }
+    catch(e){ return 'Asia/Dhaka'; }
+  })();
+
+  const fmtN = n => (Number(n) || 0).toLocaleString();
+
+  // Did this call fail because the analytics tables/functions aren't there?
+  function isMissingSchema(err){
+    if(!err) return false;
+    const m = [err.message, err.hint, err.details, err.code].join(' ');
+    return /does not exist|schema cache|PGRST202|PGRST205|42P01|42883/i.test(m);
+  }
+
+  function showAnalyticsSetup(show){
+    analyticsReady = !show;
+    const text =
+      'Analytics and feedback need the newer database tables. Open Supabase ' +
+      '&rsaquo; SQL Editor, paste in the whole of <code>supabase-schema.sql</code> ' +
+      'again and press Run — it is safe to re-run and will not touch your ' +
+      'existing questions or results. Then reload this page.';
+    ['analyticsSetup','feedbackSetup'].forEach(id=>{
+      const el = $(id);
+      el.innerHTML = text;
+      el.classList.toggle('hidden', !show);
+    });
+  }
+
+  // ---------------- loading ----------------
+  async function loadDashboard(silent){
+    if(!sb) return;
+    const host = $('tab-dashboard');
+    // Hold the previous render at reduced opacity rather than flashing a
+    // skeleton - the numbers never jump out from under you.
+    if(!silent) host.classList.add('refreshing');
+
+    const [tRes, dRes, vRes] = await Promise.all([
+      sb.rpc('analytics_totals', { p_tz: TZ }),
+      sb.rpc('analytics_daily',  { p_days: dashDays, p_tz: TZ }),
+      sb.from('visits').select('*').order('first_seen', { ascending:false }).limit(3000)
+    ]);
+
+    host.classList.remove('refreshing');
+
+    if(isMissingSchema(tRes.error) || isMissingSchema(dRes.error) || isMissingSchema(vRes.error)){
+      showAnalyticsSetup(true);
+      return;
+    }
+    showAnalyticsSetup(false);
+
+    if(tRes.error) return toast('Could not load analytics: ' + tRes.error.message, true);
+    if(dRes.error) return toast('Could not load analytics: ' + dRes.error.message, true);
+
+    // analytics_totals() returns a single row, but through RPC it arrives
+    // as a one-element array.
+    totals = Array.isArray(tRes.data) ? (tRes.data[0] || null) : tRes.data;
+    daily  = dRes.data || [];
+    visits = vRes.data || [];
+
+    renderDashboard();
+    $('dashUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  }
+
+  async function loadFeedback(){
+    if(!sb) return;
+    const { data, error } = await sb.from('feedback')
+      .select('*').order('created_at', { ascending:false }).limit(1000);
+    if(error){
+      if(isMissingSchema(error)) return showAnalyticsSetup(true);
+      return toast('Could not load feedback: ' + error.message, true);
+    }
+    feedback = data || [];
+    renderFeedback();
+  }
+
+  // ---------------- small chart helpers ----------------
+
+  // Axis ticks that land on 1/2/5 x 10^n rather than on 7.3333.
+  function niceTicks(max, count){
+    const raw = Math.max(max, 1) / Math.max(count, 1);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    const top = Math.max(step, Math.ceil(Math.max(max, 1) / step) * step);
+    const out = [];
+    for(let v = 0; v <= top + 1e-9; v += step) out.push(Math.round(v));
+    return out;
+  }
+
+  // A bar with its top corners rounded and its base square on the axis.
+  function barPath(x, y, w, h, r){
+    if(h <= 0.5) return '';
+    r = Math.min(r, w / 2, h);
+    return 'M' + x + ',' + (y + h) +
+           'L' + x + ',' + (y + r) +
+           'Q' + x + ',' + y + ' ' + (x + r) + ',' + y +
+           'L' + (x + w - r) + ',' + y +
+           'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) +
+           'L' + (x + w) + ',' + (y + h) + 'Z';
+  }
+
+  function svgEl(name, attrs){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+    Object.keys(attrs || {}).forEach(k=>el.setAttribute(k, attrs[k]));
+    return el;
+  }
+
+  // One tooltip per plot, reused.
+  function plotTip(host){
+    let tip = host.querySelector('.viz-tip');
+    if(!tip){
+      tip = document.createElement('div');
+      tip.className = 'viz-tip';
+      host.appendChild(tip);
+    }
+    return tip;
+  }
+
+  function moveTip(host, tip, x, y){
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = x - w / 2;
+    left = Math.max(2, Math.min(left, host.clientWidth - w - 2));
+    tip.style.left = left + 'px';
+    tip.style.top  = Math.max(2, y - h - 10) + 'px';
+  }
+
+  function dayLabel(iso){
+    // iso is a plain 'YYYY-MM-DD' from Postgres - parsing it as local
+    // avoids the off-by-one you get from treating it as UTC midnight.
+    const [y, m, d] = String(iso).split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+
+  // ---------------- the traffic chart ----------------
+  function renderTraffic(){
+    const host = $('trafficPlot');
+    const rows = daily;
+    host.querySelectorAll('svg').forEach(s=>s.remove());
+    if(!rows.length){
+      const tip = host.querySelector('.viz-tip');
+      host.innerHTML = '<div class="empty">No days to show yet.</div>';
+      if(tip) host.appendChild(tip);
+      return;
+    }
+    if(host.querySelector('.empty')) host.querySelector('.empty').remove();
+
+    const W = Math.max(300, host.clientWidth || 640);
+    const H = 250;
+    const padL = 38, padR = 10, padT = 12, padB = 30;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const max = Math.max(1, ...rows.map(r=>Math.max(+r.visitors, +r.attempts)));
+    const ticks = niceTicks(max, 4);
+    const top = ticks[ticks.length - 1];
+    const yOf = v => padT + plotH - (v / top) * plotH;
+
+    const band = plotW / rows.length;
+    const GAP = 2;                                   // surface gap between the pair
+    const barW = Math.max(3, Math.min(20, (band * 0.62 - GAP) / 2));
+
+    const svg = svgEl('svg', { viewBox:'0 0 ' + W + ' ' + H, height:H, role:'img',
+                               'aria-label':'Visitors and attempts per day' });
+
+    // recessive solid hairline grid
+    ticks.forEach(t=>{
+      svg.appendChild(svgEl('line', {
+        class:'grid-line', x1:padL, x2:W - padR, y1:yOf(t), y2:yOf(t)
+      }));
+      const lbl = svgEl('text', { class:'axis-text', x:padL - 7, y:yOf(t) + 4, 'text-anchor':'end' });
+      lbl.textContent = t;
+      svg.appendChild(lbl);
+    });
+
+    // hover bands, behind the marks
+    const tip = plotTip(host);
+    rows.forEach((r, i)=>{
+      const rect = svgEl('rect', {
+        class:'band', x:padL + i * band, y:padT, width:band, height:plotH
+      });
+      rect.addEventListener('mouseenter', ()=>{
+        const d = dayLabel(r.day);
+        tip.innerHTML =
+          '<b>' + d.toLocaleDateString(undefined, {weekday:'short', day:'numeric', month:'short'}) + '</b>' +
+          '<div class="k"><i style="background:var(--series-1)"></i><em>Visitors</em><strong>' + fmtN(r.visitors) + '</strong></div>' +
+          '<div class="k"><i style="background:var(--series-2)"></i><em>Attempts</em><strong>' + fmtN(r.attempts) + '</strong></div>' +
+          '<div class="k"><i style="background:var(--series-3)"></i><em>Feedback</em><strong>' + fmtN(r.feedbacks) + '</strong></div>';
+        tip.classList.add('show');
+        const scale = host.clientWidth / W;
+        moveTip(host, tip, (padL + i * band + band / 2) * scale, padT * scale + 10);
+      });
+      rect.addEventListener('mouseleave', ()=>tip.classList.remove('show'));
+      svg.appendChild(rect);
+    });
+
+    rows.forEach((r, i)=>{
+      const cx = padL + i * band + band / 2;
+      const x1 = cx - barW - GAP / 2;
+      const x2 = cx + GAP / 2;
+      const h1 = plotH - (yOf(+r.visitors) - padT);
+      const h2 = plotH - (yOf(+r.attempts) - padT);
+
+      const p1 = barPath(x1, yOf(+r.visitors), barW, h1, 4);
+      if(p1) svg.appendChild(svgEl('path', { d:p1, fill:'var(--series-1)' }));
+      const p2 = barPath(x2, yOf(+r.attempts), barW, h2, 4);
+      if(p2) svg.appendChild(svgEl('path', { d:p2, fill:'var(--series-2)' }));
+    });
+
+    // x labels - how many fit is a question of pixels, not of row count,
+    // so the spacing is worked out from the plot width. Below about four
+    // slots even "12 Sep" is too wide, and the day number goes on alone.
+    const FULL_W = 42, SHORT_W = 18, LABEL_GAP = 8;
+    const useShort = plotW / (FULL_W + LABEL_GAP) < 4;
+    const labelW = useShort ? SHORT_W : FULL_W;
+    const slots = Math.max(2, Math.floor(plotW / (labelW + LABEL_GAP)));
+    const every = Math.max(1, Math.ceil(rows.length / slots));
+
+    rows.forEach((r, i)=>{
+      // Counted back from the newest day, so the right-hand end is always
+      // labelled and the spacing stays even.
+      if((rows.length - 1 - i) % every !== 0) return;
+      const d = dayLabel(r.day);
+      // Keep the text box inside the chart; the shift only ever affects
+      // the two end labels and is a few pixels at most.
+      const half = labelW / 2;
+      const cx = Math.max(half + 2, Math.min(padL + i * band + band / 2, W - half - 2));
+      const t = svgEl('text', { class:'axis-text', x:cx, y:H - 10, 'text-anchor':'middle' });
+      t.textContent = useShort
+        ? String(d.getDate())
+        : d.getDate() + ' ' + d.toLocaleDateString(undefined, {month:'short'});
+      svg.appendChild(t);
+    });
+
+    svg.appendChild(svgEl('line', {
+      class:'axis-line', x1:padL, x2:W - padR, y1:padT + plotH, y2:padT + plotH
+    }));
+
+    host.insertBefore(svg, tip);
+    renderTrafficTable();
+  }
+
+  // The chart's table twin - every value readable without hovering.
+  function renderTrafficTable(){
+    const rows = daily;
+    const head = '<table><thead><tr><th>Day</th><th>Visitors</th><th>Page views</th>' +
+                 '<th>Started</th><th>Finished</th><th>Attempts</th><th>Feedback</th></tr></thead><tbody>';
+    const body = rows.map(r=>{
+      const d = dayLabel(r.day);
+      return '<tr>' +
+        '<td data-label="Day">' + d.toLocaleDateString(undefined, {day:'numeric', month:'short'}) + '</td>' +
+        '<td data-label="Visitors">'   + fmtN(r.visitors)   + '</td>' +
+        '<td data-label="Page views">' + fmtN(r.page_views) + '</td>' +
+        '<td data-label="Started">'    + fmtN(r.started)    + '</td>' +
+        '<td data-label="Finished">'   + fmtN(r.finished)   + '</td>' +
+        '<td data-label="Attempts">'   + fmtN(r.attempts)   + '</td>' +
+        '<td data-label="Feedback">'   + fmtN(r.feedbacks)  + '</td>' +
+      '</tr>';
+    }).join('');
+    $('trafficTable').innerHTML = head + body + '</tbody></table>';
+  }
+
+  $('trafficTableBtn').addEventListener('click', ()=>{
+    const t = $('trafficTable');
+    const shown = t.classList.toggle('hidden');
+    $('trafficPlot').classList.toggle('hidden', !shown);
+    $('trafficTableBtn').textContent = shown ? 'Table' : 'Chart';
+  });
+
+  // ---------------- hour of day ----------------
+  function renderHours(){
+    const host = $('hourPlot');
+    host.querySelectorAll('svg').forEach(s=>s.remove());
+    const empty = host.querySelector('.empty');
+    if(empty) empty.remove();
+
+    const buckets = new Array(24).fill(0);
+    visits.forEach(v=>{ buckets[new Date(v.first_seen).getHours()]++; });
+
+    if(!visits.length){
+      const tip = host.querySelector('.viz-tip');
+      const div = document.createElement('div');
+      div.className = 'empty';
+      div.textContent = 'No visits recorded yet.';
+      host.insertBefore(div, tip || null);
+      return;
+    }
+
+    const W = Math.max(300, host.clientWidth || 640);
+    const H = 190;
+    const padL = 34, padR = 10, padT = 12, padB = 26;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const ticks = niceTicks(Math.max.apply(null, buckets), 3);
+    const top = ticks[ticks.length - 1];
+    const yOf = v => padT + plotH - (v / top) * plotH;
+
+    const band = plotW / 24;
+    const barW = Math.max(3, band - 3);   // 3px keeps a surface gap between bars
+
+    const svg = svgEl('svg', { viewBox:'0 0 ' + W + ' ' + H, height:H, role:'img',
+                               'aria-label':'Visits by hour of day' });
+
+    ticks.forEach(t=>{
+      svg.appendChild(svgEl('line', { class:'grid-line', x1:padL, x2:W - padR, y1:yOf(t), y2:yOf(t) }));
+      const lbl = svgEl('text', { class:'axis-text', x:padL - 7, y:yOf(t) + 4, 'text-anchor':'end' });
+      lbl.textContent = t;
+      svg.appendChild(lbl);
+    });
+
+    const tip = plotTip(host);
+    buckets.forEach((n, h)=>{
+      const x = padL + h * band + (band - barW) / 2;
+      const hit = svgEl('rect', { class:'band', x:padL + h * band, y:padT, width:band, height:plotH });
+      hit.addEventListener('mouseenter', ()=>{
+        tip.innerHTML = '<b>' + String(h).padStart(2,'0') + ':00 – ' +
+                        String(h).padStart(2,'0') + ':59</b>' +
+                        '<div class="k"><i style="background:var(--series-1)"></i>' +
+                        '<em>Visitors</em><strong>' + fmtN(n) + '</strong></div>';
+        tip.classList.add('show');
+        const scale = host.clientWidth / W;
+        moveTip(host, tip, (padL + h * band + band / 2) * scale, (padT + 10) * scale);
+      });
+      hit.addEventListener('mouseleave', ()=>tip.classList.remove('show'));
+      svg.appendChild(hit);
+
+      const d = barPath(x, yOf(n), barW, plotH - (yOf(n) - padT), 4);
+      if(d) svg.appendChild(svgEl('path', { d:d, fill:'var(--series-1)' }));
+    });
+
+    for(let h = 0; h < 24; h += 3){
+      const t = svgEl('text', {
+        class:'axis-text', x:padL + h * band + band / 2, y:H - 9, 'text-anchor':'middle'
+      });
+      t.textContent = String(h).padStart(2,'0');
+      svg.appendChild(t);
+    }
+
+    svg.appendChild(svgEl('line', {
+      class:'axis-line', x1:padL, x2:W - padR, y1:padT + plotH, y2:padT + plotH
+    }));
+    host.insertBefore(svg, tip);
+  }
+
+  // Bars grow in on the first paint. After that they are set outright -
+  // a live refresh every 20 seconds should not replay the animation, which
+  // would read as the page flashing rather than as new data arriving.
+  let dashPainted = false;
+
+  function setBarWidth(el, pct){
+    if(dashPainted){
+      const t = el.style.transition;
+      el.style.transition = 'none';
+      el.style.width = pct + '%';
+      void el.offsetWidth;
+      el.style.transition = t;
+    } else {
+      requestAnimationFrame(()=>{ el.style.width = pct + '%'; });
+    }
+  }
+
+  // ---------------- funnel ----------------
+  function renderFunnel(){
+    const host = $('funnelBox');
+    const v = totals ? +totals.visitors : 0;
+    const s = totals ? +totals.started  : 0;
+    const f = totals ? +totals.finished : 0;
+
+    const stages = [
+      { label:'Opened the site', n:v, cls:'s1' },
+      { label:'Started the quiz', n:s, cls:'s2' },
+      { label:'Saw their result', n:f, cls:'s3' }
+    ];
+    const base = Math.max(v, 1);
+
+    host.innerHTML = '';
+    stages.forEach((st, i)=>{
+      const pct = Math.round(st.n / base * 100);
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML =
+        '<div class="bar-label">' + st.label + '</div>' +
+        '<div class="bar-val">' + fmtN(st.n) + (i ? ' · ' + pct + '%' : '') + '</div>' +
+        '<div class="bar-track"><div class="bar-fill ' + st.cls + '" style="width:0%"></div></div>';
+      host.appendChild(row);
+      setBarWidth(row.querySelector('.bar-fill'), Math.max(pct, st.n ? 2 : 0));
+
+      if(i < stages.length - 1 && st.n > 0){
+        const lost = st.n - stages[i + 1].n;
+        const drop = document.createElement('div');
+        drop.className = 'funnel-drop';
+        drop.textContent = lost > 0
+          ? '↓ ' + fmtN(lost) + ' left here'
+          : '↓ everyone carried on';
+        host.appendChild(drop);
+      }
+    });
+  }
+
+  // ---------------- breakdown lists ----------------
+  function countBy(rows, key){
+    const map = new Map();
+    rows.forEach(r=>{
+      const v = (r[key] || 'unknown').toString();
+      map.set(v, (map.get(v) || 0) + 1);
+    });
+    let list = [...map.entries()].sort((a, b)=>b[1] - a[1]);
+    // Never invent a colour for a long tail - fold it into "Other".
+    if(list.length > 6){
+      const tail = list.slice(5).reduce((s, x)=>s + x[1], 0);
+      list = list.slice(0, 5).concat([['Other', tail]]);
+    }
+    return list;
+  }
+
+  function renderBreakdown(hostId, list){
+    const host = $(hostId);
+    host.innerHTML = '';
+    if(!list.length){
+      host.innerHTML = '<div class="empty">Nothing yet.</div>';
+      return;
+    }
+    const total = list.reduce((s, x)=>s + x[1], 0) || 1;
+    list.forEach(([label, n])=>{
+      const pct = Math.round(n / total * 100);
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      const name = document.createElement('div');
+      name.className = 'bar-label';
+      name.textContent = label;
+      name.title = label;
+      const val = document.createElement('div');
+      val.className = 'bar-val';
+      val.textContent = fmtN(n) + ' · ' + pct + '%';
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.width = '0%';
+      track.appendChild(fill);
+      row.append(name, val, track);
+      host.appendChild(row);
+      setBarWidth(fill, Math.max(pct, 2));
+    });
+  }
+
+  // ---------------- latest visitors ----------------
+  function renderVisitRows(){
+    const tbody = $('visitRows');
+    tbody.innerHTML = '';
+    const rows = visits.slice(0, 40);
+    $('visitsEmpty').classList.toggle('hidden', rows.length > 0);
+
+    rows.forEach((v, i)=>{
+      const got = v.finished_quiz ? 'the result' : (v.started_quiz ? 'the quiz' : 'the front page');
+      const cells = [
+        ['#', i + 1],
+        ['When', new Date(v.first_seen).toLocaleString()],
+        ['Device', v.device],
+        ['Browser', v.browser],
+        ['From', v.referrer],
+        ['Views', v.page_views],
+        ['Got to', got]
+      ];
+      const tr = document.createElement('tr');
+      cells.forEach(([label, val])=>{
+        const td = document.createElement('td');
+        td.dataset.label = label;
+        td.textContent = val;
+        tr.append(td);
+      });
+      tbody.append(tr);
+    });
+  }
+
+  // Average score comes from the attempts already loaded for the Results
+  // tab, so it moves the moment that list refreshes.
+  function renderScoreTile(){
+    if(attempts.length){
+      const pct = attempts.reduce((s, a)=>s + (a.total ? a.score / a.total : 0), 0) / attempts.length;
+      $('dsAvgScore').textContent = Math.round(pct * 100) + '%';
+      $('dsAvgSub').textContent = 'across ' + fmtN(attempts.length) + ' attempts';
+    } else {
+      $('dsAvgScore').textContent = '–';
+      $('dsAvgSub').textContent = ' ';
+    }
+  }
+
+  // ---------------- the whole dashboard ----------------
+  function renderDashboard(){
+    if(totals){
+      $('dsVisitors').textContent = fmtN(totals.visitors);
+      $('dsViews').textContent    = fmtN(totals.page_views);
+      $('dsToday').textContent    = fmtN(totals.visitors_today);
+      $('dsAttempts').textContent = fmtN(totals.attempts);
+      $('dsFeedback').textContent = fmtN(totals.feedbacks);
+
+      const v = +totals.visitors || 0;
+      $('dsComplete').textContent = v ? Math.round(+totals.finished / v * 100) + '%' : '–';
+      $('dsViewsSub').textContent = v
+        ? (Math.round(+totals.page_views / v * 10) / 10) + ' per visitor'
+        : ' ';
+      $('dsTodaySub').textContent    = fmtN(totals.attempts_today) + ' attempts today';
+      $('dsAttemptsSub').textContent = fmtN(totals.started) + ' started the quiz';
+      $('dsRating').textContent      = totals.avg_rating ? (+totals.avg_rating).toFixed(1) + ' / 5' : '–';
+      $('dsRatingSub').textContent   = +totals.unread_feedback
+        ? fmtN(totals.unread_feedback) + ' unread'
+        : 'all read';
+      $('dsFeedbackSub').textContent = v
+        ? Math.round(+totals.feedbacks / v * 100) + '% of visitors'
+        : ' ';
+    }
+
+    renderScoreTile();
+    renderTraffic();
+    renderFunnel();
+    renderHours();
+    renderBreakdown('deviceBars',   countBy(visits, 'device'));
+    renderBreakdown('browserBars',  countBy(visits, 'browser'));
+    renderBreakdown('referrerBars', countBy(visits, 'referrer'));
+    renderBreakdown('osBars',       countBy(visits, 'os'));
+    renderVisitRows();
+    dashPainted = true;
+  }
+
+  // ---------------- dashboard controls ----------------
+  document.querySelectorAll('#rangeSeg button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#rangeSeg button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      dashDays = parseInt(b.dataset.days, 10) || 14;
+      loadDashboard();
+    });
+  });
+
+  $('dashRefresh').addEventListener('click', ()=>{ loadDashboard(); toast('Refreshed'); });
+
+  $('liveBtn').addEventListener('click', ()=>{
+    liveOn = !liveOn;
+    $('liveBtn').classList.toggle('on', liveOn);
+    $('liveBtn').innerHTML = '<i></i>' + (liveOn ? 'LIVE' : 'PAUSED');
+    if(liveOn){ startDashLive(); loadDashboard(true); } else stopDashLive();
+  });
+
+  function startDashLive(){
+    stopDashLive();
+    if(!liveOn) return;
+    dashTimer = setInterval(()=>{
+      if(document.hidden) return;                                   // not a background tab
+      if($('tab-dashboard').classList.contains('hidden')) return;   // not the open tab
+      loadDashboard(true);
+      loadAttempts();
+    }, 20000);
+  }
+  function stopDashLive(){ clearInterval(dashTimer); dashTimer = null; }
+
+  // Charts are drawn at the container's real pixel width, so a resize
+  // needs a redraw. Debounced, because resize fires continuously.
+  let resizeTimer = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(()=>{
+      if($('tab-dashboard').classList.contains('hidden')) return;
+      renderTraffic();
+      renderHours();
+    }, 180);
+  });
+
+  // ============================================================
+  //  FEEDBACK
+  // ============================================================
+
+  function starRow(n){
+    let out = '';
+    for(let i = 1; i <= 5; i++){
+      out += i <= n ? '★' : '<span class="off">★</span>';
+    }
+    return out;
+  }
+
+  function filteredFeedback(){
+    const term = $('fbSearch').value.trim().toLowerCase();
+    const mode = $('fbFilter').value;
+    return feedback.filter(f=>{
+      if(mode === 'unread'  && f.is_read) return false;
+      if(mode === 'written' && !(f.message || '').trim()) return false;
+      if(/^[1-5]$/.test(mode) && f.rating !== parseInt(mode, 10)) return false;
+      if(!term) return true;
+      return (f.message || '').toLowerCase().includes(term)
+          || (f.name    || '').toLowerCase().includes(term)
+          || (f.contact || '').toLowerCase().includes(term);
+    });
+  }
+
+  function renderFeedback(){
+    const rated = feedback.filter(f=>f.rating > 0);
+    const unread = feedback.filter(f=>!f.is_read).length;
+    const written = feedback.filter(f=>(f.message || '').trim()).length;
+
+    $('fsTotal').textContent   = fmtN(feedback.length);
+    $('fsUnread').textContent  = fmtN(unread);
+    $('fsWritten').textContent = fmtN(written);
+    $('fsAvg').textContent = rated.length
+      ? (rated.reduce((s, f)=>s + f.rating, 0) / rated.length).toFixed(1) + ' / 5'
+      : '–';
+
+    const badge = $('fbBadge');
+    badge.textContent = unread;
+    badge.classList.toggle('hidden', unread === 0);
+
+    // rating distribution - ordered categories, one colour, always labelled
+    const rows = $('ratingRows');
+    rows.innerHTML = '';
+    const maxN = Math.max(1, ...[1,2,3,4,5].map(r=>rated.filter(f=>f.rating === r).length));
+    for(let r = 5; r >= 1; r--){
+      const n = rated.filter(f=>f.rating === r).length;
+      const line = document.createElement('div');
+      line.className = 'r-line';
+      line.innerHTML =
+        '<div class="r-label">' + '★'.repeat(r) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' +
+          (n / maxN * 100) + '%"></div></div>' +
+        '<div class="r-n">' + fmtN(n) + '</div>';
+      rows.appendChild(line);
+    }
+
+    const list = $('fbList');
+    const shown = filteredFeedback();
+    list.innerHTML = '';
+    $('fbEmpty').classList.toggle('hidden', shown.length > 0);
+    $('fbEmpty').textContent = feedback.length
+      ? 'Nothing matches that filter.'
+      : 'No feedback yet.';
+
+    shown.forEach(f=>{
+      const card = document.createElement('div');
+      card.className = 'fb-card' + (f.is_read ? '' : ' unread');
+
+      const top = document.createElement('div');
+      top.className = 'fb-top';
+
+      const who = document.createElement('span');
+      who.className = 'fb-who';
+      who.textContent = f.name || 'Guest';
+
+      const stars = document.createElement('span');
+      stars.className = 'fb-stars';
+      stars.innerHTML = f.rating ? starRow(f.rating) : '';
+      stars.setAttribute('aria-label', f.rating ? f.rating + ' out of 5' : 'no rating');
+
+      const lang = document.createElement('span');
+      lang.className = 'pill';
+      lang.textContent = f.lang;
+
+      const when = document.createElement('span');
+      when.className = 'fb-when';
+      when.textContent = new Date(f.created_at).toLocaleString();
+
+      top.append(who, stars, lang, when);
+
+      const body = document.createElement('div');
+      const msg = (f.message || '').trim();
+      body.className = 'fb-text' + (msg ? '' : ' empty');
+      body.textContent = msg || 'Rating only — no comment left.';
+
+      card.append(top, body);
+
+      if(f.contact){
+        const c = document.createElement('div');
+        c.className = 'fb-contact';
+        c.textContent = 'Contact: ' + f.contact;
+        card.append(c);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'fb-actions';
+      actions.append(
+        mkBtn(f.is_read ? 'Mark unread' : 'Mark read', 'btn-ghost', async ()=>{
+          const { error } = await sb.from('feedback')
+            .update({ is_read: !f.is_read }).eq('id', f.id);
+          if(error) return toast(error.message, true);
+          f.is_read = !f.is_read;
+          renderFeedback();
+        }),
+        mkBtn('Delete', 'btn-danger', async ()=>{
+          if(!confirm('Delete this feedback from ' + (f.name || 'Guest') + '?')) return;
+          const { error } = await sb.from('feedback').delete().eq('id', f.id);
+          if(error) return toast(error.message, true);
+          toast('Feedback deleted');
+          loadFeedback();
+        })
+      );
+      card.append(actions);
+      list.append(card);
+    });
+  }
+
+  $('fbSearch').addEventListener('input', renderFeedback);
+  $('fbFilter').addEventListener('change', renderFeedback);
+  $('fbRefresh').addEventListener('click', ()=>{ loadFeedback(); toast('Refreshed'); });
+
+  $('fbCsvBtn').addEventListener('click', ()=>{
+    const rows = filteredFeedback();
+    if(!rows.length) return toast('Nothing to export', true);
+
+    const esc = v => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"';
+    const header = ['Name','Contact','Rating','Comment','Language','Read','Received'];
+    const lines = [header.map(esc).join(',')];
+    rows.forEach(f=>{
+      lines.push([
+        f.name, f.contact || '', f.rating || '', f.message || '',
+        f.lang, f.is_read ? 'yes' : 'no',
+        new Date(f.created_at).toLocaleString()
+      ].map(esc).join(','));
+    });
+
+    // The BOM makes Excel open বাংলা comments correctly.
+    const blob = new Blob(['﻿' + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hacknfix-feedback-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Exported ' + rows.length + ' rows');
+  });
+
 
   init();
 })();

@@ -242,3 +242,312 @@ insert into public.questions (sort_order, icon, q_bn, q_en, options, explain_bn,
 end if;
 end
 $seed$;
+
+-- ============================================================
+--  5. ANALYTICS + FEEDBACK
+--     Added for the admin dashboard. Everything below is
+--     create-if-not-exists / create-or-replace, so re-running
+--     this whole file on an existing project is safe.
+-- ============================================================
+
+-- One row per visitor session, not per page load. The browser keeps a
+-- random session id in localStorage and calls track_visit() with it, so a
+-- returning visitor updates their row instead of adding another.
+--
+-- Deliberately no IP address and no full user-agent string: the dashboard
+-- only needs shapes (phone vs desktop, Chrome vs Safari), not identities.
+create table if not exists public.visits (
+  id            uuid        primary key default gen_random_uuid(),
+  session_id    text        not null unique,
+  first_seen    timestamptz not null default now(),
+  last_seen     timestamptz not null default now(),
+  page_views    int         not null default 1,
+  device        text        not null default 'unknown',   -- mobile / tablet / desktop
+  browser       text        not null default 'unknown',
+  os            text        not null default 'unknown',
+  referrer      text        not null default 'direct',    -- host only, never the full URL
+  lang          text        not null default 'bn',
+  screen        text,                                     -- "390x844"
+  timezone      text,
+  started_quiz  boolean     not null default false,
+  finished_quiz boolean     not null default false,
+  gave_feedback boolean     not null default false
+);
+
+create index if not exists visits_first_seen_idx on public.visits (first_seen desc);
+create index if not exists visits_last_seen_idx  on public.visits (last_seen desc);
+
+-- Visitor feedback. Rating is 1-5 stars; either a rating or a message is
+-- enough to submit, both are better.
+create table if not exists public.feedback (
+  id         uuid        primary key default gen_random_uuid(),
+  name       text        not null default 'Guest',
+  contact    text,                                        -- phone or email, optional
+  rating     int         not null default 0,
+  message    text        not null default '',
+  lang       text        not null default 'bn',
+  session_id text,
+  is_read    boolean     not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists feedback_created_idx on public.feedback (created_at desc);
+
+-- ------------------------------------------------------------
+-- 5b. ROW LEVEL SECURITY - same shape as the rest of the file.
+--     Visitors never touch these tables directly; they go through the
+--     security-definer functions below. So there is no anon policy here.
+-- ------------------------------------------------------------
+
+alter table public.visits   enable row level security;
+alter table public.feedback enable row level security;
+
+drop policy if exists "visits_admin_all"   on public.visits;
+drop policy if exists "feedback_admin_all" on public.feedback;
+
+create policy "visits_admin_all" on public.visits
+  for all to authenticated
+  using (true) with check (true);
+
+create policy "feedback_admin_all" on public.feedback
+  for all to authenticated
+  using (true) with check (true);
+
+-- Belt and braces. Row Level Security already stops the anon key reading
+-- these, but taking the table privilege away too means a future policy
+-- written by mistake cannot open them up by accident. Visitors reach both
+-- tables only through the security-definer functions below.
+revoke all on public.visits   from anon;
+revoke all on public.feedback from anon;
+grant select, insert, update, delete on public.visits   to authenticated;
+grant select, insert, update, delete on public.feedback to authenticated;
+
+-- ------------------------------------------------------------
+-- 5c. WHAT THE PUBLIC SITE CALLS
+-- ------------------------------------------------------------
+
+-- Record a visit. Called once per page load. The first call for a session
+-- creates the row; later calls just bump page_views and last_seen.
+create or replace function public.track_visit(
+  p_session  text,
+  p_device   text default 'unknown',
+  p_browser  text default 'unknown',
+  p_os       text default 'unknown',
+  p_referrer text default 'direct',
+  p_lang     text default 'bn',
+  p_screen   text default null,
+  p_timezone text default null
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  -- A missing or silly session id is ignored rather than stored: it would
+  -- only ever become a junk row nobody can interpret.
+  if p_session is null or length(trim(p_session)) < 8 or length(p_session) > 64 then
+    return;
+  end if;
+
+  insert into public.visits (session_id, device, browser, os, referrer, lang, screen, timezone)
+  values (
+    trim(p_session),
+    left(coalesce(nullif(trim(p_device),  ''), 'unknown'), 20),
+    left(coalesce(nullif(trim(p_browser), ''), 'unknown'), 30),
+    left(coalesce(nullif(trim(p_os),      ''), 'unknown'), 30),
+    left(coalesce(nullif(trim(p_referrer),''), 'direct'),  120),
+    case when p_lang in ('bn','en') then p_lang else 'bn' end,
+    left(nullif(trim(p_screen),   ''), 20),
+    left(nullif(trim(p_timezone), ''), 60)
+  )
+  on conflict (session_id) do update set
+    last_seen  = now(),
+    page_views = visits.page_views + 1,
+    lang       = excluded.lang,
+    -- keep whatever we learned first, but fill in blanks on a later visit
+    device     = case when visits.device  = 'unknown' then excluded.device  else visits.device  end,
+    browser    = case when visits.browser = 'unknown' then excluded.browser else visits.browser end,
+    os         = case when visits.os      = 'unknown' then excluded.os      else visits.os      end;
+end
+$fn$;
+
+-- Flag something the visitor did: started the quiz, finished it, or left
+-- feedback. Flags only ever turn on, so a retake cannot un-finish a session.
+create or replace function public.mark_visit(p_session text, p_event text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  if p_session is null or p_event not in ('start','finish','feedback') then
+    return;
+  end if;
+
+  update public.visits set
+    last_seen     = now(),
+    started_quiz  = started_quiz  or p_event = 'start',
+    finished_quiz = finished_quiz or p_event = 'finish',
+    gave_feedback = gave_feedback or p_event = 'feedback'
+  where session_id = trim(p_session);
+end
+$fn$;
+
+-- Save a piece of feedback. Returns the new row id.
+create or replace function public.submit_feedback(
+  p_name    text,
+  p_contact text,
+  p_rating  int,
+  p_message text,
+  p_lang    text default 'bn',
+  p_session text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_id  uuid;
+  v_msg text := left(coalesce(trim(p_message), ''), 2000);
+  v_rat int  := coalesce(p_rating, 0);
+begin
+  if v_rat < 0 or v_rat > 5 then
+    raise exception 'invalid_rating';
+  end if;
+
+  -- Something has to be said. An empty form is not feedback.
+  if v_rat = 0 and v_msg = '' then
+    raise exception 'empty_feedback';
+  end if;
+
+  insert into public.feedback (name, contact, rating, message, lang, session_id)
+  values (
+    left(coalesce(nullif(trim(p_name), ''), 'Guest'), 60),
+    left(nullif(trim(p_contact), ''), 120),
+    v_rat,
+    v_msg,
+    case when p_lang in ('bn','en') then p_lang else 'bn' end,
+    left(nullif(trim(p_session), ''), 64)
+  )
+  returning id into v_id;
+
+  perform public.mark_visit(p_session, 'feedback');
+  return v_id;
+end
+$fn$;
+
+-- ------------------------------------------------------------
+-- 5d. WHAT THE DASHBOARD CALLS
+--     No security definer here on purpose - these run as the caller, so
+--     RLS applies and only a logged-in admin gets anything back.
+--     p_tz decides where a "day" starts; the database itself is UTC.
+-- ------------------------------------------------------------
+
+create or replace function public.analytics_daily(
+  p_days int  default 14,
+  p_tz   text default 'Asia/Dhaka'
+)
+returns table (
+  day        date,
+  visitors   bigint,
+  page_views bigint,
+  started    bigint,
+  finished   bigint,
+  attempts   bigint,
+  feedbacks  bigint
+)
+language sql
+stable
+as $fn$
+  with bounds as (
+    select greatest(1, least(coalesce(p_days, 14), 90)) as n,
+           coalesce(nullif(trim(p_tz), ''), 'UTC')      as tz
+  ),
+  days as (
+    select generate_series(
+             (timezone(b.tz, now())::date - (b.n - 1)),
+             timezone(b.tz, now())::date,
+             interval '1 day'
+           )::date as day
+    from bounds b
+  ),
+  v as (
+    select timezone(b.tz, vi.first_seen)::date               as day,
+           count(*)                                          as visitors,
+           sum(vi.page_views)                                as page_views,
+           count(*) filter (where vi.started_quiz)           as started,
+           count(*) filter (where vi.finished_quiz)          as finished
+    from public.visits vi cross join bounds b
+    group by 1
+  ),
+  tries as (
+    select timezone(b.tz, a.created_at)::date as day, count(*) as attempts
+    from public.attempts a cross join bounds b
+    group by 1
+  ),
+  fb as (
+    select timezone(b.tz, f.created_at)::date as day, count(*) as feedbacks
+    from public.feedback f cross join bounds b
+    group by 1
+  )
+  select d.day,
+         coalesce(v.visitors,  0)::bigint,
+         coalesce(v.page_views,0)::bigint,
+         coalesce(v.started,   0)::bigint,
+         coalesce(v.finished,  0)::bigint,
+         coalesce(tries.attempts, 0)::bigint,
+         coalesce(fb.feedbacks,0)::bigint
+  from days d
+  left join v  on v.day  = d.day
+  left join tries on tries.day = d.day
+  left join fb on fb.day = d.day
+  order by d.day;
+$fn$;
+
+-- The headline numbers, counted across the whole table rather than across
+-- the rows the browser happens to have downloaded.
+create or replace function public.analytics_totals(p_tz text default 'Asia/Dhaka')
+returns table (
+  visitors        bigint,
+  page_views      bigint,
+  started         bigint,
+  finished        bigint,
+  visitors_today  bigint,
+  attempts        bigint,
+  attempts_today  bigint,
+  feedbacks       bigint,
+  unread_feedback bigint,
+  avg_rating      numeric
+)
+language sql
+stable
+as $fn$
+  with b as (select coalesce(nullif(trim(p_tz), ''), 'UTC') as tz)
+  select
+    (select count(*) from public.visits),
+    (select coalesce(sum(page_views), 0)::bigint from public.visits),
+    (select count(*) from public.visits where started_quiz),
+    (select count(*) from public.visits where finished_quiz),
+    (select count(*) from public.visits v, b
+      where timezone(b.tz, v.first_seen)::date = timezone(b.tz, now())::date),
+    (select count(*) from public.attempts),
+    (select count(*) from public.attempts a, b
+      where timezone(b.tz, a.created_at)::date = timezone(b.tz, now())::date),
+    (select count(*) from public.feedback),
+    (select count(*) from public.feedback where not is_read),
+    (select round(avg(rating)::numeric, 2) from public.feedback where rating > 0);
+$fn$;
+
+revoke all on function public.track_visit(text, text, text, text, text, text, text, text) from public;
+revoke all on function public.mark_visit(text, text) from public;
+revoke all on function public.submit_feedback(text, text, int, text, text, text) from public;
+revoke all on function public.analytics_daily(int, text) from public;
+revoke all on function public.analytics_totals(text) from public;
+
+grant execute on function public.track_visit(text, text, text, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.mark_visit(text, text) to anon, authenticated;
+grant execute on function public.submit_feedback(text, text, int, text, text, text) to anon, authenticated;
+
+-- Dashboard functions are for you, not for visitors.
+grant execute on function public.analytics_daily(int, text) to authenticated;
+grant execute on function public.analytics_totals(text)     to authenticated;

@@ -10,7 +10,7 @@ HTML that talk to it directly.
 
 ```
 index.html           the quiz (now loads questions from the database)
-admin.html           your admin panel  <-- this is where you change questions
+admin.html           your admin panel  <-- dashboard, questions, results, feedback
 config.js            your Supabase URL + anon key (you fill this in)
 supabase-schema.sql  paste this into Supabase once, to create the database
 ```
@@ -30,13 +30,18 @@ supabase-schema.sql  paste this into Supabase once, to create the database
 1. In the left sidebar open **SQL Editor** → **New query**.
 2. Open `supabase-schema.sql`, copy the **entire** file, paste it in, press
    **Run**.
-3. You should see "Success". Check **Table Editor** — you now have
-   `questions` (with your original 10 questions already in it), `attempts`,
-   and `settings`.
+
+You should see "Success". Check **Table Editor** — you now have
+`questions`, `attempts`, `settings`, `visits` and `feedback`.
 
 This file is safe to run more than once. The seed at the bottom only fires
 when the questions table is empty, so re-running it will never duplicate
 your questions.
+
+> **Already had this running before the dashboard existed?** Re-run the file.
+> It adds the `visits` and `feedback` tables and leaves your existing
+> questions, results and settings exactly as they are. Until you do, the
+> Dashboard and Feedback tabs will tell you they are waiting for it.
 
 ## Step 3 — Connect your pages to it
 
@@ -93,6 +98,39 @@ browsers block parts of the setup; serve them over `http://` as above.
 
 ## Using the admin panel
 
+**Dashboard tab** — who is actually showing up.
+
+- *The tiles* — unique visitors, page views, visitors today, quiz attempts,
+  completion rate, average score, feedback count and average rating. These
+  are counted across the whole database, not just the rows on screen.
+- *Visitors and attempts* — a bar per day for the last 7, 14 or 30 days.
+  Hover a day for exact numbers, or press **Table** to read the whole range
+  as a table, including page views and how many started versus finished.
+- *Where people drop off* — of everyone who opened the site, how many
+  started the quiz and how many reached the result screen. This is usually
+  the most useful chart on the page: a big gap between "opened" and
+  "started" means the front page is losing people.
+- *When people visit* — first visit by hour of day, in your timezone. Handy
+  for deciding when to post the link.
+- *Devices, browsers, where they came from, operating system* — add
+  `?ref=something` to a link (`yoursite.com/?ref=poster-qr`,
+  `?ref=fb-post`) and that tag shows up under "where they came from", so
+  you can tell which poster or post actually worked.
+- *LIVE* — the dashboard refreshes itself every 20 seconds. Press the pill
+  to pause it. It stops on its own while the browser tab is in the
+  background, so it won't chew through a phone battery during an event.
+
+**Feedback tab** — everything visitors have written, newest first. Filter by
+unread or by star rating, search the text, mark items read as you work
+through them, delete spam, or **Export CSV**. The tab shows a red count of
+unread items.
+
+Visitors reach the form two ways: the speech-bubble button in the site
+header, on every screen, and a row of stars on their result screen — tapping
+a star opens the form with that rating already chosen, so leaving feedback is
+one tap for someone in a hurry. A rating on its own is enough; a comment,
+name and contact detail are all optional.
+
 **Questions tab** — add, edit, hide, reorder and delete questions. Each one
 has বাংলা and English text, 2–6 options with exactly one marked correct, and
 an explanation in both languages. "Hide" takes a question out of the quiz
@@ -113,6 +151,34 @@ to open the whole thing in Excel (বাংলা names come through correctly).
   both languages without touching any code.
 
 Changes apply the next time someone loads the quiz page.
+
+---
+
+## What the dashboard collects
+
+One row per visitor, written when the page loads. Deliberately **no IP
+address and no raw user-agent string**:
+
+| Stored | Not stored |
+|---|---|
+| A random session id kept in that browser | IP address |
+| mobile / tablet / desktop | Any name or contact detail |
+| Browser and OS family (Chrome, Android…) | The full user-agent string |
+| Referring site, or your own `?ref=` tag | Precise location |
+| Language, screen size, timezone | Anything linking a visit to an attempt |
+
+The session id is a random number generated in the visitor's browser. It
+lets a returning visitor update their own row instead of creating a second
+one; it identifies nobody. Visits and quiz results are separate tables with
+no join between them, so the dashboard can tell you *191 people finished*
+without being able to tell you *which visit was which person*.
+
+Feedback is different: visitors may type a name and a phone or email if they
+want a reply. That is only ever visible to you on the Feedback tab.
+
+Visitors never write to these tables directly — they call `track_visit()`,
+`mark_visit()` and `submit_feedback()`, which are the only doors open to the
+anon key. Reading any of it requires being logged in.
 
 ---
 
@@ -137,12 +203,14 @@ protected by the Supabase login, not by being secret.
                  ┌──────────────┐
    visitor  ───▶ │  index.html  │ ──── reads questions + settings ───┐
                  └──────────────┘                                    │
-                        │  submit_attempt()                          │
+                        │  track_visit() · mark_visit()              │
+                        │  submit_attempt() · submit_feedback()      │
                         ▼                                            ▼
                  ┌─────────────────────────────────────────────────────┐
                  │                 Supabase (Postgres)                 │
-                 │   questions  ·  attempts  ·  settings                │
-                 │   Row Level Security decides who may read/write      │
+                 │   questions · attempts · settings                   │
+                 │   visits · feedback                                 │
+                 │   Row Level Security decides who may read/write     │
                  └─────────────────────────────────────────────────────┘
                         ▲                                            ▲
                         │  full read/write, after login              │
@@ -162,6 +230,9 @@ Who can do what:
 | Read names, phones, emails | **no** | yes |
 | See the leaderboard | name + score only | everything |
 | Change site settings | no | yes |
+| Record a visit | yes, via `track_visit()` | yes |
+| Leave feedback | yes, via `submit_feedback()` | yes |
+| Read visits or feedback | **no** | yes |
 
 Two details worth knowing:
 
