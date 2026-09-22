@@ -912,9 +912,25 @@
 
   /* While the exam is live, nothing but the answer boxes is selectable.
      This is deterrence, not security - see the note in the JS. */
-  body.exam-live{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  /* The `*` matters: without it any element that sets its own
+     user-select (the answer box does) wins over a rule on body alone,
+     and the text under it stays selectable. */
+  body.exam-live,
+  body.exam-live *{
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  /* The student still has to be able to type and edit their own answer. */
   body.exam-live input,
-  body.exam-live textarea{-webkit-user-select:text;user-select:text;}
+  body.exam-live textarea{
+    -webkit-user-select:text;
+    -moz-user-select:text;
+    -ms-user-select:text;
+    user-select:text;
+  }
   body.exam-live .topbar .icon-btn:not(#examQuitBtn){display:none;}
 
   @media print{
@@ -1649,6 +1665,10 @@
     viol_blur:"পরীক্ষার উইন্ডো থেকে সরে গিয়েছিলেন।",
     "viol_fullscreen-exit":"ফুলস্ক্রিন থেকে বের হয়েছেন।",
     viol_generic:"নিয়মভঙ্গ রেকর্ড হয়েছে।",
+    viol_minimised:"আপনি পরীক্ষার পাতা থেকে সরে গিয়েছিলেন বা উইন্ডো ছোট করেছিলেন।",
+    endedTitle:"পরীক্ষা শেষ হয়ে গেছে",
+    endedBody:"নিয়ম অনুযায়ী পরীক্ষার পাতা ছেড়ে যাওয়ায় আপনার খাতা জমা হয়ে গেছে। বিস্তারিত আপনার শিক্ষকের কাছে গেছে।",
+    ruleEndOnExit:"ফুলস্ক্রিন থেকে বের হলে বা উইন্ডো ছোট করলে পরীক্ষা সাথে সাথেই শেষ হয়ে যাবে — কোনো সতর্কতা ছাড়াই।",
 
     strikeOutTitle:"খাতা জমা হয়ে গেছে",
     strikeOutBody:"অনেকবার নিয়ম ভাঙার কারণে আপনার খাতা নিজে থেকেই জমা হয়ে গেছে। বিস্তারিত আপনার শিক্ষকের কাছে গেছে।",
@@ -1748,6 +1768,10 @@
     viol_blur:"The exam window lost focus.",
     "viol_fullscreen-exit":"You left fullscreen.",
     viol_generic:"A rule violation was recorded.",
+    viol_minimised:"You moved away from the exam, or minimised the window.",
+    endedTitle:"Your exam has ended",
+    endedBody:"Your paper was submitted because you left the exam. The details have gone to your instructor.",
+    ruleEndOnExit:"Leaving fullscreen or minimising the window ends the exam immediately, with no warning.",
 
     strikeOutTitle:"Paper submitted",
     strikeOutBody:"Your paper was submitted automatically after too many violations. The details have gone to your instructor.",
@@ -2833,7 +2857,7 @@
   const EXAM = {
     attempt:null, token:null, questions:[], idx:0,
     cfg:{ mcq_seconds:30, max_violations:3, require_fullscreen:true,
-          block_copy:true, detect_tab_switch:true },
+          block_copy:true, detect_tab_switch:true, end_on_exit:true },
     deadline:0,          // ms epoch, from the server
     strikes:0,
     live:false,          // exam in progress -> anti-cheat armed
@@ -2954,9 +2978,17 @@
     if(s.exam_rules) items.push(s.exam_rules);
     items.push(L.ruleMcqTime.replace('{n}', lang==='bn' ? bnNum(s.mcq_seconds||30) : (s.mcq_seconds||30)));
     items.push(L.ruleNoBack);
-    if(s.block_copy)        items.push(L.ruleNoCopy);
-    if(s.detect_tab_switch) items.push(L.ruleNoTab);
-    if(s.require_fullscreen)items.push(L.ruleFullscreen);
+    if(s.block_copy) items.push(L.ruleNoCopy);
+
+    // Ending a paper for a rule the student was never shown would not be
+    // defensible, so when end_on_exit is on it is stated plainly and on
+    // its own rather than buried among the strike rules.
+    if(s.end_on_exit){
+      items.push(L.ruleEndOnExit);
+    }else{
+      if(s.detect_tab_switch) items.push(L.ruleNoTab);
+      if(s.require_fullscreen)items.push(L.ruleFullscreen);
+    }
     items.push(L.ruleStrikes.replace('{n}', lang==='bn' ? bnNum(s.max_violations||3) : (s.max_violations||3)));
     items.push(L.ruleAutosave);
 
@@ -3406,8 +3438,14 @@
     if(cfg.block_copy){
       ['copy','cut'].forEach(t=>on(document, t, e=>{
         e.preventDefault();
+        // Cancelling the event stops the copy, but some browsers have
+        // already staged the selection. Overwriting it empties whatever
+        // would otherwise land on the clipboard.
+        try{ e.clipboardData.setData('text/plain', ''); }catch(_){}
         trip('copy', 'tried to ' + t);
       }));
+      // Fire before the selection is even handed to the clipboard.
+      ['beforecopy','beforecut'].forEach(t=>on(document, t, e=>e.preventDefault()));
       on(document, 'paste', e=>{
         e.preventDefault();
         trip('paste', 'tried to paste');
@@ -3436,14 +3474,47 @@
       if(ctrl && k === 'p'){ e.preventDefault(); return trip('print','Ctrl+P'); }
       if(ctrl && k === 's'){ e.preventDefault(); return trip('save','Ctrl+S'); }
       if(k === 'printscreen'){ trip('screenshot','PrintScreen'); }
-      // Ctrl+C / Ctrl+V are already caught by the copy/paste handlers.
+
+      // A keydown backstop for the clipboard shortcuts. The copy/cut/paste
+      // events above catch most of it, but not every browser fires a
+      // cancelable copy event for every route into the clipboard, and the
+      // Insert-key pair is missed entirely.
+      if(cfg.block_copy){
+        const inBox = e.target &&
+          (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT');
+
+        // Select-all inside your own answer box is fair - you need it to
+        // rewrite what you typed. Anywhere else it is the first half of
+        // copying the paper.
+        if(ctrl && k === 'a' && !inBox){
+          e.preventDefault(); return trip('copy','Ctrl+A');
+        }
+        if(ctrl && (k === 'c' || k === 'x')){
+          e.preventDefault(); return trip('copy','Ctrl+' + k.toUpperCase());
+        }
+        if(ctrl && k === 'v'){
+          e.preventDefault(); return trip('paste','Ctrl+V');
+        }
+        if(ctrl && k === 'insert'){
+          e.preventDefault(); return trip('copy','Ctrl+Insert');
+        }
+        if(e.shiftKey && k === 'insert'){
+          e.preventDefault(); return trip('paste','Shift+Insert');
+        }
+      }
     });
 
     // --- leaving the page ---
     if(cfg.detect_tab_switch){
+      // Minimising the window, switching app, or moving to another tab
+      // all surface as the document being hidden. The browser cannot
+      // tell them apart, so they are treated as one thing: the student
+      // is no longer looking at the exam.
       on(document, 'visibilitychange', ()=>{
-        if(document.hidden) trip('tab-switch', 'tab hidden');
+        if(document.hidden) leftTheExam('minimised', 'window hidden or minimised');
       });
+      // Focus alone is far too twitchy to end a paper over - clicking the
+      // address bar fires it - so it only ever costs a strike.
       on(window, 'blur', ()=>trip('blur', 'window lost focus'));
     }
 
@@ -3451,7 +3522,7 @@
     if(cfg.require_fullscreen){
       on(document, 'fullscreenchange', ()=>{
         if(!document.fullscreenElement && EXAM.live && !EXAM.done){
-          trip('fullscreen-exit', 'left fullscreen');
+          leftTheExam('fullscreen-exit', 'left fullscreen');
         }
       });
       goFullscreen();
@@ -3484,6 +3555,48 @@
     }
   }
 
+  // Walking out of the exam - leaving fullscreen, minimising, switching
+  // away. When end_on_exit is on this is not a strike, it is the end of
+  // the paper: recorded, submitted, done.
+  //
+  // It is deliberately harsh, and it is a setting rather than a rule
+  // because it has a real false-positive problem: on a phone, an
+  // incoming call minimises the browser through no fault of the
+  // student. Turn it off and these cost a strike like anything else.
+  function leftTheExam(kind, detail){
+    if(!EXAM.live || EXAM.done) return;
+
+    if(!EXAM.cfg.end_on_exit) return trip(kind, detail);
+
+    // Record it before submitting, but do not make the student wait on
+    // the round trip - the paper closes either way.
+    logViolation(kind, detail);
+    finishExam(true, 'left-exam:' + kind);
+
+    showWarn({
+      title: UI[lang].endedTitle,
+      body:  UI[lang]['viol_' + kind] || UI[lang].viol_generic,
+      count: UI[lang].endedBody,
+      okKey: 'okBtn', danger:true, onOk:null
+    });
+  }
+
+  // Post a violation and hand back the server's running count. Kept
+  // separate from trip() so an exit can be recorded without also going
+  // through the warn-and-count path.
+  async function logViolation(kind, detail){
+    const sb = examSb();
+    if(!sb || !EXAM.attempt) return null;
+    try{
+      const { data, error } = await sb.rpc('exam_log_violation', {
+        p_attempt:EXAM.attempt, p_token:EXAM.token,
+        p_kind:kind, p_detail:detail || ''
+      });
+      if(error) throw error;
+      return data;
+    }catch(e){ return null; }   // logging must never break the exam itself
+  }
+
   // One violation. Logged server-side; the count that comes back is the
   // one shown, so a student cannot reset it by reloading.
   async function trip(kind, detail){
@@ -3495,30 +3608,22 @@
     if(now - EXAM.lastTrip < 1200) return;
     EXAM.lastTrip = now;
 
-    const sb = examSb();
-    if(!sb) return;
+    const data = await logViolation(kind, detail);
+    if(!data) return;
 
-    try{
-      const { data, error } = await sb.rpc('exam_log_violation', {
-        p_attempt:EXAM.attempt, p_token:EXAM.token,
-        p_kind:kind, p_detail:detail || ''
+    EXAM.strikes = data.count;
+    paintStrikes();
+
+    if(data.over){
+      finishExam(true, 'violations:' + kind);
+      showWarn({
+        title: UI[lang].strikeOutTitle,
+        body:  UI[lang].strikeOutBody,
+        okKey: 'okBtn', danger:true, onOk:null
       });
-      if(error) throw error;
-
-      EXAM.strikes = data.count;
-      paintStrikes();
-
-      if(data.over){
-        finishExam(true, 'violations:' + kind);
-        showWarn({
-          title: UI[lang].strikeOutTitle,
-          body:  UI[lang].strikeOutBody,
-          okKey: 'okBtn', danger:true, onOk:null
-        });
-      }else{
-        warnStrike(kind, data.count, data.max);
-      }
-    }catch(e){ /* logging must never break the exam itself */ }
+    }else{
+      warnStrike(kind, data.count, data.max);
+    }
   }
 
   function paintStrikes(){

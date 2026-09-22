@@ -610,6 +610,15 @@ create table if not exists public.exam_settings (
 
 insert into public.exam_settings (id) values (1) on conflict (id) do nothing;
 
+-- Upgrade for databases that already have the exam half installed.
+--
+-- When on, leaving fullscreen or minimising the window does not cost a
+-- strike - it ends the paper there and then. Strict by design, but read
+-- the warning in SETUP.md before using it on phones: an incoming call
+-- can minimise the browser through no fault of the student.
+alter table public.exam_settings
+  add column if not exists end_on_exit boolean not null default true;
+
 -- The question bank. qtype decides which columns matter:
 --   mcq       -> options (jsonb), auto-graded on submit
 --   written   -> model_answer, graded by hand
@@ -901,7 +910,8 @@ begin
         'max_violations',     v_cfg.max_violations,
         'require_fullscreen', v_cfg.require_fullscreen,
         'block_copy',         v_cfg.block_copy,
-        'detect_tab_switch',  v_cfg.detect_tab_switch
+        'detect_tab_switch',  v_cfg.detect_tab_switch,
+        'end_on_exit',        v_cfg.end_on_exit
       ),
       'questions',  public.exam_paper(v_att.id)
     );
@@ -990,7 +1000,8 @@ begin
       'max_violations',     v_cfg.max_violations,
       'require_fullscreen', v_cfg.require_fullscreen,
       'block_copy',         v_cfg.block_copy,
-      'detect_tab_switch',  v_cfg.detect_tab_switch
+      'detect_tab_switch',  v_cfg.detect_tab_switch,
+      'end_on_exit',        v_cfg.end_on_exit
     ),
     'questions',  public.exam_paper(v_id)
   );

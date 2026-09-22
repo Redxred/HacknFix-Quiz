@@ -1111,6 +1111,18 @@
           <label><input type="checkbox" id="exsFullscreen" style="width:auto;margin-right:7px;vertical-align:-2px;">Require fullscreen</label>
         </div>
         <div class="field">
+          <label><input type="checkbox" id="exsEndOnExit" style="width:auto;margin-right:7px;vertical-align:-2px;"><strong>Leaving fullscreen or minimising ends the exam immediately</strong></label>
+          <div class="sub" style="margin:4px 0 0;">
+            No warning and no strike — the paper is submitted the moment the student
+            leaves. Students are told this in the rules before they start.
+            <strong>Read this before using it on phones:</strong> an incoming call or a
+            notification can minimise the browser through no fault of the student, and
+            they will lose their paper for it. For a phone-based exam, turn this off and
+            let these cost a strike instead, so a student gets a warning rather than an
+            ending. Switch away with this off and it counts toward the limit above.
+          </div>
+        </div>
+        <div class="field">
           <label><input type="checkbox" id="exsBlockCopy" style="width:auto;margin-right:7px;vertical-align:-2px;">Block copy, cut, paste and right-click</label>
         </div>
         <div class="field">
@@ -3253,6 +3265,7 @@
     $('exsMaxViol').value          = data.max_violations;
     $('exsPass').value             = data.pass_percent;
     $('exsFullscreen').checked     = data.require_fullscreen;
+    $('exsEndOnExit').checked      = data.end_on_exit;
     $('exsBlockCopy').checked      = data.block_copy;
     $('exsTabSwitch').checked      = data.detect_tab_switch;
     $('exsShuffleQ').checked       = data.shuffle_questions;
@@ -3295,6 +3308,7 @@
       max_violations:          n('exsMaxViol', 1, 20, 3),
       pass_percent:            n('exsPass', 0, 100, 40),
       require_fullscreen:      $('exsFullscreen').checked,
+      end_on_exit:             $('exsEndOnExit').checked,
       block_copy:              $('exsBlockCopy').checked,
       detect_tab_switch:       $('exsTabSwitch').checked,
       shuffle_questions:       $('exsShuffleQ').checked,

@@ -65,7 +65,7 @@ window.HACKNFIX_CONFIG = {
 
 ## Step 4 — Create your admin login
 
-1. In Supabase go to **w* → **Users** → **Add user** →
+1. In Supabase go to **Authentication** → **Users** → **Add user** →
    *Create new user*.
 2. Enter your email and a strong password. Tick **Auto Confirm User**.
 3. Then go to **Authentication** → **Sign In / Providers** → **Email** and
@@ -195,12 +195,21 @@ questions, the same answers and the original clock still running.
 Be clear-eyed about this, because it matters when you are deciding whether
 to fail someone.
 
-**The browser-side blocks are a deterrent, not a lock.** Copy, cut, paste,
-right-click, text selection, F12, Ctrl+Shift+I, Ctrl+U, Ctrl+P and Ctrl+S
-are all blocked, the exam runs fullscreen, and switching tabs or leaving
-fullscreen is detected. A student who knows their way around developer
-tools can defeat every one of these. Anything running in a page the
-student controls can be turned off by the student.
+**The browser-side blocks are a deterrent, not a lock.** Blocked during the
+exam: copy, cut and paste (as events, as Ctrl+C / Ctrl+X / Ctrl+V, and as
+the older Ctrl+Insert / Shift+Insert pair), select-all outside the answer
+box, right-click, drag, text selection anywhere but the answer box, F12,
+Ctrl+Shift+I / J / C, Ctrl+U, Ctrl+P and Ctrl+S. A cancelled copy also has
+the clipboard overwritten with an empty string, so nothing is left staged
+from the attempt. The exam runs fullscreen, and leaving it is caught.
+
+The student can still select and edit inside their own answer box — Ctrl+A
+works there, because they need it to rewrite what they typed — but copying
+text *out* of the page is blocked everywhere, that box included.
+
+A student who knows their way around developer tools can defeat every one
+of these. Anything running in a page the student controls can be turned off
+by the student.
 
 **These parts hold, because they are in the database:**
 
@@ -219,10 +228,30 @@ So a student who bypasses the copy block still leaves a trail. When you open
 their paper you see the violation log: what they did, and when. Three
 violations (configurable) submits the paper automatically and flags it.
 
-A fair warning about false positives: on a phone, an incoming call or a
-notification can steal focus and count as a tab switch through no fault of
-the student. If your students sit the exam on phones, raise the violation
-limit, or set it to log quietly and judge the log yourself.
+### Leaving the exam ends it
+
+Separate from the strike system, and **on by default**: if a student leaves
+fullscreen or minimises the window, the paper is submitted there and then.
+No warning, no strike. They are told this in the rules before they start,
+and the reason is recorded against the paper.
+
+The switch is **Leaving fullscreen or minimising ends the exam immediately**
+under Exam settings.
+
+**Think carefully before leaving this on for a phone-based exam.** The
+browser cannot tell the difference between a student deliberately switching
+away and an incoming call minimising the browser for them. With this on, a
+phone call costs a student their paper. For a phone exam, turn it off: the
+same events then cost a strike, so the student gets a warning and you still
+get the full log to judge.
+
+Note that losing focus *without* the window being hidden — clicking the
+address bar, say — is always only a strike. It is far too twitchy to end a
+paper over.
+
+A fair warning about false positives generally: if your students sit the
+exam on phones, raise the violation limit as well, or set everything to log
+quietly and judge the log yourself.
 
 ### The admin tabs
 
@@ -247,7 +276,7 @@ export the lot to CSV.
 
 **Exam settings** — how many questions of each type, seconds per MCQ, minutes
 for the written and practical sections, the pass mark, the violation limit,
-and every anti-cheat switch individually. It shows you the total time a paper
+whether leaving the exam ends it, and every anti-cheat switch individually. It shows you the total time a paper
 adds up to as you change the numbers, so a 20-question MCQ section does not
 quietly become a four-hour exam. Settings apply to papers started after you
 save; a paper already running keeps the rules it began under.
