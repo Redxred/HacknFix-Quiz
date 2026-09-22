@@ -154,6 +154,112 @@ Changes apply the next time someone loads the quiz page.
 
 ---
 
+## Part 2 — the final exam
+
+The site now opens on a choice of two things:
+
+- **Awareness quiz** — the original, open to everyone, unchanged.
+- **Final exam** — a graded exam for cyber security / ethical hacking
+  students, behind a registration form.
+
+### Turning it on
+
+1. Re-run `supabase-schema.sql` (SQL Editor → paste → Run). It adds the
+   exam tables and leaves your quiz, results, settings and feedback
+   exactly as they are.
+2. In the admin panel, open **Exam settings** and tick **The exam is
+   open**. Until you do, the Final Exam card shows as closed.
+
+The schema seeds five MCQs, two written questions and two practical
+tasks so you can try a paper immediately. Replace them under **Exam
+questions**.
+
+### How a paper works
+
+A student fills in **name, student ID, batch, email and phone** — all five
+are required — ticks the rules box, and the paper starts. They get a random
+draw from your active questions, in three sections:
+
+- **MCQ** — one question at a time with a countdown, 30 seconds by default.
+  When it runs out the paper moves on by itself and there is no going back.
+  Marked automatically the moment the paper is submitted.
+- **Written** — long answers, marked by you.
+- **Practical** — the same, with a monospaced box for commands. Marked by you.
+
+Answers save as they are typed. A student who is knocked offline, or who
+closes the tab by accident, gets back into the same paper with the same
+questions, the same answers and the original clock still running.
+
+### Anti-cheating — what actually works
+
+Be clear-eyed about this, because it matters when you are deciding whether
+to fail someone.
+
+**The browser-side blocks are a deterrent, not a lock.** Copy, cut, paste,
+right-click, text selection, F12, Ctrl+Shift+I, Ctrl+U, Ctrl+P and Ctrl+S
+are all blocked, the exam runs fullscreen, and switching tabs or leaving
+fullscreen is detected. A student who knows their way around developer
+tools can defeat every one of these. Anything running in a page the
+student controls can be turned off by the student.
+
+**These parts hold, because they are in the database:**
+
+- Correct answers are never sent to the browser. There is nothing in the
+  page to read, no matter what tools they open. This is the important one.
+- The clock is the server's. Changing the device clock does nothing.
+- Every paper carries a secret token. Knowing another student's attempt id
+  gets you nothing — you cannot read their paper, write into it or submit it.
+- One sitting per student ID, enforced on insert rather than in the page.
+- Questions and options are shuffled per student, so two people side by side
+  are not on the same question at the same time.
+- **Every violation is logged with a server timestamp, whether or not the
+  block itself worked.** This is what you actually mark on.
+
+So a student who bypasses the copy block still leaves a trail. When you open
+their paper you see the violation log: what they did, and when. Three
+violations (configurable) submits the paper automatically and flags it.
+
+A fair warning about false positives: on a phone, an incoming call or a
+notification can steal focus and count as a tab switch through no fault of
+the student. If your students sit the exam on phones, raise the violation
+limit, or set it to log quietly and judge the log yourself.
+
+### The admin tabs
+
+**Exam questions** — the bank. Each question is MCQ, written or practical,
+carries its own marks, and can be hidden without deleting. MCQs need exactly
+one correct option. Written and practical questions take **marking notes**:
+what a full-mark answer contains. Only you ever see those, and they sit
+beside the student's answer while you mark, so you are not re-deciding the
+standard on every paper. Exam questions are English only.
+
+**Exam results** — every paper, with the MCQ section already marked. The tab
+shows a red count of papers waiting on you. Open one to:
+
+- read the violation log for that student,
+- see every MCQ with their answer and the correct one side by side,
+- mark each written and practical answer out of its marks, with optional
+  feedback,
+- press **Finish marking** once everything has a mark.
+
+Search by name, student ID, batch or email; filter to just the flagged ones;
+export the lot to CSV.
+
+**Exam settings** — how many questions of each type, seconds per MCQ, minutes
+for the written and practical sections, the pass mark, the violation limit,
+and every anti-cheat switch individually. It shows you the total time a paper
+adds up to as you change the numbers, so a 20-question MCQ section does not
+quietly become a four-hour exam. Settings apply to papers started after you
+save; a paper already running keeps the rules it began under.
+
+### A note on marks
+
+The student sees their MCQ score straight away, and is told the rest is
+awaiting marking. They are never shown which MCQs they got wrong — that
+would hand the answer key to the next student to sit the paper.
+
+---
+
 ## What the dashboard collects
 
 One row per visitor, written when the page loads. Deliberately **no IP
