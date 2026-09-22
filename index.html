@@ -731,6 +731,199 @@
     .card{padding:20px 16px;}
     .hero-title{font-size:1.4rem;}
   }
+
+  /* ============================================================
+     PART 2 - FINAL EXAM
+     Reuses the quiz's tokens so both halves stay one product.
+     ============================================================ */
+
+  /* ---------- Mode chooser ---------- */
+  .mode-grid{display:grid;gap:14px;margin-top:22px;}
+  @media(min-width:640px){ .mode-grid{grid-template-columns:1fr 1fr;} }
+
+  .mode-card{
+    position:relative;text-align:left;cursor:pointer;
+    background:var(--card);border:1.5px solid var(--border);
+    border-radius:var(--radius-lg);padding:22px 20px;
+    display:flex;flex-direction:column;gap:10px;
+    transition:transform .16s ease, border-color .16s ease, box-shadow .2s ease;
+    font:inherit;color:inherit;width:100%;
+  }
+  .mode-card:hover:not(:disabled){
+    transform:translateY(-3px);border-color:var(--primary);box-shadow:var(--shadow);
+  }
+  .mode-card:disabled{opacity:.6;cursor:not-allowed;}
+  .mode-card .mode-ic{
+    width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+    background:var(--chip-bg);color:var(--primary);flex:none;
+  }
+  .mode-card .mode-ic svg{width:24px;height:24px;}
+  .mode-card h3{margin:0;font-size:1.12rem;font-weight:700;letter-spacing:-.01em;}
+  .mode-card p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.55;}
+  .mode-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .mode-tag{
+    font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:999px;
+    background:var(--chip-bg);color:var(--muted);
+  }
+  .mode-card.is-exam .mode-ic{background:#EEF2FF;color:#4338CA;}
+  html[data-theme="dark"] .mode-card.is-exam .mode-ic{background:#232A46;color:#A5B4FC;}
+  .mode-tag.live{background:var(--success-bg);color:var(--primary);}
+  .mode-tag.shut{background:var(--danger-bg);color:var(--danger);}
+
+  /* ---------- Exam registration ---------- */
+  .exam-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .exam-head .mode-ic{width:40px;height:40px;border-radius:12px;background:#EEF2FF;color:#4338CA;display:grid;place-items:center;}
+  html[data-theme="dark"] .exam-head .mode-ic{background:#232A46;color:#A5B4FC;}
+  .exam-head .mode-ic svg{width:21px;height:21px;}
+
+  .req::after{content:" *";color:var(--danger);font-weight:700;}
+
+  .rules-box{
+    border:1px solid var(--border);border-radius:var(--radius-md);
+    padding:14px 16px;margin:18px 0;background:var(--bg-soft);
+  }
+  .rules-box h4{margin:0 0 8px;font-size:.92rem;font-weight:700;}
+  .rules-box ul{margin:0;padding-left:18px;}
+  .rules-box li{font-size:.86rem;color:var(--muted);line-height:1.7;}
+  .rules-agree{display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:.87rem;cursor:pointer;}
+  .rules-agree input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--primary);}
+
+  /* ---------- Exam runner ---------- */
+  .exam-bar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border);
+  }
+  .sec-pill{
+    font-size:.74rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    padding:5px 11px;border-radius:999px;background:var(--chip-bg);color:var(--muted);
+  }
+  .sec-pill.on{background:var(--primary);color:var(--on-primary);}
+  .exam-spacer{flex:1;}
+
+  .exam-clock{
+    display:flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums;
+    font-weight:700;font-size:.95rem;padding:5px 12px;border-radius:999px;
+    background:var(--chip-bg);color:var(--text);
+  }
+  .exam-clock svg{width:15px;height:15px;opacity:.7;}
+  .exam-clock.warn{background:#FEF3C7;color:#92400E;}
+  .exam-clock.danger{background:var(--danger-bg);color:var(--danger);animation:pulseSoft 1s ease-in-out infinite;}
+  html[data-theme="dark"] .exam-clock.warn{background:#3A2E12;color:#FCD34D;}
+  @keyframes pulseSoft{50%{opacity:.62;}}
+
+  .strike-chip{
+    display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;
+    padding:5px 11px;border-radius:999px;background:var(--danger-bg);color:var(--danger);
+  }
+
+  .q-marks{
+    display:inline-block;font-size:.73rem;font-weight:700;padding:3px 9px;
+    border-radius:999px;background:var(--chip-bg);color:var(--muted);margin-bottom:10px;
+  }
+  .q-hint{font-size:.85rem;color:var(--muted);margin:10px 0 0;font-style:italic;line-height:1.6;}
+
+  /* The MCQ countdown is its own bar so it reads as urgent even on a
+     small screen where the ring is easy to miss. */
+  .mcq-timer{height:5px;border-radius:999px;background:var(--border);overflow:hidden;margin-bottom:16px;}
+  .mcq-timer i{
+    display:block;height:100%;width:100%;border-radius:999px;background:var(--primary);
+    transition:width 1s linear, background-color .3s ease;
+  }
+  .mcq-timer.warn i{background:#D97706;}
+  .mcq-timer.danger i{background:var(--danger);transition:width 1s linear;}
+
+  /* The quiz reveals the answer the moment you tap, so it only ever
+     styles .correct / .incorrect. An exam reveals nothing, so a picked
+     option needs its own neutral state. */
+  .option.selected{
+    border-color:var(--primary);
+    background:var(--success-bg);
+    box-shadow:inset 0 0 0 1px var(--primary);
+    font-weight:600;
+  }
+  .option.selected::after{
+    content:"";position:absolute;right:14px;top:50%;
+    width:9px;height:9px;border-radius:50%;background:var(--primary);
+    transform:translateY(-50%);
+  }
+  #exOptions .option{position:relative;padding-right:36px;}
+
+  .exam-ta{
+    width:100%;min-height:200px;resize:vertical;font:inherit;font-size:.95rem;
+    line-height:1.7;padding:14px 15px;border-radius:var(--radius-md);
+    border:1.5px solid var(--border);background:var(--card);color:var(--text);
+    -webkit-user-select:text;user-select:text;
+  }
+  .exam-ta:focus{outline:none;border-color:var(--primary);}
+  .exam-ta.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88rem;}
+
+  .ta-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;font-size:.78rem;color:var(--muted);}
+  .save-state{display:flex;align-items:center;gap:6px;}
+  .save-state i{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none;}
+  .save-state.saved i{background:var(--accent);}
+  .save-state.saving i{background:#D97706;animation:pulseSoft .9s ease-in-out infinite;}
+  .save-state.failed i{background:var(--danger);}
+
+  /* ---------- Warning overlay ---------- */
+  .warn-back{
+    position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;
+    background:rgba(12,20,16,.72);backdrop-filter:blur(4px);
+    animation:fadeIn .18s ease-out;
+  }
+  @keyframes fadeIn{from{opacity:0;}}
+  .warn-card{
+    background:var(--card);border-radius:var(--radius-lg);padding:28px 24px;
+    max-width:420px;width:100%;text-align:center;box-shadow:var(--shadow);
+    border-top:4px solid var(--danger);
+    animation:popIn .3s cubic-bezier(.22,1.2,.36,1) both;
+  }
+  .warn-card .wic{
+    width:54px;height:54px;margin:0 auto 14px;border-radius:50%;
+    display:grid;place-items:center;background:var(--danger-bg);color:var(--danger);
+  }
+  .warn-card .wic svg{width:28px;height:28px;}
+  .warn-card h3{margin:0 0 8px;font-size:1.15rem;font-weight:700;color:var(--danger);}
+  .warn-card p{margin:0 0 6px;font-size:.92rem;color:var(--muted);line-height:1.6;}
+  .warn-count{font-weight:700;color:var(--text);margin:12px 0 18px;font-size:.95rem;}
+
+  /* ---------- Result ---------- */
+  .exam-done-ic{
+    width:70px;height:70px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;
+    background:var(--success-bg);color:var(--primary);
+    animation:popIn .5s cubic-bezier(.22,1.2,.36,1) both;
+  }
+  .exam-done-ic svg{width:36px;height:36px;}
+  .exam-done-ic.flagged{background:var(--danger-bg);color:var(--danger);}
+
+  .score-rows{margin:20px 0;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;}
+  .score-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;font-size:.92rem;}
+  .score-row + .score-row{border-top:1px solid var(--border);}
+  .score-row .lbl{color:var(--muted);}
+  .score-row .val{font-weight:700;font-variant-numeric:tabular-nums;}
+  .score-row.pending .val{color:var(--muted);font-weight:600;font-style:italic;}
+  .score-row.total{background:var(--bg-soft);font-weight:700;}
+
+  .ref-code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.85rem;background:var(--bg-soft);border:1px dashed var(--border);
+    border-radius:var(--radius-sm);padding:10px 12px;margin-top:16px;
+    word-break:break-all;color:var(--muted);
+  }
+
+  /* While the exam is live, nothing but the answer boxes is selectable.
+     This is deterrence, not security - see the note in the JS. */
+  body.exam-live{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  body.exam-live input,
+  body.exam-live textarea{-webkit-user-select:text;user-select:text;}
+  body.exam-live .topbar .icon-btn:not(#examQuitBtn){display:none;}
+
+  @media print{
+    body.exam-live main{display:none !important;}
+    body.exam-live::after{
+      content:"Printing is disabled during the exam.";
+      display:block;padding:40px;font-size:18px;text-align:center;
+    }
+  }
 </style>
 </head>
 <body data-lang="bn">
@@ -761,8 +954,164 @@
 
 <main>
 
+  <!-- SCREEN 0: PICK A MODE -->
+  <section id="screen-choose" class="card">
+    <div class="welcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
+    </div>
+    <h1 class="hero-title" data-t="chooseTitle">আপনি কী করতে চান?</h1>
+    <p class="hero-sub" data-t="chooseSub">দুটি অংশ আছে — সবার জন্য সচেতনতা কুইজ, আর শিক্ষার্থীদের জন্য ফাইনাল পরীক্ষা।</p>
+
+    <div class="mode-grid">
+      <button class="mode-card" id="pickQuiz" type="button">
+        <span class="mode-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
+        </span>
+        <h3 data-t="modeQuizTitle">সচেতনতা কুইজ</h3>
+        <p data-t="modeQuizSub">ফেসবুক, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে পারেন কিনা দেখুন। সবার জন্য উন্মুক্ত।</p>
+        <span class="mode-meta">
+          <span class="mode-tag" data-t="modeQuizT1">১০টি প্রশ্ন</span>
+          <span class="mode-tag" data-t="modeQuizT2">৩ মিনিট</span>
+          <span class="mode-tag" data-t="modeQuizT3">লিডারবোর্ড</span>
+        </span>
+      </button>
+
+      <button class="mode-card is-exam" id="pickExam" type="button">
+        <span class="mode-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v6h6M8 13h8M8 17h5"/></svg>
+        </span>
+        <h3 data-t="modeExamTitle">ফাইনাল পরীক্ষা</h3>
+        <p data-t="modeExamSub">সাইবার সিকিউরিটি ও এথিক্যাল হ্যাকিং শিক্ষার্থীদের জন্য। এমসিকিউ, লিখিত ও ব্যবহারিক।</p>
+        <span class="mode-meta">
+          <span class="mode-tag" data-t="modeExamT1">এমসিকিউ + লিখিত + ব্যবহারিক</span>
+          <span class="mode-tag" id="examOpenTag" data-t="modeExamT2">নিবন্ধন লাগবে</span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: EXAM REGISTRATION -->
+  <section id="screen-exam-reg" class="card hidden">
+    <div class="exam-head">
+      <span class="mode-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v6h6M8 13h8M8 17h5"/></svg>
+      </span>
+      <div>
+        <h1 class="hero-title" id="examTitle" style="margin:0;font-size:1.35rem;">Final Exam</h1>
+        <p class="hero-sub" id="examSub" style="margin:2px 0 0;font-size:.88rem;">Cyber Security &amp; Ethical Hacking</p>
+      </div>
+    </div>
+
+    <p class="hero-sub" data-t="examRegSub" style="margin-top:14px;">নিচের সব তথ্য পূরণ করা বাধ্যতামূলক। এগুলো আপনার খাতার সাথে যুক্ত থাকবে।</p>
+
+    <div class="field">
+      <label class="req" data-t="lblExName">পূর্ণ নাম</label>
+      <input type="text" id="exName" autocomplete="name" maxlength="80">
+      <div class="field-live hidden" id="exNameLive"></div>
+    </div>
+    <div class="field">
+      <label class="req" data-t="lblExId">স্টুডেন্ট আইডি</label>
+      <input type="text" id="exId" autocomplete="off" maxlength="40" style="text-transform:uppercase;">
+      <div class="field-live hidden" id="exIdLive"></div>
+    </div>
+    <div class="field">
+      <label class="req" data-t="lblExBatch">ব্যাচ</label>
+      <input type="text" id="exBatch" autocomplete="off" maxlength="40">
+      <div class="field-live hidden" id="exBatchLive"></div>
+    </div>
+    <div class="field">
+      <label class="req" data-t="lblExEmail">ইমেইল</label>
+      <input type="email" id="exEmail" autocomplete="email" maxlength="120">
+      <div class="field-live hidden" id="exEmailLive"></div>
+    </div>
+    <div class="field">
+      <label class="req" data-t="lblExPhone">মোবাইল নম্বর</label>
+      <input type="tel" id="exPhone" inputmode="numeric" pattern="[0-9]*" maxlength="11" autocomplete="tel" placeholder="01XXXXXXXXX">
+      <div class="field-live hidden" id="exPhoneLive"></div>
+    </div>
+
+    <div class="rules-box">
+      <h4 data-t="rulesTitle">পরীক্ষার নিয়ম</h4>
+      <ul id="rulesList"></ul>
+      <label class="rules-agree">
+        <input type="checkbox" id="exAgree">
+        <span data-t="rulesAgree">আমি নিয়মগুলো পড়েছি এবং মেনে চলতে সম্মত আছি।</span>
+      </label>
+    </div>
+
+    <div class="closed-note hidden" id="examClosedNote"></div>
+
+    <div id="examStartRow">
+      <button class="btn btn-primary" id="examStartBtn" type="button" data-t="examStartBtn">পরীক্ষা শুরু করুন</button>
+      <button class="btn btn-ghost" id="examBackBtn" type="button" data-t="backBtn" style="margin-top:10px;">ফিরে যান</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: EXAM RUNNER -->
+  <section id="screen-exam" class="card hidden">
+    <div class="exam-bar">
+      <span class="sec-pill" id="pillMcq">MCQ</span>
+      <span class="sec-pill" id="pillWritten" data-t="secWritten">লিখিত</span>
+      <span class="sec-pill" id="pillPractical" data-t="secPractical">ব্যবহারিক</span>
+      <span class="exam-spacer"></span>
+      <span class="strike-chip hidden" id="strikeChip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v5M12 17.5v.5"/><path d="M10.3 3.9L2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4A1.5 1.5 0 0 0 21.5 18L13.7 3.9a1.5 1.5 0 0 0-2.6 0z"/></svg>
+        <span id="strikeText">0/3</span>
+      </span>
+      <span class="exam-clock" id="examClock">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span id="examClockText">--:--</span>
+      </span>
+    </div>
+
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="exProgress" style="width:0%"></div></div>
+      <div class="progress-label"><span id="exNum">1</span>/<span id="exTotal">1</span></div>
+    </div>
+
+    <div class="mcq-timer hidden" id="mcqTimer"><i id="mcqTimerFill"></i></div>
+
+    <div class="q-marks" id="exMarks">1 mark</div>
+    <div class="q-text" id="exPrompt"></div>
+    <p class="q-hint hidden" id="exHint"></p>
+
+    <div class="options" id="exOptions"></div>
+
+    <div id="exTextWrap" class="hidden">
+      <textarea class="exam-ta" id="exAnswer" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      <div class="ta-foot">
+        <span class="save-state" id="exSaveState"><i></i><span id="exSaveText"></span></span>
+        <span id="exWordCount"></span>
+      </div>
+    </div>
+
+    <div class="next-row" id="exNextRow" style="display:flex;gap:10px;">
+      <button class="btn btn-ghost hidden" id="exPrevBtn" type="button" data-t="prevBtn" style="flex:1;">আগের প্রশ্ন</button>
+      <button class="btn btn-primary" id="exNextBtn" type="button" data-t="nextBtn" style="flex:2;">পরবর্তী প্রশ্ন</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 6: EXAM SUBMITTED -->
+  <section id="screen-exam-done" class="card hidden">
+    <div class="exam-done-ic" id="exDoneIc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div class="result-level" id="exDoneTitle"></div>
+    <p class="hero-sub" id="exDoneSub" style="margin-top:6px;"></p>
+
+    <div class="score-rows" id="exScoreRows"></div>
+
+    <p class="hero-sub" id="exPendingNote" style="font-size:.87rem;"></p>
+    <div class="ref-code hidden" id="exRef"></div>
+
+    <div class="action-row" style="margin-top:20px;">
+      <button class="btn btn-ghost" id="exHomeBtn" type="button" data-t="homeBtn">শুরুতে ফিরুন</button>
+    </div>
+  </section>
+
+
   <!-- SCREEN 1: REGISTER -->
-  <section id="screen-register" class="card">
+  <section id="screen-register" class="card hidden">
     <div class="welcome-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
     </div>
@@ -1228,6 +1577,208 @@
 
   const sb = window.HacknFix && window.HacknFix.client;
 
+  // ---------- i18n: the exam half ----------
+  // Kept out of the big UI literal above so the two parts can be edited
+  // without stepping on each other. Exam QUESTIONS are English-only by
+  // design; this is only the furniture around them.
+  Object.assign(UI.bn, {
+    chooseTitle:"আপনি কী করতে চান?",
+    chooseSub:"দুটি অংশ আছে — সবার জন্য সচেতনতা কুইজ, আর শিক্ষার্থীদের জন্য ফাইনাল পরীক্ষা।",
+    modeQuizTitle:"সচেতনতা কুইজ",
+    modeQuizSub:"ফেসবুক, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে পারেন কিনা দেখুন। সবার জন্য উন্মুক্ত।",
+    modeQuizT1:"১০টি প্রশ্ন", modeQuizT2:"৩ মিনিট", modeQuizT3:"লিডারবোর্ড",
+    modeExamTitle:"ফাইনাল পরীক্ষা",
+    modeExamSub:"সাইবার সিকিউরিটি ও এথিক্যাল হ্যাকিং শিক্ষার্থীদের জন্য। এমসিকিউ, লিখিত ও ব্যবহারিক।",
+    modeExamT1:"এমসিকিউ + লিখিত + ব্যবহারিক",
+    modeExamT2:"নিবন্ধন লাগবে",
+    examOpenNow:"এখন চলছে",
+    examShut:"এখন বন্ধ",
+    examNotInstalled:"এখনো সেট-আপ হয়নি",
+
+    examRegSub:"নিচের সব তথ্য পূরণ করা বাধ্যতামূলক। এগুলো আপনার খাতার সাথে যুক্ত থাকবে।",
+    lblExName:"পূর্ণ নাম", lblExId:"স্টুডেন্ট আইডি", lblExBatch:"ব্যাচ",
+    lblExEmail:"ইমেইল", lblExPhone:"মোবাইল নম্বর",
+    errName:"পুরো নাম লিখুন", errId:"স্টুডেন্ট আইডি লিখুন",
+    errBatch:"ব্যাচ লিখুন", errEmail:"সঠিক ইমেইল দিন",
+    errPhone:"১১ সংখ্যার সঠিক নম্বর দিন",
+    errFix:"লাল দাগ দেওয়া ঘরগুলো ঠিক করুন",
+    errAgree:"নিয়মে সম্মতি দিন",
+    errBlank:"উত্তর লিখে তারপর এগোন",
+
+    rulesTitle:"পরীক্ষার নিয়ম",
+    rulesAgree:"আমি নিয়মগুলো পড়েছি এবং মেনে চলতে সম্মত আছি।",
+    ruleMcqTime:"প্রতিটি এমসিকিউ প্রশ্নে {n} সেকেন্ড। সময় শেষ হলে নিজে থেকেই পরের প্রশ্নে চলে যাবে।",
+    prevBtn:"আগের প্রশ্ন",
+    ruleNoBack:"এমসিকিউ প্রশ্নে একবার পেরিয়ে গেলে আর ফিরে যাওয়া যাবে না। লিখিত ও ব্যবহারিক অংশে ফিরে গিয়ে উত্তর বদলানো যাবে।",
+    ruleNoCopy:"কপি, কাট ও পেস্ট বন্ধ থাকবে।",
+    ruleNoTab:"অন্য ট্যাব বা অ্যাপে গেলে তা রেকর্ড হবে।",
+    ruleFullscreen:"পরীক্ষা ফুলস্ক্রিনে চলবে; বের হলে তা রেকর্ড হবে।",
+    ruleStrikes:"{n} বার নিয়ম ভাঙলে খাতা নিজে থেকেই জমা হয়ে যাবে।",
+    ruleAutosave:"আপনার উত্তর লেখার সাথে সাথেই সেভ হয়।",
+
+    examStartBtn:"পরীক্ষা শুরু করুন",
+    examStarting:"শুরু হচ্ছে…",
+    examSubmitBtn:"খাতা জমা দিন",
+    backBtn:"ফিরে যান", homeBtn:"শুরুতে ফিরুন",
+    okBtn:"ঠিক আছে", cancelBtn:"বাতিল", warnBack:"পরীক্ষায় ফিরুন",
+
+    secMcq:"এমসিকিউ", secWritten:"লিখিত", secPractical:"ব্যবহারিক",
+    markOne:"নম্বর", markMany:"নম্বর",
+    words:"শব্দ",
+    phWritten:"এখানে আপনার উত্তর লিখুন…",
+    phPractical:"ধাপগুলো ও কমান্ডগুলো এক এক করে লিখুন…",
+    save_saving:"সেভ হচ্ছে…", save_saved:"সেভ হয়েছে", save_failed:"সেভ হয়নি", save_idle:"",
+
+    mcqTimeout:"সময় শেষ — পরের প্রশ্নে যাচ্ছি",
+    examResumed:"আগের পরীক্ষা যেখানে ছিল সেখান থেকে চলছে",
+
+    confirmTitle:"খাতা জমা দেবেন?",
+    confirmDone:"সব প্রশ্নের উত্তর দেওয়া হয়েছে। জমা দিলে আর বদলানো যাবে না।",
+    confirmLeft:"{n}টি প্রশ্ন এখনো খালি। জমা দিলে আর বদলানো যাবে না।",
+
+    warnTitle:"সতর্কতা",
+    warnCount:"এটি {n} নম্বর সতর্কতা, সর্বোচ্চ {m}টি।",
+    viol_copy:"পরীক্ষা চলাকালে কপি করা যাবে না।",
+    viol_paste:"পরীক্ষা চলাকালে পেস্ট করা যাবে না।",
+    viol_devtools:"ডেভেলপার টুল খোলার চেষ্টা রেকর্ড হয়েছে।",
+    viol_viewsource:"পেজের সোর্স দেখার চেষ্টা রেকর্ড হয়েছে।",
+    viol_print:"প্রিন্ট করা বন্ধ আছে।",
+    viol_save:"পেজ সেভ করা বন্ধ আছে।",
+    viol_screenshot:"স্ক্রিনশট নেওয়ার চেষ্টা রেকর্ড হয়েছে।",
+    "viol_tab-switch":"আপনি অন্য ট্যাবে গিয়েছিলেন। পরীক্ষার পাতায় থাকুন।",
+    viol_blur:"পরীক্ষার উইন্ডো থেকে সরে গিয়েছিলেন।",
+    "viol_fullscreen-exit":"ফুলস্ক্রিন থেকে বের হয়েছেন।",
+    viol_generic:"নিয়মভঙ্গ রেকর্ড হয়েছে।",
+
+    strikeOutTitle:"খাতা জমা হয়ে গেছে",
+    strikeOutBody:"অনেকবার নিয়ম ভাঙার কারণে আপনার খাতা নিজে থেকেই জমা হয়ে গেছে। বিস্তারিত আপনার শিক্ষকের কাছে গেছে।",
+    fsUnavailable:"এই ব্রাউজারে ফুলস্ক্রিন কাজ করছে না — পরীক্ষা চালিয়ে যান।",
+
+    doneOk:"খাতা জমা হয়েছে",
+    doneOkSub:"আপনার উত্তরগুলো সংরক্ষিত হয়েছে।",
+    doneTimeUp:"সময় শেষ",
+    doneTimeUpSub:"সময় ফুরিয়ে যাওয়ায় খাতা নিজে থেকেই জমা হয়েছে।",
+    doneFlagged:"খাতা জমা হয়েছে (চিহ্নিত)",
+    doneFlaggedSub:"নিয়মভঙ্গের কারণে খাতা আগেই জমা হয়েছে। শিক্ষক বিষয়টি দেখবেন।",
+    pendingMark:"শিক্ষক দেখবেন",
+    totalSoFar:"এখন পর্যন্ত",
+    pendingNote:"এমসিকিউ অংশের নম্বর সাথে সাথেই এসেছে। লিখিত ও ব্যবহারিক অংশ শিক্ষক হাতে দেখে নম্বর দেবেন।",
+    gradedNote:"আপনার সম্পূর্ণ ফলাফল উপরে দেখানো হয়েছে।",
+    refLabel:"রেফারেন্স:",
+
+    examErrClosed:"পরীক্ষা এখন বন্ধ আছে।",
+    examErrTaken:"এই স্টুডেন্ট আইডিতে একবার পরীক্ষা দেওয়া হয়ে গেছে।",
+    examErrEmpty:"এখনো কোনো প্রশ্ন যোগ করা হয়নি। শিক্ষককে জানান।",
+    examErrName:"নাম লাগবে", examErrId:"স্টুডেন্ট আইডি লাগবে",
+    examErrBatch:"ব্যাচ লাগবে", examErrEmail:"ইমেইল লাগবে",
+    examErrPhone:"মোবাইল নম্বর লাগবে", examErrBadEmail:"ইমেইলটি সঠিক নয়",
+    examErrTime:"সময় শেষ হয়ে গেছে।",
+    examErrDone:"এই খাতা আগেই জমা হয়েছে।",
+    examErrSession:"সেশনটি আর কার্যকর নেই। আবার শুরু করুন।",
+    examErrOffline:"সার্ভারে সংযোগ নেই — পরীক্ষা শুরু করা যাচ্ছে না।",
+    examErrSubmit:"জমা দেওয়া যায়নি",
+    examErrGeneric:"কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+  });
+
+  Object.assign(UI.en, {
+    chooseTitle:"What would you like to do?",
+    chooseSub:"Two parts: an awareness quiz for everyone, and the final exam for students.",
+    modeQuizTitle:"Awareness quiz",
+    modeQuizSub:"See whether you can spot the scams going around on Facebook, bKash and banking apps. Open to everyone.",
+    modeQuizT1:"10 questions", modeQuizT2:"3 minutes", modeQuizT3:"Leaderboard",
+    modeExamTitle:"Final exam",
+    modeExamSub:"For cyber security and ethical hacking students. MCQ, written and practical.",
+    modeExamT1:"MCQ + written + practical",
+    modeExamT2:"Registration required",
+    examOpenNow:"Open now",
+    examShut:"Closed",
+    examNotInstalled:"Not set up yet",
+
+    examRegSub:"Every field below is required. These details are attached to your paper.",
+    lblExName:"Full name", lblExId:"Student ID", lblExBatch:"Batch",
+    lblExEmail:"Email", lblExPhone:"Mobile number",
+    errName:"Enter your full name", errId:"Enter your student ID",
+    errBatch:"Enter your batch", errEmail:"Enter a valid email",
+    errPhone:"Enter a valid 11-digit number",
+    errFix:"Fix the fields marked in red",
+    errAgree:"Please agree to the rules",
+    errBlank:"Write an answer before moving on",
+
+    rulesTitle:"Exam rules",
+    rulesAgree:"I have read the rules and agree to follow them.",
+    ruleMcqTime:"Each MCQ gives you {n} seconds. When it runs out the paper moves on by itself.",
+    prevBtn:"Previous",
+    ruleNoBack:"Once an MCQ has passed you cannot return to it. You can move back and forth freely within the written and practical sections.",
+    ruleNoCopy:"Copy, cut and paste are disabled.",
+    ruleNoTab:"Switching to another tab or app is recorded.",
+    ruleFullscreen:"The exam runs fullscreen; leaving it is recorded.",
+    ruleStrikes:"After {n} violations your paper is submitted automatically.",
+    ruleAutosave:"Your answers save as you type.",
+
+    examStartBtn:"Start the exam",
+    examStarting:"Starting…",
+    examSubmitBtn:"Submit paper",
+    backBtn:"Go back", homeBtn:"Back to start",
+    okBtn:"OK", cancelBtn:"Cancel", warnBack:"Return to exam",
+
+    secMcq:"MCQ", secWritten:"Written", secPractical:"Practical",
+    markOne:"mark", markMany:"marks",
+    words:"words",
+    phWritten:"Type your answer here…",
+    phPractical:"List your steps and commands, one per line…",
+    save_saving:"Saving…", save_saved:"Saved", save_failed:"Not saved", save_idle:"",
+
+    mcqTimeout:"Time up — moving on",
+    examResumed:"Picked up where you left off",
+
+    confirmTitle:"Submit your paper?",
+    confirmDone:"Every question has an answer. You cannot change anything after this.",
+    confirmLeft:"{n} question(s) are still blank. You cannot change anything after this.",
+
+    warnTitle:"Warning",
+    warnCount:"That is warning {n} of {m}.",
+    viol_copy:"Copying is not allowed during the exam.",
+    viol_paste:"Pasting is not allowed during the exam.",
+    viol_devtools:"An attempt to open developer tools was recorded.",
+    viol_viewsource:"An attempt to view the page source was recorded.",
+    viol_print:"Printing is disabled during the exam.",
+    viol_save:"Saving the page is disabled during the exam.",
+    viol_screenshot:"A screenshot attempt was recorded.",
+    "viol_tab-switch":"You switched away from the exam tab. Stay on this page.",
+    viol_blur:"The exam window lost focus.",
+    "viol_fullscreen-exit":"You left fullscreen.",
+    viol_generic:"A rule violation was recorded.",
+
+    strikeOutTitle:"Paper submitted",
+    strikeOutBody:"Your paper was submitted automatically after too many violations. The details have gone to your instructor.",
+    fsUnavailable:"Fullscreen is not available in this browser — carry on with the exam.",
+
+    doneOk:"Paper submitted",
+    doneOkSub:"Your answers have been saved.",
+    doneTimeUp:"Time up",
+    doneTimeUpSub:"The clock ran out, so your paper was submitted automatically.",
+    doneFlagged:"Paper submitted (flagged)",
+    doneFlaggedSub:"Your paper was submitted early because of rule violations. Your instructor will review it.",
+    pendingMark:"Awaiting marking",
+    totalSoFar:"So far",
+    pendingNote:"The MCQ section is marked instantly. Written and practical answers are marked by hand by your instructor.",
+    gradedNote:"Your full result is shown above.",
+    refLabel:"Reference:",
+
+    examErrClosed:"The exam is not open right now.",
+    examErrTaken:"This student ID has already sat the exam.",
+    examErrEmpty:"No questions have been added yet. Tell your instructor.",
+    examErrName:"Your name is required", examErrId:"Student ID is required",
+    examErrBatch:"Batch is required", examErrEmail:"Email is required",
+    examErrPhone:"Mobile number is required", examErrBadEmail:"That email does not look right",
+    examErrTime:"Time is up.",
+    examErrDone:"This paper has already been submitted.",
+    examErrSession:"That session is no longer valid. Please start again.",
+    examErrOffline:"No connection to the server — the exam cannot start.",
+    examErrSubmit:"Could not submit",
+    examErrGeneric:"Something went wrong. Please try again."
+  });
+
   const $ = (id)=>document.getElementById(id);
 
   function shuffle(arr){
@@ -1299,6 +1850,12 @@
     renderFbPrompt();
     if(tickTimer) paintTimer(parseInt(SETTINGS.timer_seconds, 10) || 1);
     if(statsTimer) loadStats();
+    // The exam half keeps its own furniture in sync.
+    if(typeof paintExamChrome === 'function'){
+      paintExamChrome();
+      paintStrikes();
+      if(!$('screen-exam').classList.contains('hidden')) renderExamQuestion();
+    }
   }
   $('langBtn').addEventListener('click', ()=>{
     lang = lang==='bn' ? 'en' : 'bn';
@@ -1308,7 +1865,8 @@
 
   // ---------- Screens ----------
   function showScreen(id){
-    ['screen-register','screen-quiz','screen-result'].forEach(s=>{
+    ['screen-choose','screen-register','screen-quiz','screen-result',
+     'screen-exam-reg','screen-exam','screen-exam-done'].forEach(s=>{
       $(s).classList.toggle('hidden', s!==id);
     });
     // Replay the card entrance instead of having it run only on first paint.
@@ -1325,6 +1883,7 @@
     else stopStats();
 
     if(id !== 'screen-quiz') stopTimer();
+    if(id !== 'screen-exam') stopMcqTimer();
 
     window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -2247,12 +2806,844 @@
     }, wait);
   }
 
+  // ============================================================
+  //  PART 2 - THE FINAL EXAM
+  //
+  //  A word on the anti-cheat in here, so nobody is misled by it:
+  //  everything this file does in the browser - blocking copy, watching
+  //  for tab switches, forcing fullscreen, swallowing F12 - is a
+  //  DETERRENT. A determined student with DevTools can defeat all of
+  //  it, and nothing running in a page they control can stop them.
+  //
+  //  The parts that actually hold are in the database, not here:
+  //    - correct answers are never sent to the browser, so there is
+  //      nothing in the page to read
+  //    - the deadline is the server's, so changing the system clock
+  //      does nothing
+  //    - every attempt carries a token, so one student cannot write
+  //      into another's paper
+  //    - one sitting per student id is enforced on insert
+  //    - every trip below is logged with a server timestamp, so the
+  //      grader sees the pattern even when the block itself was bypassed
+  //
+  //  Treat the client-side half as "keeps honest people honest, and
+  //  makes cheating leave a trail" - not as a lock.
+  // ============================================================
+
+  const EXAM = {
+    attempt:null, token:null, questions:[], idx:0,
+    cfg:{ mcq_seconds:30, max_violations:3, require_fullscreen:true,
+          block_copy:true, detect_tab_switch:true },
+    deadline:0,          // ms epoch, from the server
+    strikes:0,
+    live:false,          // exam in progress -> anti-cheat armed
+    done:false,
+    mcqLeft:0,
+    saveTimer:null, mcqTick:null, clockTick:null, pingTick:null,
+    lastTrip:0,          // de-dupes events that fire in pairs
+    settings:null
+  };
+
+  // ---------- helpers ----------
+  const examSb = ()=> window.HacknFix && window.HacknFix.client;
+
+  function mmss(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(sec/60), s = sec%60;
+    const t = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    return lang === 'bn' ? bnNum(t) : t;
+  }
+
+  function examToast(msg, bad){
+    // Reuses the quiz's field-live style rather than inventing a second
+    // notification system.
+    let el = $('examToast');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'examToast';
+      el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:24px;'
+        + 'z-index:200;padding:11px 18px;border-radius:999px;font-size:.88rem;font-weight:600;'
+        + 'box-shadow:var(--shadow);max-width:90vw;text-align:center;transition:opacity .25s ease;';
+      document.body.appendChild(el);
+    }
+    el.style.background = bad ? 'var(--danger)' : 'var(--primary)';
+    el.style.color = '#fff';
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(()=>{ el.style.opacity = '0'; }, 2600);
+  }
+
+  // Turn a raised Postgres error into something a student can act on.
+  function examError(e){
+    const raw = (e && (e.message || e.error_description || '')) + '';
+    const map = {
+      exam_closed:      'examErrClosed',
+      already_attempted:'examErrTaken',
+      no_questions:     'examErrEmpty',
+      need_name:        'examErrName',
+      need_student:     'examErrId',
+      need_batch:       'examErrBatch',
+      need_email:       'examErrEmail',
+      need_phone:       'examErrPhone',
+      bad_email:        'examErrBadEmail',
+      time_up:          'examErrTime',
+      already_submitted:'examErrDone',
+      bad_attempt:      'examErrSession'
+    };
+    for(const k in map){
+      if(raw.indexOf(k) !== -1) return UI[lang][map[k]] || k;
+    }
+    return raw || (UI[lang].examErrGeneric);
+  }
+
+  // ---------- settings ----------
+  async function loadExamSettings(){
+    const sb = examSb();
+    if(!sb) return;
+    try{
+      const { data, error } = await sb.from('exam_settings').select('*').eq('id',1).single();
+      if(error) throw error;
+      EXAM.settings = data;
+      paintExamChrome();
+    }catch(e){
+      // Older database that has not had the exam half installed yet.
+      console.warn('Exam settings unavailable:', e.message || e);
+      EXAM.settings = null;
+      paintExamChrome();
+    }
+  }
+
+  function paintExamChrome(){
+    const s = EXAM.settings;
+    const tag = $('examOpenTag');
+    const pick = $('pickExam');
+    if(!tag || !pick) return;
+
+    if(!s){
+      // Exam tables missing: say so rather than showing a door that
+      // opens onto an error.
+      pick.disabled = true;
+      tag.className = 'mode-tag shut';
+      tag.textContent = UI[lang].examNotInstalled;
+      return;
+    }
+    if($('examTitle')) $('examTitle').textContent = s.exam_title || 'Final Exam';
+    if($('examSub'))   $('examSub').textContent   = s.exam_sub || '';
+
+    pick.disabled = false;
+    tag.className = 'mode-tag ' + (s.exam_open ? 'live' : 'shut');
+    tag.textContent = s.exam_open ? UI[lang].examOpenNow : UI[lang].examShut;
+
+    const closed = !s.exam_open;
+    $('examStartRow').classList.toggle('hidden', closed);
+    const note = $('examClosedNote');
+    note.classList.toggle('hidden', !closed);
+    note.textContent = s.exam_closed_msg || UI[lang].examShut;
+
+    renderRules();
+  }
+
+  function renderRules(){
+    const host = $('rulesList');
+    if(!host) return;
+    const s = EXAM.settings || {};
+    const L = UI[lang];
+    const items = [];
+
+    if(s.exam_rules) items.push(s.exam_rules);
+    items.push(L.ruleMcqTime.replace('{n}', lang==='bn' ? bnNum(s.mcq_seconds||30) : (s.mcq_seconds||30)));
+    items.push(L.ruleNoBack);
+    if(s.block_copy)        items.push(L.ruleNoCopy);
+    if(s.detect_tab_switch) items.push(L.ruleNoTab);
+    if(s.require_fullscreen)items.push(L.ruleFullscreen);
+    items.push(L.ruleStrikes.replace('{n}', lang==='bn' ? bnNum(s.max_violations||3) : (s.max_violations||3)));
+    items.push(L.ruleAutosave);
+
+    host.innerHTML = '';
+    items.forEach(t=>{
+      const li = document.createElement('li');
+      li.textContent = t;
+      host.appendChild(li);
+    });
+  }
+
+  // ---------- registration ----------
+  function examField(id){ return ($(id).value || '').trim(); }
+
+  function markExamField(id, ok, msg){
+    const live = $(id + 'Live');
+    if(!live) return;
+    live.classList.toggle('hidden', ok);
+    if(!ok) live.textContent = msg;
+    $(id).style.borderColor = ok ? '' : 'var(--danger)';
+  }
+
+  function validateExamForm(){
+    const L = UI[lang];
+    let ok = true;
+    const checks = [
+      ['exName',  examField('exName').length  >= 3,  L.errName],
+      ['exId',    examField('exId').length    >= 2,  L.errId],
+      ['exBatch', examField('exBatch').length >= 1,  L.errBatch],
+      ['exEmail', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(examField('exEmail')), L.errEmail],
+      ['exPhone', /^01[3-9]\d{8}$/.test(examField('exPhone')), L.errPhone]
+    ];
+    checks.forEach(([id, good, msg])=>{
+      markExamField(id, good, msg);
+      if(!good) ok = false;
+    });
+    return ok;
+  }
+
+  async function startExam(){
+    if(!validateExamForm()) return examToast(UI[lang].errFix, true);
+    if(!$('exAgree').checked) return examToast(UI[lang].errAgree, true);
+
+    const sb = examSb();
+    if(!sb) return examToast(UI[lang].examErrOffline, true);
+
+    const btn = $('examStartBtn');
+    btn.disabled = true;
+    btn.textContent = UI[lang].examStarting;
+
+    try{
+      const { data, error } = await sb.rpc('exam_start', {
+        p_name:       examField('exName'),
+        p_student_id: examField('exId'),
+        p_batch:      examField('exBatch'),
+        p_email:      examField('exEmail'),
+        p_phone:      examField('exPhone'),
+        p_user_agent: navigator.userAgent.slice(0,400)
+      });
+      if(error) throw error;
+
+      EXAM.attempt   = data.attempt;
+      EXAM.token     = data.token;
+      EXAM.questions = data.questions || [];
+      EXAM.cfg       = Object.assign(EXAM.cfg, data.config || {});
+      EXAM.deadline  = new Date(data.deadline).getTime();
+      EXAM.strikes   = data.violations || 0;
+      EXAM.done      = false;
+
+      if(!EXAM.questions.length) throw new Error('no_questions');
+
+      // Resuming: drop them at the first unanswered question rather
+      // than making them click through what they already did.
+      EXAM.idx = 0;
+      if(data.resumed){
+        const at = EXAM.questions.findIndex(q =>
+          q.choice === null && !(q.text || '').trim());
+        EXAM.idx = at === -1 ? EXAM.questions.length - 1 : at;
+        examToast(UI[lang].examResumed);
+      }
+
+      showScreen('screen-exam');
+      armAntiCheat();
+      startExamClock();
+      renderExamQuestion();
+    }catch(e){
+      examToast(examError(e), true);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = UI[lang].examStartBtn;
+    }
+  }
+
+  // ---------- rendering ----------
+  function currentQ(){ return EXAM.questions[EXAM.idx]; }
+
+  function sectionOf(q){ return q ? q.qtype : 'mcq'; }
+
+  function renderExamQuestion(){
+    const q = currentQ();
+    if(!q) return;
+    const L = UI[lang];
+    const n = EXAM.idx + 1, total = EXAM.questions.length;
+
+    $('exProgress').style.width = (n/total*100) + '%';
+    $('exNum').textContent   = lang==='bn' ? bnNum(n) : n;
+    $('exTotal').textContent = lang==='bn' ? bnNum(total) : total;
+
+    ['pillMcq','pillWritten','pillPractical'].forEach(id=>$(id).classList.remove('on'));
+    $({mcq:'pillMcq', written:'pillWritten', practical:'pillPractical'}[q.qtype]).classList.add('on');
+
+    $('exMarks').textContent = (lang==='bn' ? bnNum(q.marks) : q.marks) + ' ' +
+      (q.marks === 1 ? L.markOne : L.markMany);
+    $('exPrompt').textContent = q.prompt;
+
+    const hint = $('exHint');
+    hint.classList.toggle('hidden', !q.hint);
+    hint.textContent = q.hint || '';
+
+    const isMcq = q.qtype === 'mcq';
+    $('exOptions').classList.toggle('hidden', !isMcq);
+    $('exTextWrap').classList.toggle('hidden', isMcq);
+    $('mcqTimer').classList.toggle('hidden', !isMcq);
+
+    if(isMcq) renderMcq(q); else renderWritten(q);
+
+    $('exNextBtn').textContent = (EXAM.idx === total - 1) ? L.examSubmitBtn : L.nextBtn;
+
+    // Going back is allowed inside the written and practical sections,
+    // where you are meant to be able to revise an answer. It is never
+    // allowed for an MCQ - those are timed one at a time, and letting
+    // anyone return to one would make the 30 seconds meaningless.
+    const prev = EXAM.questions[EXAM.idx - 1];
+    $('exPrevBtn').classList.toggle('hidden',
+      isMcq || !prev || prev.qtype === 'mcq');
+
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  async function goPrev(){
+    const q = currentQ();
+    if(!q || q.qtype === 'mcq' || EXAM.idx === 0) return;
+    if(EXAM.questions[EXAM.idx - 1].qtype === 'mcq') return;
+    await flushText();
+    EXAM.idx--;
+    renderExamQuestion();
+  }
+
+  function renderMcq(q){
+    const host = $('exOptions');
+    host.innerHTML = '';
+    (q.options || []).forEach((o, i)=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'option' + (q.choice === i ? ' selected' : '');
+      b.textContent = o.text;
+      b.addEventListener('click', ()=>{
+        q.choice = i;
+        host.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
+        b.classList.add('selected');
+        saveAnswer(q, {choice:i});
+      });
+      host.appendChild(b);
+    });
+    startMcqTimer();
+  }
+
+  function renderWritten(q){
+    stopMcqTimer();
+    const ta = $('exAnswer');
+    ta.value = q.text || '';
+    ta.classList.toggle('code', q.qtype === 'practical');
+    ta.placeholder = UI[lang][q.qtype === 'practical' ? 'phPractical' : 'phWritten'];
+    countWords();
+    setSaveState('idle');
+    setTimeout(()=>ta.focus(), 120);
+  }
+
+  function countWords(){
+    const v = ($('exAnswer').value || '').trim();
+    const n = v ? v.split(/\s+/).length : 0;
+    $('exWordCount').textContent = (lang==='bn' ? bnNum(n) : n) + ' ' + UI[lang].words;
+  }
+
+  function setSaveState(state){
+    const el = $('exSaveState');
+    el.className = 'save-state ' + (state === 'idle' ? '' : state);
+    $('exSaveText').textContent = UI[lang]['save_' + state] || '';
+  }
+
+  // ---------- saving ----------
+  async function saveAnswer(q, patch){
+    const sb = examSb();
+    if(!sb || !EXAM.attempt || EXAM.done) return;
+    const body = {
+      p_attempt:  EXAM.attempt,
+      p_token:    EXAM.token,
+      p_question: q.id,
+      p_choice:   ('choice' in patch) ? patch.choice : null,
+      p_text:     ('text'   in patch) ? patch.text   : null
+    };
+    try{
+      const { error } = await sb.rpc('exam_save_answer', body);
+      if(error) throw error;
+      if('text' in patch) setSaveState('saved');
+    }catch(e){
+      if((e.message||'').indexOf('time_up') !== -1) return finishExam(true, 'time');
+      if('text' in patch) setSaveState('failed');
+    }
+  }
+
+  function queueTextSave(){
+    const q = currentQ();
+    if(!q || q.qtype === 'mcq') return;
+    q.text = $('exAnswer').value;
+    countWords();
+    setSaveState('saving');
+    clearTimeout(EXAM.saveTimer);
+    EXAM.saveTimer = setTimeout(()=>saveAnswer(q, {text:q.text}), 800);
+  }
+
+  // Flush whatever is in the box before moving on, so nothing is lost
+  // between the last keystroke and the click.
+  function flushText(){
+    const q = currentQ();
+    if(!q || q.qtype === 'mcq') return Promise.resolve();
+    clearTimeout(EXAM.saveTimer);
+    q.text = $('exAnswer').value;
+    return saveAnswer(q, {text:q.text});
+  }
+
+  // ---------- the 30-second MCQ timer ----------
+  function startMcqTimer(){
+    stopMcqTimer();
+    const secs = Math.max(5, parseInt(EXAM.cfg.mcq_seconds, 10) || 30);
+    EXAM.mcqLeft = secs;
+    paintMcqTimer(secs);
+
+    EXAM.mcqTick = setInterval(()=>{
+      EXAM.mcqLeft--;
+      paintMcqTimer(secs);
+      if(EXAM.mcqLeft <= 0){
+        stopMcqTimer();
+        // Out of time on this one: whatever is selected stands, and the
+        // paper moves on by itself. There is no going back.
+        examToast(UI[lang].mcqTimeout, true);
+        goNext(true);
+      }
+    }, 1000);
+  }
+
+  function paintMcqTimer(total){
+    const bar = $('mcqTimer'), fill = $('mcqTimerFill');
+    const frac = Math.max(0, EXAM.mcqLeft) / total;
+    fill.style.width = (frac*100) + '%';
+    bar.classList.toggle('warn',   EXAM.mcqLeft <= total/2 && EXAM.mcqLeft > 5);
+    bar.classList.toggle('danger', EXAM.mcqLeft <= 5);
+  }
+
+  function stopMcqTimer(){
+    clearInterval(EXAM.mcqTick);
+    EXAM.mcqTick = null;
+  }
+
+  // ---------- the overall clock ----------
+  function startExamClock(){
+    stopExamClock();
+    paintExamClock();
+    EXAM.clockTick = setInterval(paintExamClock, 1000);
+    // Resync against the server every half minute, so a student who
+    // changes their device clock gains nothing.
+    EXAM.pingTick = setInterval(pingExam, 30000);
+  }
+
+  function paintExamClock(){
+    const left = (EXAM.deadline - Date.now()) / 1000;
+    $('examClockText').textContent = mmss(left);
+    const box = $('examClock');
+    box.classList.toggle('warn',   left <= 300 && left > 60);
+    box.classList.toggle('danger', left <= 60);
+    if(left <= 0){
+      stopExamClock();
+      examToast(UI[lang].examErrTime, true);
+      finishExam(true, 'time');
+    }
+  }
+
+  function stopExamClock(){
+    clearInterval(EXAM.clockTick); EXAM.clockTick = null;
+    clearInterval(EXAM.pingTick);  EXAM.pingTick  = null;
+  }
+
+  async function pingExam(){
+    const sb = examSb();
+    if(!sb || !EXAM.attempt || EXAM.done) return;
+    try{
+      const { data, error } = await sb.rpc('exam_ping', {
+        p_attempt:EXAM.attempt, p_token:EXAM.token
+      });
+      if(error) throw error;
+      // The server's clock wins.
+      EXAM.deadline = Date.now() + (data.seconds_left * 1000);
+      EXAM.strikes  = data.violations;
+      paintStrikes();
+      if(data.status !== 'in_progress') finishExam(true, 'closed-elsewhere');
+    }catch(e){ /* a dropped ping is not worth interrupting anyone over */ }
+  }
+
+  // ---------- navigation ----------
+  async function goNext(auto){
+    const q = currentQ();
+    if(!q) return;
+
+    if(q.qtype !== 'mcq'){
+      // Make them put something down rather than skipping by accident -
+      // but never block an automatic move.
+      if(!auto && !($('exAnswer').value || '').trim()){
+        return examToast(UI[lang].errBlank, true);
+      }
+      await flushText();
+    }
+
+    if(EXAM.idx >= EXAM.questions.length - 1){
+      if(auto) return finishExam(true, 'timeout-last');
+      return confirmSubmit();
+    }
+    EXAM.idx++;
+    renderExamQuestion();
+  }
+
+  function confirmSubmit(){
+    const left = EXAM.questions.filter(q =>
+      q.choice === null && !(q.text||'').trim()).length;
+    const L = UI[lang];
+    const msg = left
+      ? L.confirmLeft.replace('{n}', lang==='bn' ? bnNum(left) : left)
+      : L.confirmDone;
+    showWarn({
+      title: L.confirmTitle,
+      body:  msg,
+      okKey: 'examSubmitBtn',
+      danger:false,
+      onOk:  ()=>finishExam(false, null)
+    });
+  }
+
+  // ---------- submit ----------
+  async function finishExam(auto, reason){
+    if(EXAM.done) return;
+    EXAM.done = true;
+
+    // Disarm first, so submitting does not trip its own alarms (leaving
+    // fullscreen at the end is not a violation).
+    disarmAntiCheat();
+    stopMcqTimer();
+    stopExamClock();
+
+    const sb = examSb();
+    if(!sb) return;
+
+    try{ await flushText(); }catch(e){}
+
+    try{
+      const { data, error } = await sb.rpc('exam_submit', {
+        p_attempt:EXAM.attempt, p_token:EXAM.token,
+        p_auto:!!auto, p_reason:reason || null
+      });
+      if(error) throw error;
+      showExamResult(data, auto, reason);
+    }catch(e){
+      // Already submitted from another tab is a success, not a failure.
+      if((e.message||'').indexOf('already_submitted') !== -1){
+        showExamResult({mcq_score:0,mcq_total:0,awaiting:0}, auto, reason);
+      }else{
+        examToast(examError(e), true);
+        showScreen('screen-exam-done');
+        $('exDoneTitle').textContent = UI[lang].examErrSubmit;
+        $('exDoneSub').textContent   = examError(e);
+      }
+    }
+  }
+
+  function showExamResult(res, auto, reason){
+    const L = UI[lang];
+    showScreen('screen-exam-done');
+
+    const flagged = auto && reason !== 'time';
+    $('exDoneIc').classList.toggle('flagged', !!flagged);
+    $('exDoneTitle').textContent = flagged ? L.doneFlagged
+                                : auto     ? L.doneTimeUp
+                                :            L.doneOk;
+    $('exDoneSub').textContent = flagged ? L.doneFlaggedSub
+                               : auto    ? L.doneTimeUpSub
+                               :           L.doneOkSub;
+
+    const rows = $('exScoreRows');
+    rows.innerHTML = '';
+    const add = (label, value, cls)=>{
+      const r = document.createElement('div');
+      r.className = 'score-row ' + (cls || '');
+      const l = document.createElement('span'); l.className = 'lbl'; l.textContent = label;
+      const v = document.createElement('span'); v.className = 'val'; v.textContent = value;
+      r.append(l, v);
+      rows.appendChild(r);
+    };
+
+    const num = n => lang==='bn' ? bnNum(n) : n;
+    add(L.secMcq, num(res.mcq_score) + ' / ' + num(res.mcq_total));
+    if(res.awaiting > 0){
+      add(L.secWritten + ' + ' + L.secPractical, L.pendingMark, 'pending');
+      add(L.totalSoFar, num(res.mcq_score) + ' / ' + num(res.mcq_total + res.awaiting), 'total');
+    }else{
+      add(L.totalSoFar, num(res.mcq_score) + ' / ' + num(res.mcq_total), 'total');
+    }
+
+    $('exPendingNote').textContent = res.awaiting > 0 ? L.pendingNote : L.gradedNote;
+
+    const ref = $('exRef');
+    ref.classList.remove('hidden');
+    ref.textContent = L.refLabel + ' ' + (EXAM.attempt || '').slice(0,8).toUpperCase();
+
+    EXAM.attempt = null;
+    EXAM.token   = null;
+  }
+
+  // ============================================================
+  //  ANTI-CHEAT
+  //  Read the note at the top of this section before trusting any of it.
+  // ============================================================
+
+  const examGuards = [];
+
+  function on(target, type, fn, opts){
+    target.addEventListener(type, fn, opts);
+    examGuards.push(()=>target.removeEventListener(type, fn, opts));
+  }
+
+  function armAntiCheat(){
+    if(EXAM.live) return;
+    EXAM.live = true;
+    document.body.classList.add('exam-live');
+    paintStrikes();
+
+    const cfg = EXAM.cfg;
+
+    // --- copy / paste / selection ---
+    if(cfg.block_copy){
+      ['copy','cut'].forEach(t=>on(document, t, e=>{
+        e.preventDefault();
+        trip('copy', 'tried to ' + t);
+      }));
+      on(document, 'paste', e=>{
+        e.preventDefault();
+        trip('paste', 'tried to paste');
+      });
+      on(document, 'contextmenu', e=>{ e.preventDefault(); });
+      on(document, 'dragstart', e=>{ e.preventDefault(); });
+      // Selection is blocked by CSS everywhere except the answer boxes,
+      // where the student obviously needs it.
+      on(document, 'selectstart', e=>{
+        const t = e.target;
+        if(t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+        e.preventDefault();
+      });
+    }
+
+    // --- devtools / print / save shortcuts ---
+    on(document, 'keydown', e=>{
+      const k = (e.key || '').toLowerCase();
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if(k === 'f12'){ e.preventDefault(); return trip('devtools','F12'); }
+      if(ctrl && e.shiftKey && ['i','j','c'].includes(k)){
+        e.preventDefault(); return trip('devtools','Ctrl+Shift+'+k.toUpperCase());
+      }
+      if(ctrl && k === 'u'){ e.preventDefault(); return trip('viewsource','Ctrl+U'); }
+      if(ctrl && k === 'p'){ e.preventDefault(); return trip('print','Ctrl+P'); }
+      if(ctrl && k === 's'){ e.preventDefault(); return trip('save','Ctrl+S'); }
+      if(k === 'printscreen'){ trip('screenshot','PrintScreen'); }
+      // Ctrl+C / Ctrl+V are already caught by the copy/paste handlers.
+    });
+
+    // --- leaving the page ---
+    if(cfg.detect_tab_switch){
+      on(document, 'visibilitychange', ()=>{
+        if(document.hidden) trip('tab-switch', 'tab hidden');
+      });
+      on(window, 'blur', ()=>trip('blur', 'window lost focus'));
+    }
+
+    // --- fullscreen ---
+    if(cfg.require_fullscreen){
+      on(document, 'fullscreenchange', ()=>{
+        if(!document.fullscreenElement && EXAM.live && !EXAM.done){
+          trip('fullscreen-exit', 'left fullscreen');
+        }
+      });
+      goFullscreen();
+    }
+
+    // --- refresh / close ---
+    on(window, 'beforeunload', e=>{
+      if(!EXAM.live || EXAM.done) return;
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    });
+  }
+
+  function disarmAntiCheat(){
+    EXAM.live = false;
+    document.body.classList.remove('exam-live');
+    while(examGuards.length) examGuards.pop()();
+    if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  }
+
+  function goFullscreen(){
+    const el = document.documentElement;
+    if(el.requestFullscreen && !document.fullscreenElement){
+      el.requestFullscreen().catch(()=>{
+        // Some mobile browsers refuse outright. Not the student's fault,
+        // so it is noted rather than counted against them.
+        examToast(UI[lang].fsUnavailable);
+      });
+    }
+  }
+
+  // One violation. Logged server-side; the count that comes back is the
+  // one shown, so a student cannot reset it by reloading.
+  async function trip(kind, detail){
+    if(!EXAM.live || EXAM.done) return;
+
+    // visibilitychange and blur both fire when a tab is switched - count
+    // that as one thing, not two.
+    const now = Date.now();
+    if(now - EXAM.lastTrip < 1200) return;
+    EXAM.lastTrip = now;
+
+    const sb = examSb();
+    if(!sb) return;
+
+    try{
+      const { data, error } = await sb.rpc('exam_log_violation', {
+        p_attempt:EXAM.attempt, p_token:EXAM.token,
+        p_kind:kind, p_detail:detail || ''
+      });
+      if(error) throw error;
+
+      EXAM.strikes = data.count;
+      paintStrikes();
+
+      if(data.over){
+        finishExam(true, 'violations:' + kind);
+        showWarn({
+          title: UI[lang].strikeOutTitle,
+          body:  UI[lang].strikeOutBody,
+          okKey: 'okBtn', danger:true, onOk:null
+        });
+      }else{
+        warnStrike(kind, data.count, data.max);
+      }
+    }catch(e){ /* logging must never break the exam itself */ }
+  }
+
+  function paintStrikes(){
+    const chip = $('strikeChip');
+    if(!chip) return;
+    const max = EXAM.cfg.max_violations || 3;
+    chip.classList.toggle('hidden', EXAM.strikes <= 0);
+    $('strikeText').textContent = (lang==='bn' ? bnNum(EXAM.strikes) : EXAM.strikes)
+      + '/' + (lang==='bn' ? bnNum(max) : max);
+  }
+
+  function warnStrike(kind, count, max){
+    const L = UI[lang];
+    const reason = L['viol_' + kind] || L.viol_generic;
+    showWarn({
+      title: L.warnTitle,
+      body:  reason,
+      count: L.warnCount
+               .replace('{n}', lang==='bn' ? bnNum(count) : count)
+               .replace('{m}', lang==='bn' ? bnNum(max)   : max),
+      okKey: 'warnBack',
+      danger:true,
+      onOk: ()=>{ if(EXAM.cfg.require_fullscreen && !EXAM.done) goFullscreen(); }
+    });
+  }
+
+  // ---------- warning / confirm overlay ----------
+  function showWarn({title, body, count, okKey, danger, onOk}){
+    const old = document.getElementById('warnBack');
+    if(old) old.remove();
+
+    const back = document.createElement('div');
+    back.className = 'warn-back';
+    back.id = 'warnBack';
+
+    const card = document.createElement('div');
+    card.className = 'warn-card';
+    if(!danger) card.style.borderTopColor = 'var(--primary)';
+
+    const ic = document.createElement('div');
+    ic.className = 'wic';
+    if(!danger){ ic.style.background = 'var(--success-bg)'; ic.style.color = 'var(--primary)'; }
+    ic.innerHTML = danger
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v5M12 17.5v.5"/><path d="M10.3 3.9L2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4A1.5 1.5 0 0 0 21.5 18L13.7 3.9a1.5 1.5 0 0 0-2.6 0z"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+
+    const h = document.createElement('h3');
+    h.textContent = title;
+    if(!danger) h.style.color = 'var(--primary)';
+
+    const p = document.createElement('p');
+    p.textContent = body;
+
+    card.append(ic, h, p);
+
+    if(count){
+      const c = document.createElement('div');
+      c.className = 'warn-count';
+      c.textContent = count;
+      card.appendChild(c);
+    }
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:10px;margin-top:8px;';
+
+    // A confirm needs a way out; a warning does not.
+    if(onOk && okKey === 'examSubmitBtn'){
+      const cancel = document.createElement('button');
+      cancel.className = 'btn btn-ghost';
+      cancel.style.flex = '1';
+      cancel.textContent = UI[lang].cancelBtn;
+      cancel.addEventListener('click', ()=>back.remove());
+      row.appendChild(cancel);
+    }
+
+    const ok = document.createElement('button');
+    ok.className = 'btn btn-primary';
+    ok.style.flex = '1';
+    ok.textContent = UI[lang][okKey] || UI[lang].okBtn;
+    ok.addEventListener('click', ()=>{
+      back.remove();
+      if(onOk) onOk();
+    });
+    row.appendChild(ok);
+
+    card.appendChild(row);
+    back.appendChild(card);
+    document.body.appendChild(back);
+    setTimeout(()=>ok.focus(), 60);
+  }
+
+  // ---------- wiring ----------
+  $('pickQuiz').addEventListener('click', ()=>showScreen('screen-register'));
+  $('pickExam').addEventListener('click', ()=>{
+    if(!EXAM.settings) return examToast(UI[lang].examNotInstalled, true);
+    showScreen('screen-exam-reg');
+  });
+  $('examBackBtn').addEventListener('click', ()=>showScreen('screen-choose'));
+  $('examStartBtn').addEventListener('click', startExam);
+  $('exNextBtn').addEventListener('click', ()=>goNext(false));
+  $('exPrevBtn').addEventListener('click', goPrev);
+  $('exHomeBtn').addEventListener('click', ()=>location.reload());
+
+  $('exAnswer').addEventListener('input', queueTextSave);
+  $('exAnswer').addEventListener('blur', ()=>{ flushText(); });
+
+  // Typing the student id in lowercase should still match the record.
+  $('exId').addEventListener('input', e=>{
+    e.target.value = e.target.value.toUpperCase();
+  });
+  $('exPhone').addEventListener('input', e=>{
+    e.target.value = e.target.value.replace(/\D/g,'').slice(0,11);
+  });
+
+  ['exName','exId','exBatch','exEmail','exPhone'].forEach(id=>{
+    $(id).addEventListener('blur', ()=>{ if($(id).value.trim()) validateExamForm(); });
+  });
+
   // ---------- Init ----------
   applyTheme();
   if(!sb) $('fbOpenBtn').classList.add('hidden');
   applyLang();
   splashStep(15, 'loadStart');
   loadFromServer();
+  loadExamSettings();
   trackVisit();
   startStats();
   setTimeout(hideSplash, SPLASH_MAX);   // safety net
