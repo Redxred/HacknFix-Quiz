@@ -27,7 +27,7 @@ The admin opens on two separate workspaces: **Awareness Quiz** and
 
 Both Results pages can download an Excel workbook for **all** student
 results, fetched across every database page. Each result row has an Excel
-button for an individual download. In Final Exam Results, **Full paper Excel**
+button for an individual download. In Final Exam Results, **Excel**
 includes every question, all MCQ options, student answers, marks, feedback and
 the violation log. The dashboard's **Recent results** also has an **Excel**
 button beside **Review** for the same individual full-paper download.

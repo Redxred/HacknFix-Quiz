@@ -337,7 +337,7 @@ shows a red count of papers waiting on you. Open one to:
 
 Search by name, student ID, batch or email; filter to just the flagged ones;
 export the visible rows to CSV.
-**Full paper Excel** on a row (or **Excel** beside **Review** in Recent results)
+**Excel** on a row (or beside **Review** in Recent results)
 opens on a **Full exam paper** sheet: student details followed by every question,
 MCQ option, student answer, marks and feedback. Long answers continue across
 readable rows. Four additional sheets provide the student result, question-level

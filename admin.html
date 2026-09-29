@@ -623,7 +623,7 @@
   :root[data-theme="dark"] .pill.written{background:#3A2E12;color:#FCD34D;}
   :root[data-theme="dark"] .pill.practical{background:#132D1E;color:#86EFAC;}
 </style>
-<link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="portal.css?v=results-layout-2">
 </head>
 <body>
 
@@ -1075,41 +1075,49 @@
         <div class="stat"><div class="n" id="stExAvg">–</div><div class="l">Average</div></div>
       </div>
 
-      <div class="card">
-        <h2>Papers</h2>
-        <p class="sub">
-          A paper lands here the moment it is submitted, with the MCQ section already
-          marked. Open one to mark the written and practical answers and to read its
-          violation log.
-        </p>
-        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-          <input type="text" id="exSearch" placeholder="Search name, student ID, batch or email…" style="flex:1;min-width:200px;">
-          <select id="exFilter" style="width:auto;">
+      <div class="card exam-results-card">
+        <div class="exam-results-heading">
+          <div><h2>Student results</h2><p class="sub">Review papers, mark answers and download individual results.</p></div>
+          <button class="btn btn-ghost" id="exRefreshBtn" type="button">Refresh</button>
+        </div>
+        <div class="exam-results-filters">
+          <label for="exSearch">Search students
+            <input type="text" id="exSearch" placeholder="Name, student ID, batch, email or phone">
+          </label>
+          <label for="exFilter">Paper status
+          <select id="exFilter">
             <option value="all">All papers</option>
             <option value="submitted">Waiting to be marked</option>
             <option value="graded">Marked</option>
             <option value="in_progress">Sitting now</option>
             <option value="flagged">Flagged only</option>
           </select>
-          <button class="btn btn-ghost" id="exRefreshBtn" type="button">Refresh</button>
-          <button class="btn btn-ghost" id="examExcelAll" type="button">All results summary Excel</button>
-          <button class="btn btn-ghost" id="exCsvBtn" type="button">Export visible CSV</button>
+          </label>
+        </div>
+        <div class="exam-summary-exports">
+          <button class="btn btn-ghost btn-sm" id="examExcelAll" type="button" title="Download summary scores for every paper">All results summary Excel</button>
+          <button class="btn btn-ghost btn-sm" id="exCsvBtn" type="button">Export visible CSV</button>
         </div>
         <div class="paper-export-tools">
-          <label><input type="checkbox" id="exSelectVisible">Select shown papers</label>
-          <label><input type="checkbox" id="exSelectAll">Select all papers (all pages)</label>
-          <button class="btn btn-ghost" id="exClearSelection" type="button" disabled>Clear selection</button>
-          <button class="btn btn-primary" id="exDownloadSelected" type="button" disabled>Download selected full papers</button>
-          <span id="exSelectionStatus" role="status" aria-live="polite">0 papers selected</span>
+          <div class="paper-selection-options">
+            <label><input type="checkbox" id="exSelectVisible">Select shown papers</label>
+            <label><input type="checkbox" id="exSelectAll">Select all papers (all pages)</label>
+          </div>
+          <div class="paper-selection-actions">
+            <span id="exSelectionStatus" role="status" aria-live="polite">0 papers selected</span>
+            <button class="btn btn-ghost btn-sm" id="exClearSelection" type="button" disabled>Clear selection</button>
+            <button class="btn btn-primary" id="exDownloadSelected" type="button" disabled>Download selected full papers</button>
+          </div>
         </div>
-        <p class="sub">One Excel workbook with results, every question and MCQ option, student answers, marks, feedback and violation logs. Selection stays when you search or filter. Unfinished papers contain the answers saved so far.</p>
-        <div class="table-wrap">
-          <table>
+        <p class="sub">Full papers include student details, questions, answers and marks. Papers in progress contain saved answers only.</p>
+        <div class="msg err hidden" id="exResultsError" role="alert"></div>
+        <p class="exam-results-scope" id="exResultsScope" role="status"></p>
+        <div class="table-wrap exam-results-table-wrap">
+          <table class="exam-results-table" aria-label="Student exam results">
+            <colgroup><col class="ex-col-select"><col><col class="ex-col-score"><col class="ex-col-status"><col class="ex-col-date"><col class="ex-col-actions"></colgroup>
             <thead>
               <tr>
-                <th>Select</th><th>#</th><th>Student</th><th>ID</th><th>Batch</th>
-                <th>MCQ</th><th>Written</th><th>Practical</th><th>Total</th>
-                <th>Flags</th><th>Status</th><th>Submitted</th><th></th>
+                <th>Select</th><th>Student</th><th>Scores</th><th>Status</th><th>Submitted</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="exAttemptRows"></tbody>
@@ -3268,6 +3276,7 @@
     document.querySelectorAll('#exAttemptRows input[type="checkbox"]').forEach(box=>{
       box.checked = selectedExamIds.has(box.value);
       box.disabled = busy;
+      box.closest('tr').classList.toggle('is-selected',box.checked);
     });
   }
   async function selectAllExamPapers(){
@@ -3305,14 +3314,23 @@
     finally{ examSelectionBusy = false; updateExamSelection(); }
   }
   async function loadExamAttempts(){
-    const { data, error } = await sb.from('exam_attempts')
-      .select('*, exam_students(*)')
-      .order('started_at', {ascending:false})
-      .limit(500);
-    if(error){ examInstalled = false; return; }
-    examAttempts = data || [];
-    renderExamAttempts();
-    loadExamStats();
+    $('exRefreshBtn').disabled = true;
+    $('exResultsScope').textContent = 'Loading exam results…';
+    $('exResultsError').classList.add('hidden');
+    try{
+      const { data, error } = await sb.from('exam_attempts')
+        .select('*, exam_students(*)')
+        .order('started_at', {ascending:false})
+        .limit(500);
+      if(error) throw error;
+      examAttempts = data || [];
+      renderExamAttempts();
+      await loadExamStats();
+    }catch(e){
+      $('exResultsError').textContent = 'Could not load results. '+(e.message||e)+' Use Refresh to try again.';
+      $('exResultsError').classList.remove('hidden');
+      $('exResultsScope').textContent = examAttempts.length ? 'Showing previously loaded results.' : 'Results unavailable.';
+    }finally{ $('exRefreshBtn').disabled = false; }
   }
 
   async function loadExamStats(){
@@ -3357,47 +3375,70 @@
     const list = filteredExamAttempts();
 
     $('exNoPapers').classList.toggle('hidden', list.length > 0);
+    $('exNoPapers').textContent = examAttempts.length ? 'No papers match this search or filter.' : 'No exam papers yet.';
+    $('exResultsScope').textContent = 'Showing '+list.length+' of '+examAttempts.length+' loaded papers.'+
+      (examAttempts.length===500 ? ' Select all papers includes older results too.' : '');
 
-    list.forEach((a, i)=>{
+    list.forEach(a=>{
       const s = a.exam_students || {};
       const t = examTotals(a);
       const tr = document.createElement('tr');
-
-      const cell = (text, cls)=>{
+      const element = (tag,text,cls)=>{
+        const node = document.createElement(tag);
+        if(text!=null) node.textContent = text;
+        if(cls) node.className = cls;
+        return node;
+      };
+      const cell = (content,label,cls)=>{
         const td = document.createElement('td');
+        td.dataset.label = label;
         if(cls) td.className = cls;
-        td.textContent = text;
+        td.append(content);
         return td;
       };
-
-      const statusPill = document.createElement('td');
-      const sp = document.createElement('span');
-      sp.className = 'pill ' + ({in_progress:'warnp', submitted:'on', graded:'done'}[a.status] || '');
-      sp.textContent = {in_progress:'Sitting', submitted:'To mark', graded:'Marked'}[a.status] || a.status;
-      statusPill.append(sp);
-
-      const flagCell = document.createElement('td');
+      const studentDetails = element('div',null,'exam-result-value');
+      studentDetails.append(element('strong',s.name||'Unknown student'),
+        element('small','ID: '+(s.student_id||'—')),element('small','Batch: '+(s.batch||'—')));
+      const scores = element('div',null,'exam-result-value');
+      scores.append(element('strong',t.outOf ? t.got+'/'+t.outOf+' ('+t.pct+'%)' : '—','exam-result-total'));
+      const breakdown = element('div',null,'exam-result-breakdown');
+      [['MCQ',a.mcq_score,a.mcq_total],['Written',a.written_score,a.written_total],['Practical',a.practical_score,a.practical_total]].forEach(([label,got,total])=>{
+        const line = element('small');
+        line.append(element('span',label),element('span',total ? (got||0)+'/'+total : '—'));
+        breakdown.append(line);
+      });
+      scores.append(breakdown);
+      const status = element('div',null,'exam-result-value');
+      status.append(element('span',{in_progress:'Sitting', submitted:'To mark', graded:'Marked'}[a.status]||a.status,
+        'pill '+({in_progress:'warnp', submitted:'on', graded:'done'}[a.status]||'')));
       if(a.violation_count){
-        const f = document.createElement('span');
-        f.className = 'pill off';
-        f.textContent = a.violation_count + (a.auto_submitted ? ' · auto' : '');
-        flagCell.append(f);
+        status.append(element('small',a.violation_count+' flag'+(a.violation_count===1?'':'s'),'exam-urgent'));
+        if(a.auto_submitted) status.append(element('small','Auto-submitted'));
+      }else status.append(element('small','No flags'));
+      const submitted = element('div',null,'exam-result-value');
+      if(a.submitted_at){
+        const date = new Date(a.submitted_at);
+        submitted.append(element('span',date.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})),
+          element('small',date.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})));
+        submitted.title = date.toLocaleString();
       }else{
-        flagCell.textContent = '—';
+        submitted.textContent = 'Not submitted';
       }
-
-      const act = document.createElement('td');
-      act.className = 'result-actions';
-      act.append(mkBtn(a.status === 'in_progress' ? 'View' : 'Mark', 'btn-ghost',
+      const actions = element('div',null,'exam-result-buttons');
+      actions.append(mkBtn(a.status === 'submitted' ? 'Mark' : 'Review', 'btn-ghost',
         ()=>openExamPaper(a)));
-      const excel = mkBtn('Full paper Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
-      act.append(excel);
+      const excel = mkBtn('Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
+      excel.title = 'Download full exam paper';
+      excel.setAttribute('aria-label','Download full paper Excel for '+(s.name||s.student_id||'student'));
+      actions.append(excel);
       const remove = mkBtn('Delete', 'btn-danger', ()=>deleteExamResult(a,remove));
       remove.setAttribute('aria-label','Delete result for '+(s.name||s.student_id||'student'));
       remove.disabled = deletingExamIds.has(a.id);
-      act.append(remove);
+      actions.append(remove);
 
       const selectionCell = document.createElement('td');
+      selectionCell.className = 'exam-result-select';
+      selectionCell.dataset.label = 'Select';
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.value = a.id;
@@ -3410,20 +3451,10 @@
       selectionCell.append(checkbox);
       tr.append(
         selectionCell,
-        cell(i + 1),
-        cell(s.name || '—'),
-        cell(s.student_id || '—'),
-        cell(s.batch || '—'),
-        cell(a.mcq_score + '/' + a.mcq_total),
-        cell(a.written_total   ? a.written_score   + '/' + a.written_total   : '—'),
-        cell(a.practical_total ? a.practical_score + '/' + a.practical_total : '—'),
-        cell(t.outOf ? (t.got + '/' + t.outOf + '  (' + t.pct + '%)') : '—'),
-        flagCell, statusPill,
-        cell(a.submitted_at ? fmtWhen(a.submitted_at) : '—'),
-        act
+        cell(studentDetails,'Student','exam-result-student'),
+        cell(scores,'Scores'), cell(status,'Status'),cell(submitted,'Submitted'),
+        cell(actions,'Actions','result-actions')
       );
-      const labels = ['Select','#','Student','ID','Batch','MCQ','Written','Practical','Total','Flags','Status','Submitted','Actions'];
-      [...tr.children].forEach((td,index)=>td.dataset.label=labels[index]);
       rows.append(tr);
     });
     updateExamSelection();
@@ -3443,7 +3474,7 @@
 
     const esc = escapeHtml;
     const violRows = viols.length
-      ? viols.map(v=>`<tr><td>${esc(fmtWhen(v.at))}</td><td><span class="pill off">${esc(v.kind)}</span></td><td>${esc(v.detail||'')}</td></tr>`).join('')
+      ? viols.map(v=>`<tr><td data-label="When">${esc(fmtWhen(v.at))}</td><td data-label="Event"><span class="pill off">${esc(v.kind)}</span></td><td data-label="Detail">${esc(v.detail||'')}</td></tr>`).join('')
       : '<tr><td colspan="3" style="color:var(--muted);">Nothing recorded — this paper was sat cleanly.</td></tr>';
 
     back.innerHTML = `

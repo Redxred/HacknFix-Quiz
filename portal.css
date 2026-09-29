@@ -68,12 +68,75 @@ body.exam-live .option { animation:none!important;transition:background-color .1
 .exam-check { display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap; }
 .result-actions { white-space:nowrap; }
 .result-actions .btn + .btn { margin-left:6px; }
-.paper-export-tools { display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft); }
-.paper-export-tools label { display:flex;align-items:center;gap:8px;font-size:.83rem;margin:0; }
+.paper-export-tools { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:18px;margin:16px 0;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft); }
+.paper-export-tools label { display:flex;align-items:center;gap:10px;font-size:.83rem;margin:0;min-height:32px;cursor:pointer; }
 .paper-export-tools input[type="checkbox"],#exAttemptRows input[type="checkbox"] { width:18px;height:18px;flex-shrink:0;accent-color:var(--primary);cursor:pointer; }
-#exSelectionStatus { width:100%;font-size:.82rem;color:var(--muted); }
-#exAttemptRows .result-actions { white-space:normal; }
-@media(max-width:640px) { #exAttemptRows .result-actions { flex-wrap:wrap;gap:8px; } }
+.paper-selection-options { display:grid;gap:4px;min-width:0; }
+.paper-selection-actions { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0; }
+#exDownloadSelected { grid-column:1/-1;min-height:42px; }
+#exSelectionStatus { font-size:.82rem;color:var(--muted);overflow-wrap:anywhere; }
+.exam-results-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:16px; }
+.exam-results-heading > div { min-width:0; }
+.exam-results-heading > .btn { flex-shrink:0; }
+.exam-results-filters { display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin:6px 0 12px; }
+.exam-results-filters label { min-width:0;display:grid;gap:6px;margin:0; }
+.exam-results-filters input,.exam-results-filters select { min-width:0;max-width:100%; }
+.exam-summary-exports { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px; }
+.exam-summary-exports .btn { min-height:36px; }
+.exam-results-scope { margin:16px 0 10px;color:var(--muted);font-size:.78rem;line-height:1.5; }
+.exam-results-table { table-layout:fixed;min-width:0;width:100%; }
+.exam-results-table .ex-col-select { width:68px; }
+.exam-results-table .ex-col-score { width:140px; }
+.exam-results-table .ex-col-status { width:102px; }
+.exam-results-table .ex-col-date { width:124px; }
+.exam-results-table .ex-col-actions { width:108px; }
+.exam-results-table th,.exam-results-table td { padding:14px 8px;white-space:normal;vertical-align:top;overflow-wrap:anywhere; }
+.exam-results-table th { font-size:.68rem; }
+.exam-result-value { min-width:0;line-height:1.5;overflow-wrap:anywhere; }
+.exam-result-value strong { display:block;font-size:.88rem; }
+.exam-result-value small { display:block;color:var(--muted);font-size:.76rem;margin-top:4px; }
+.exam-result-value .exam-urgent { color:var(--danger); }
+.exam-result-total { color:var(--primary-strong); }
+.exam-result-breakdown { margin-top:8px; }
+.exam-result-breakdown small { display:flex;justify-content:space-between;gap:8px; }
+.exam-result-buttons { display:grid;gap:6px;min-width:0; }
+.exam-result-buttons .btn { min-height:34px;width:100%;white-space:nowrap; }
+#exAttemptRows .result-actions .btn + .btn { margin-left:0; }
+#exAttemptRows tr.is-selected { background:var(--success-bg); }
+#tab-exam-results .stats { grid-template-columns:repeat(6,minmax(0,1fr)); }
+#tab-exam-results .stat { min-width:0; }
+.modal-wide { min-width:0;overflow-wrap:anywhere; }
+.modal-wide h2 .pill { display:inline-block;max-width:100%;vertical-align:middle; }
+.modal-wide .mk-fb { min-width:0;flex-basis:180px;max-width:100%; }
+@media(max-width:1100px) { #tab-exam-results .stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:900px) {
+  .exam-results-table-wrap { overflow:visible; }
+  .exam-results-table,.exam-results-table tbody { display:block;width:100%; }
+  .exam-results-table thead,.exam-results-table colgroup { display:none; }
+  #exAttemptRows tr { display:grid;grid-template-columns:28px minmax(0,1fr);gap:0 10px;width:100%;padding:16px;margin-bottom:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft); }
+  #exAttemptRows tr.is-selected { border-color:var(--primary);background:var(--success-bg); }
+  #exAttemptRows td { display:grid;grid-template-columns:84px minmax(0,1fr);grid-column:1/-1;align-items:start;gap:12px;width:auto;min-width:0;padding:10px 0;border:0;border-top:1px solid var(--border);text-align:left; }
+  #exAttemptRows td::before { content:attr(data-label);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600; }
+  #exAttemptRows .exam-result-select { display:block;grid-column:1;grid-row:1;padding:3px 0 12px;border:0; }
+  #exAttemptRows .exam-result-student { display:block;grid-column:2;grid-row:1;padding:0 0 14px;border:0; }
+  #exAttemptRows .exam-result-select::before,#exAttemptRows .exam-result-student::before,#exAttemptRows .result-actions::before { display:none; }
+  #exAttemptRows .result-actions { display:block;padding:12px 0 0; }
+  .exam-result-buttons { grid-template-columns:repeat(3,minmax(0,1fr));gap:8px; }
+  .exam-result-buttons .btn { min-height:40px; }
+  .exam-result-breakdown { max-width:240px; }
+}
+@media(max-width:600px) {
+  #tab-exam-results .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .exam-results-filters,.paper-export-tools { grid-template-columns:minmax(0,1fr); }
+  .exam-results-heading { flex-wrap:wrap;gap:8px;margin-bottom:16px; }
+  .exam-results-heading .sub { margin-bottom:0; }
+  .paper-export-tools { gap:12px;padding:12px; }
+  .paper-selection-actions { border-top:1px solid var(--border);padding-top:12px; }
+  .exam-summary-exports .btn { flex:1 1 145px; }
+  .modal-wide .modal-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .modal-wide .modal-actions .btn { min-width:0; }
+  #mkExcel { grid-column:1/-1;grid-row:1; }
+}
 .exam-row-detail { display:block;color:var(--muted);font-size:.76rem; }
 #edMonitorRows td { vertical-align:middle; }
 #edMonitorRows progress { display:block;width:90px;height:7px;margin-top:6px;accent-color:var(--primary); }
