@@ -1271,7 +1271,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="sample-questions.js"></script>
-<script src="exam-dashboard.js"></script>
+<script src="exam-dashboard.js?v=result-delete-1"></script>
 <script src="excel-export.js?v=full-paper-2"></script>
 <script>
 (function(){
@@ -2860,6 +2860,7 @@
   let examQuestions = [];
   let examAttempts  = [];
   const selectedExamIds = new Set();
+  const deletingExamIds = new Set();
   let allExamIds = null;
   let examSelectionBusy = false;
   let examSettings  = null;
@@ -3221,21 +3222,52 @@
   }
 
   // ---------------- papers ----------------
+  async function deleteExamResult(a,button){
+    if(deletingExamIds.has(a.id)) return;
+    if(examSelectionBusy) return toast('Wait for the current paper selection or download to finish.',true);
+    const s = a.exam_students || {};
+    const who = (s.name||'Student')+' (ID: '+(s.student_id||'not available')+')';
+    if(!confirm('Permanently delete the exam result for '+who+'?\n\nAttempt: '+a.id+
+      '\n\nThis removes this paper, its answers, marks and violation log. It cannot be undone. The student profile and other attempts are kept.'+
+      (a.status==='in_progress'?'\n\nThis exam is still in progress. Deleting it will end this attempt.':'')+
+      '\n\nThe student may be able to take the exam again.')) return;
+    deletingExamIds.add(a.id);
+    const label = button.textContent;
+    button.disabled = true; button.textContent = 'Deleting…';
+    updateExamSelection();
+    try{
+      const {data,error} = await sb.from('exam_attempts').delete().eq('id',a.id).select('id');
+      if(error) throw error;
+      if(!data?.some(row=>row.id===a.id)) throw new Error('No result was deleted. Refresh the results and try again.');
+      selectedExamIds.delete(a.id);
+      allExamIds?.delete(a.id);
+      examAttempts = examAttempts.filter(row=>row.id!==a.id);
+      renderExamAttempts();
+      await Promise.allSettled([loadExamAttempts(),examDashboard.resultDeleted(a.id)]);
+      toast('Exam result deleted for '+who+'.');
+    }catch(e){ toast('Could not delete result: '+(e.message||e),true); }
+    finally{
+      deletingExamIds.delete(a.id);
+      button.disabled = false; button.textContent = label;
+      updateExamSelection();
+    }
+  }
   function updateExamSelection(message){
+    const busy = examSelectionBusy || deletingExamIds.size>0;
     const visible = filteredExamAttempts();
     const shownSelected = visible.filter(a=>selectedExamIds.has(a.id)).length;
     $('exSelectVisible').checked = visible.length>0 && shownSelected===visible.length;
     $('exSelectVisible').indeterminate = shownSelected>0 && shownSelected<visible.length;
-    $('exSelectVisible').disabled = examSelectionBusy || !visible.length;
+    $('exSelectVisible').disabled = busy || !visible.length;
     $('exSelectAll').checked = !!allExamIds?.size && [...allExamIds].every(id=>selectedExamIds.has(id));
     $('exSelectAll').indeterminate = selectedExamIds.size>0 && !$('exSelectAll').checked;
-    $('exSelectAll').disabled = examSelectionBusy;
-    $('exClearSelection').disabled = examSelectionBusy || !selectedExamIds.size;
-    $('exDownloadSelected').disabled = examSelectionBusy || !selectedExamIds.size;
+    $('exSelectAll').disabled = busy;
+    $('exClearSelection').disabled = busy || !selectedExamIds.size;
+    $('exDownloadSelected').disabled = busy || !selectedExamIds.size;
     $('exSelectionStatus').textContent = message || selectedExamIds.size+' papers selected';
     document.querySelectorAll('#exAttemptRows input[type="checkbox"]').forEach(box=>{
       box.checked = selectedExamIds.has(box.value);
-      box.disabled = examSelectionBusy;
+      box.disabled = busy;
     });
   }
   async function selectAllExamPapers(){
@@ -3360,6 +3392,10 @@
         ()=>openExamPaper(a)));
       const excel = mkBtn('Full paper Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
       act.append(excel);
+      const remove = mkBtn('Delete', 'btn-danger', ()=>deleteExamResult(a,remove));
+      remove.setAttribute('aria-label','Delete result for '+(s.name||s.student_id||'student'));
+      remove.disabled = deletingExamIds.has(a.id);
+      act.append(remove);
 
       const selectionCell = document.createElement('td');
       const checkbox = document.createElement('input');
@@ -3762,6 +3798,7 @@
   const examDashboard = window.HNFExamDashboard.create({
     sb, toast, openTab, openPaper:openExamPaper,
     downloadPaper:(a,button)=>runExcel(button,()=>downloadExamOne(a)),
+    deleteResult:deleteExamResult,
     openResults:(filter)=>{ $('exFilter').value=filter; $('exSearch').value=''; openTab('exam-results'); }
   });
   init();

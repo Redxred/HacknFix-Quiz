@@ -34,6 +34,10 @@ button beside **Review** for the same individual full-paper download.
 The workbook opens on **Full exam paper**, with student details followed by
 each question and the student's answer. Long answers continue on additional
 rows so the whole response stays readable. Summary and analysis sheets follow.
+**Delete** in Final Exam Results or the dashboard's Recent results removes one
+attempt after confirmation, including its answers, marks and violation log.
+The student's profile and other attempts remain. Quiz Results also supports
+individual deletion.
 Use the row checkboxes to choose papers, **Select shown
 papers** for the current filter, or **Select all papers (all pages)** for the
 whole database, then **Download selected full papers**. The combined workbook

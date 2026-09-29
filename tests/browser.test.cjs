@@ -66,7 +66,7 @@ async function pageFor(options = {}) {
     const client = {
       from(table) {
         window.calls.push({name:'from',table});
-        let inserted = null, update = null, head = false, operations = [], sort = null, limit = null, range = null;
+        let inserted = null, update = null, deleting = false, head = false, operations = [], sort = null, limit = null, range = null;
         const data = table === 'questions' ? [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
           options:[{bn:'সঠিক',en:'Correct',correct:true},{bn:'ভুল',en:'Wrong',correct:false}],
           explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}]
@@ -90,6 +90,13 @@ async function pageFor(options = {}) {
               let rows = data;
               if(Array.isArray(rows)){
                 rows = rows.filter(r=>operations.every(([op,k,v])=>op==='eq'?r[k]===v:op==='neq'?r[k]!==v:op==='gt'?r[k]>v:op==='gte'?r[k]>=v:r[k]<=v));
+                if(deleting){
+                  window.calls.push({name:'delete',table,filters:operations,ids:rows.map(r=>r.id)});
+                  if(options.failDelete){resolve({data:null,error:{message:'Delete rejected'}});return;}
+                  if(options.noDeleteRows){resolve({data:[],error:null});return;}
+                  rows.forEach(row=>data.splice(data.indexOf(row),1));
+                  resolve({data:rows.map(row=>({id:row.id})),error:null});return;
+                }
                 if(sort) rows = [...rows].sort((a,b)=>(a[sort[0]]>b[sort[0]]?1:-1)*(sort[1]?.ascending===false?-1:1));
                 if(limit!=null) rows = rows.slice(0,limit);
                 if(range){
@@ -101,6 +108,7 @@ async function pageFor(options = {}) {
               resolve({data:head?null:rows,count:Array.isArray(rows)?rows.length:1,error:null});
             }
           : key === 'insert' ? rows=>{inserted=rows;return chain;}
+          : key === 'delete' ? ()=>{deleting=true;return chain;}
           : key === 'update' ? patch=>{update=patch;return chain;}
           : key === 'select' ? (cols,opts)=>{head=!!opts?.head;return chain;}
           : ['eq','neq','gt','gte','lte'].includes(key) ? (k,v)=>{operations.push([key,k,v]);return chain;}
@@ -117,6 +125,7 @@ async function pageFor(options = {}) {
           return {error:{message:'Network unavailable'}};
         }
         if(name === 'exam_stats' && options.failDashboard) return {data:null,error:{message:'Stats unavailable'}};
+        if(name === 'exam_stats' && options.exportData) return {data:{students:1105,in_progress:0,submitted:0,graded:examExportRows.length,flagged:examExportRows.filter(a=>a.violation_count).length,auto:0,avg_percent:75},error:null};
         if(name === 'exam_review' && options.exportData){
           if(options.failReviewId===body.p_attempt && !window.reviewFailureCleared) return {data:null,error:{message:'Paper request failed'}};
           const attempt=examExportRows.find(a=>a.id===body.p_attempt);
@@ -454,6 +463,63 @@ test('dashboard reports failed reads and never claims an unsuccessful status cha
     assert.equal(await page.locator('#edToggleOpen').isEnabled(),true);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
+});
+
+test('individual result deletion supports cancellation, removes only that paper and refreshes selections and totals',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
+  try{
+    await page.click('#manageExam');
+    await page.click('[data-tab="exam-results"]');
+    await page.locator('#exAttemptRows input[value="exam-0"]').check();
+    await page.click('[data-tab="exam-dashboard"]');
+    const remove=page.locator('#edRecent').getByRole('button',{name:'Delete result for Exam student 0',exact:true});
+    let confirmation='';
+    page.once('dialog',async dialog=>{confirmation=dialog.message();await dialog.dismiss();});
+    await remove.click();
+    assert.match(confirmation,/Exam student 0.*STU-0/);
+    assert.match(confirmation,/answers, marks and violation log/);
+    assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='delete').length),0);
+    assert.equal(await remove.isEnabled(),true);
+    page.once('dialog',dialog=>dialog.accept());
+    await remove.click();
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Exam result deleted'));
+    assert.equal(await remove.count(),0);
+    assert.equal(await page.locator('#edGraded').innerText(),'1104');
+    assert.equal(await page.locator('#edRecent').getByRole('button',{name:'Delete result for Exam student 1',exact:true}).count(),1);
+    await page.click('[data-tab="exam-results"]');
+    assert.equal(await page.locator('#exAttemptRows input[value="exam-0"]').count(),0);
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),'0 papers selected');
+    assert.equal(await page.locator('#exDownloadSelected').isDisabled(),true);
+    page.once('dialog',dialog=>dialog.accept());
+    await page.locator('#exAttemptRows').getByRole('button',{name:'Delete result for Exam student 1',exact:true}).click();
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('deleted for Exam student 1'));
+    assert.equal(await page.locator('#exAttemptRows input[value="exam-1"]').count(),0);
+    assert.equal(await page.locator('#exAttemptRows input[value="exam-2"]').count(),1);
+    const deleted=await page.evaluate(()=>window.calls.filter(c=>c.name==='delete'));
+    assert.deepEqual(deleted.map(c=>({table:c.table,filters:c.filters,ids:c.ids})),[
+      {table:'exam_attempts',filters:[['eq','id','exam-0']],ids:['exam-0']},
+      {table:'exam_attempts',filters:[['eq','id','exam-1']],ids:['exam-1']}
+    ]);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('failed or denied individual deletion keeps the student result and restores its button',async ()=>{
+  for(const failure of [{failDelete:true},{noDeleteRows:true}]){
+    const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,...failure});
+    try{
+      await page.click('#manageExam');
+      const remove=page.locator('#edRecent').getByRole('button',{name:'Delete result for Exam student 0',exact:true});
+      page.once('dialog',dialog=>dialog.accept());
+      await remove.click();
+      await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Could not delete result'));
+      assert.equal(await remove.isEnabled(),true);
+      assert.equal(await remove.innerText(),'Delete');
+      assert.equal(await page.locator('#edGraded').innerText(),'1105');
+      assert.deepEqual(errors,[]);
+    }finally{await page.close();}
+  }
 });
 
 test('Recent results exports the correct full student paper beside Review',async ()=>{

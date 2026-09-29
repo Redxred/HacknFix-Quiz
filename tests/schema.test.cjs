@@ -57,8 +57,21 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     const expired = await start('TEST-2');
     await db.query("update exam_attempts set deadline=now()-interval '1 minute' where id=$1", [expired.attempt]);
     await assert.rejects(start('TEST-2',expired.token), /already_attempted/);
+    await db.exec('update exam_settings set one_attempt_per_student=false;');
+    const otherAttempt = await start('TEST-1');
     await db.exec('set role anon');
     await assert.rejects(db.query('select exam_paper($1)', [paper.attempt]), /permission denied/);
     await assert.rejects(db.query('select exam_review($1)', [paper.attempt]), /permission denied/);
+    // Supabase grants table access; row policies must still prevent public deletion.
+    await db.exec('reset role; grant select,delete on exam_attempts to anon,authenticated; set role anon;');
+    assert.deepEqual((await db.query('delete from exam_attempts where id=$1 returning id',[paper.attempt])).rows,[]);
+    await db.exec('set role authenticated');
+    assert.deepEqual((await db.query('delete from exam_attempts where id=$1 returning id',[paper.attempt])).rows,[{id:paper.attempt}]);
+    await db.exec('reset role');
+    assert.equal((await db.query('select count(*)::int as n from exam_answers where attempt=$1',[paper.attempt])).rows[0].n,0);
+    assert.equal((await db.query('select count(*)::int as n from exam_violations where attempt=$1',[paper.attempt])).rows[0].n,0);
+    assert.equal((await db.query('select count(*)::int as n from exam_students where id=$1',[review.student.id])).rows[0].n,1);
+    assert.equal((await db.query('select count(*)::int as n from exam_attempts where id=$1',[otherAttempt.attempt])).rows[0].n,1);
+    assert.ok((await db.query('select count(*)::int as n from exam_answers where attempt=$1',[otherAttempt.attempt])).rows[0].n>0);
   } finally { await db.close(); }
 });

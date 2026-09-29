@@ -16,7 +16,7 @@
   };
   const paperFields = 'id,status,started_at,submitted_at,deadline,violation_count,auto_submitted,mcq_score,written_score,practical_score,mcq_total,written_total,practical_total,exam_students(name,student_id,batch)';
   window.HNFExamDashboard = {
-    create({ sb, toast, openTab, openPaper, downloadPaper, openResults }) {
+    create({ sb, toast, openTab, openPaper, downloadPaper, deleteResult, openResults }) {
       let active = false, live = true, poll = null, clock = null, request = null, generation = 0;
       let settings = null, monitored = [], changingOpen = false, settingsVersion = 0;
       const set = (id, value) => { $(id).textContent = value; };
@@ -54,6 +54,7 @@
         const host = $('edMonitorRows'); host.replaceChildren();
         rows.forEach(a => {
           const tr = el('tr');
+          tr.dataset.attempt = a.id;
           const s = student(a), name = el('td');
           name.dataset.label = 'Student';
           name.append(el('strong', s.name || 'Unknown student'), el('small', [s.student_id, s.batch].filter(Boolean).join(' · '), 'exam-row-detail'));
@@ -121,6 +122,7 @@
         if (!rows.length) { host.append(el('p', marking ? 'No papers waiting for marking.' : 'No submitted papers yet.', 'sub')); return; }
         rows.forEach(a => {
           const row = el('div', null, 'exam-feed-item'), details = el('div');
+          row.dataset.attempt = a.id;
           const s = student(a), result = score(a);
           details.append(el('strong', s.name || 'Unknown student'), el('small', [s.student_id, s.batch, when(a.submitted_at)].filter(Boolean).join(' · ')));
           details.append(el('small', a.status === 'graded' ? `Marked · ${result.got}/${result.total}` : 'Awaiting marking · MCQ ' + a.mcq_score + '/' + a.mcq_total));
@@ -133,6 +135,11 @@
             excel.setAttribute('aria-label', 'Download full paper Excel for ' + (s.name || s.student_id || 'student'));
             excel.addEventListener('click', () => downloadPaper(a, excel));
             actions.append(excel);
+            const remove = el('button', 'Delete', 'btn btn-danger btn-sm');
+            remove.type = 'button';
+            remove.setAttribute('aria-label','Delete result for '+(s.name || s.student_id || 'student'));
+            remove.addEventListener('click',()=>deleteResult(a,remove));
+            actions.append(remove);
           }
           row.append(details, actions); host.append(row);
         });
@@ -143,6 +150,7 @@
         rows.forEach(v => {
           const s = v.exam_attempts?.exam_students || {};
           const item = el('div', null, 'exam-feed-item'), details = el('div');
+          item.dataset.attempt = v.attempt;
           details.append(el('strong', String(v.kind || 'Event').replaceAll('-', ' ') + ' · ' + (s.name || s.student_id || 'Student')));
           details.append(el('small', when(v.at)), el('small', v.detail || 'No additional detail'));
           item.append(details, paperButton({ id: v.attempt }, 'Review')); host.append(item);
@@ -247,7 +255,17 @@
       $('edFlagQueue').addEventListener('click',() => openResults('flagged'));
       document.querySelectorAll('[data-exam-page]').forEach(b => b.addEventListener('click',() => openTab(b.dataset.examPage)));
       document.addEventListener('visibilitychange',() => { schedule(); if (active && live && !document.hidden) refresh(); });
-      return { enter() { active = true; schedule(); return refresh(); }, leave, refresh };
+      return { enter() { active = true; schedule(); return refresh(); }, leave, refresh,
+        async resultDeleted(id) {
+          // Let an older read finish before fetching the post-delete state.
+          if (request) await request;
+          monitored = monitored.filter(a=>a.id!==id);
+          document.querySelectorAll('#tab-exam-dashboard [data-attempt]').forEach(node=>{
+            if(node.dataset.attempt===id) node.remove();
+          });
+          return refresh();
+        }
+      };
     }
   };
 })();

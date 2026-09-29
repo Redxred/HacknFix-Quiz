@@ -356,6 +356,14 @@ Excel** exports only the summary scores for every paper. Workbooks are created
 in your browser using admin-only data. The CSV button exports only the loaded,
 visible papers. These export controls need no additional SQL migration.
 
+To remove one result, use **Delete** on its Final Exam Results row or beside
+**Review** and **Excel** in Recent results. The confirmation identifies the
+student and attempt. Deletion permanently removes that attempt's paper,
+answers, marks and violation log; the student profile and other attempts stay.
+Deleting an active attempt ends it. Removing a student's only attempt can let
+them take the exam again. Counts and export selections update after deletion.
+This uses the existing admin permissions and needs no SQL migration.
+
 **Exam settings** — how many questions of each type, seconds per MCQ, minutes
 for the written and practical sections, the pass mark, the violation limit,
 whether leaving the exam ends it, and every anti-cheat switch individually. It shows you the total time a paper
