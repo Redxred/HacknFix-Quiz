@@ -941,6 +941,7 @@
     }
   }
 </style>
+<link rel="stylesheet" href="portal.css">
 </head>
 <body data-lang="bn">
 <div id="splash" class="splash">
@@ -972,6 +973,7 @@
 
   <!-- SCREEN 0: PICK A MODE -->
   <section id="screen-choose" class="card">
+    <p class="portal-kicker" data-t="portalKicker">শিখুন · অনুশীলন করুন · এগিয়ে যান</p>
     <div class="welcome-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
     </div>
@@ -1059,12 +1061,13 @@
 
     <div id="examStartRow">
       <button class="btn btn-primary" id="examStartBtn" type="button" data-t="examStartBtn">পরীক্ষা শুরু করুন</button>
-      <button class="btn btn-ghost" id="examBackBtn" type="button" data-t="backBtn" style="margin-top:10px;">ফিরে যান</button>
     </div>
+    <button class="btn btn-ghost" id="examBackBtn" type="button" data-t="backBtn" style="margin-top:10px;">ফিরে যান</button>
   </section>
 
   <!-- SCREEN 5: EXAM RUNNER -->
   <section id="screen-exam" class="card hidden">
+    <div class="practice-banner hidden" id="practiceBanner"><span data-t="practiceNotice">অনুশীলন — কোনো ফলাফল জমা হবে না</span><button class="btn btn-ghost btn-sm" id="exitPractice" type="button" data-t="backBtn">ফিরে যান</button></div>
     <div class="exam-bar">
       <span class="sec-pill" id="pillMcq">MCQ</span>
       <span class="sec-pill" id="pillWritten" data-t="secWritten">লিখিত</span>
@@ -1086,6 +1089,8 @@
     </div>
 
     <div class="mcq-timer hidden" id="mcqTimer"><i id="mcqTimerFill"></i></div>
+    <div class="exam-tools"><span id="examAnswered" aria-live="polite"></span><button class="btn btn-ghost btn-sm" id="toggleQuestionMap" type="button" aria-expanded="false" aria-controls="questionMap" data-t="questionMapLabel">প্রশ্ন তালিকা</button></div>
+    <nav id="questionMap" class="question-map hidden" aria-label="Exam questions"></nav>
 
     <div class="q-marks" id="exMarks">1 mark</div>
     <div class="q-text" id="exPrompt"></div>
@@ -1119,6 +1124,7 @@
 
     <p class="hero-sub" id="exPendingNote" style="font-size:.87rem;"></p>
     <div class="ref-code hidden" id="exRef"></div>
+    <div id="practiceReview" class="hidden"></div>
 
     <div class="action-row" style="margin-top:20px;">
       <button class="btn btn-ghost" id="exHomeBtn" type="button" data-t="homeBtn">শুরুতে ফিরুন</button>
@@ -1245,6 +1251,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="sample-questions.js"></script>
 <script>
 (function(){
   // ---------- i18n ----------
@@ -1269,7 +1276,7 @@
       boardLocal:"সার্ভারে সংযোগ করা যায়নি, তাই শুধু আপনার ডিভাইসের স্কোর দেখানো হচ্ছে।",
       boardEmpty:"এখনো কেউ কুইজ শেষ করেনি। আপনিই প্রথম হোন!",
       boardLoading:"লিডারবোর্ড লোড হচ্ছে...",
-      offlineNote:"এই মুহূর্তে সার্ভারে সংযোগ করা যায়নি, তাই প্রশ্ন ও স্কোর অফলাইন কপি থেকে চলছে। ইন্টারনেট ঠিক হলে স্কোর আবার সবার সাথে যুক্ত হবে।",
+      offlineNote:"সার্ভারে সংযোগ করা যায়নি। এই স্কোর শুধু এই ডিভাইসে সংরক্ষিত আছে, সবার লিডারবোর্ডে যোগ হয়নি।",
       closedDefault:"কুইজটি এই মুহূর্তে বন্ধ আছে। পরে আবার চেষ্টা করুন।",
       setupNote:"ব্যাকএন্ড এখনো যুক্ত হয়নি — config.js ফাইলে আপনার Supabase URL ও anon key বসান। ততক্ষণ কুইজটি অফলাইন প্রশ্ন দিয়ে চলছে।",
       splashTag:"সাইবার সচেতনতা যাচাই",
@@ -1347,7 +1354,7 @@
       boardLocal:"Couldn't reach the server, so this only shows scores from your device.",
       boardEmpty:"Nobody has finished the quiz yet. Be the first!",
       boardLoading:"Loading leaderboard...",
-      offlineNote:"The server couldn't be reached, so questions and scores are running from the offline copy. Your score will join the shared board again once you're back online.",
+      offlineNote:"The server couldn't be reached. This score is saved only on this device and has not been added to the shared leaderboard.",
       closedDefault:"The quiz is closed right now. Please check back later.",
       setupNote:"Backend not connected yet — put your Supabase URL and anon key in config.js. Until then the quiz runs on the offline questions.",
       splashTag:"Check your cyber awareness",
@@ -1562,8 +1569,11 @@
   ];
 
   // ---------- State ----------
-  let lang = localStorage.getItem('cq_lang') || 'bn';
-  let theme = localStorage.getItem('cq_theme') || '';
+  let lang = 'bn', theme = '';
+  try{
+    lang = localStorage.getItem('cq_lang') === 'en' ? 'en' : 'bn';
+    theme = localStorage.getItem('cq_theme') || '';
+  }catch(e){}
   let user = null;
   let qIndex = 0;
   let score = 0;
@@ -1694,7 +1704,7 @@
     examErrPhone:"মোবাইল নম্বর লাগবে", examErrBadEmail:"ইমেইলটি সঠিক নয়",
     examErrTime:"সময় শেষ হয়ে গেছে।",
     examErrDone:"এই খাতা আগেই জমা হয়েছে।",
-    examErrSession:"সেশনটি আর কার্যকর নেই। আবার শুরু করুন।",
+    examErrSession:"এই ব্রাউজারে পরীক্ষা আবার চালু করা যাচ্ছে না। যে ব্রাউজারে শুরু করেছিলেন সেটি ব্যবহার করুন অথবা প্রশাসকের সঙ্গে যোগাযোগ করুন।",
     examErrOffline:"সার্ভারে সংযোগ নেই — পরীক্ষা শুরু করা যাচ্ছে না।",
     examErrSubmit:"জমা দেওয়া যায়নি",
     examErrGeneric:"কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
@@ -1797,13 +1807,32 @@
     examErrPhone:"Mobile number is required", examErrBadEmail:"That email does not look right",
     examErrTime:"Time is up.",
     examErrDone:"This paper has already been submitted.",
-    examErrSession:"That session is no longer valid. Please start again.",
+    examErrSession:"This exam cannot be resumed here. Use the browser where you started it, or contact your administrator.",
     examErrOffline:"No connection to the server — the exam cannot start.",
     examErrSubmit:"Could not submit",
     examErrGeneric:"Something went wrong. Please try again."
   });
 
   const $ = (id)=>document.getElementById(id);
+
+  Object.assign(UI.en, {
+    portalKicker:'Learn · Practice · Progress',
+    practiceNotice:'Practice only — answers are not submitted or saved after leaving.',
+    practiceComplete:'Practice complete',
+    practiceReviewHint:'Review the sample answers below. Written and practical responses are for self-review, not graded.',
+    questionMapLabel:'Question map', answeredLabel:'answered',
+    yourAnswer:'Your answer', reviewAnswer:'Answer / marking points', noAnswer:'Not answered',
+    secWritten:'Written / CQ', examUnavailable:'The exam is temporarily unavailable. Please contact your instructor, or try a practice paper.'
+  });
+  Object.assign(UI.bn, {
+    portalKicker:'শিখুন · অনুশীলন করুন · এগিয়ে যান',
+    practiceNotice:'শুধু অনুশীলন — উত্তর জমা হবে না, পেজ ছাড়লে মুছে যাবে।',
+    practiceComplete:'অনুশীলন শেষ',
+    practiceReviewHint:'নিচের নমুনা উত্তর দেখে মিলিয়ে নিন। লিখিত ও ব্যবহারিক উত্তরে নম্বর দেওয়া হয়নি।',
+    questionMapLabel:'প্রশ্ন তালিকা', answeredLabel:'টির উত্তর দেওয়া হয়েছে',
+    yourAnswer:'আপনার উত্তর', reviewAnswer:'উত্তর / মূল্যায়নের বিষয়', noAnswer:'উত্তর দেওয়া হয়নি',
+    secWritten:'লিখিত / CQ', examUnavailable:'পরীক্ষাটি এখন চালু করা যাচ্ছে না। শিক্ষকের সঙ্গে যোগাযোগ করুন অথবা অনুশীলন করুন।'
+  });
 
   function shuffle(arr){
     const a = arr.slice();
@@ -1841,7 +1870,7 @@
   $('themeBtn').addEventListener('click', ()=>{
     const curDark = theme==='dark' || (theme==='' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     theme = curDark ? 'light' : 'dark';
-    localStorage.setItem('cq_theme', theme);
+    try{ localStorage.setItem('cq_theme', theme); }catch(e){}
     applyTheme();
   });
 
@@ -1859,7 +1888,7 @@
       if(UI[lang][key] !== undefined) el.setAttribute('placeholder', UI[lang][key]);
     });
     if(!document.getElementById('screen-quiz').classList.contains('hidden')){
-      renderQuestion();
+      translateQuestion();
     }
     if(!document.getElementById('screen-result').classList.contains('hidden')){
       renderResult();
@@ -1878,12 +1907,12 @@
     if(typeof paintExamChrome === 'function'){
       paintExamChrome();
       paintStrikes();
-      if(!$('screen-exam').classList.contains('hidden')) renderExamQuestion();
+      if(!$('screen-exam').classList.contains('hidden')) renderExamQuestion(true);
     }
   }
   $('langBtn').addEventListener('click', ()=>{
     lang = lang==='bn' ? 'en' : 'bn';
-    localStorage.setItem('cq_lang', lang);
+    try{ localStorage.setItem('cq_lang', lang); }catch(e){}
     applyLang();
   });
 
@@ -2033,7 +2062,7 @@
     if(!name){ alert(UI[lang].needName); $('inpName').focus(); return; }
     if(!phone || !/^[0-9]{11}$/.test(phone)){ alert(UI[lang].needPhone); $('inpPhone').focus(); return; }
     user = {name, phone, email};
-    localStorage.setItem('cq_user', JSON.stringify(user));
+    try{ localStorage.setItem('cq_user', JSON.stringify(user)); }catch(e){}
     qIndex = 0; score = 0; quizStartedAt = Date.now();
     runQuestions = buildShuffledRun();
     markVisit('start');
@@ -2108,7 +2137,7 @@
     note.classList.remove('hidden');
     note.textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
 
-    $('qExplain').innerHTML = `<strong>${UI[lang].wrongWord}.</strong> ${item.explain[lang]}`;
+    $('qExplain').innerHTML = `<strong>${UI[lang].wrongWord}.</strong> ${escapeHtml(item.explain[lang])}`;
     $('qExplain').classList.remove('hidden');
     $('nextRow').classList.remove('hidden');
 
@@ -2118,6 +2147,22 @@
   }
 
   // ---------- Quiz ----------
+  function translateQuestion(){
+    const item = runQuestions[qIndex];
+    $('qNum').textContent = lang==='bn' ? bnNum(qIndex+1) : qIndex+1;
+    $('qTotal').textContent = lang==='bn' ? bnNum(runQuestions.length) : runQuestions.length;
+    $('qText').textContent = item.q[lang];
+    document.querySelectorAll('#qOptions .option').forEach((el, i)=>{
+      el.textContent = item.options[i][lang];
+    });
+    if(answered){
+      const wrong = timedOut || !!document.querySelector('#qOptions .incorrect');
+      $('qExplain').innerHTML = `<strong>${wrong ? UI[lang].wrongWord : UI[lang].correctWord}.</strong> ${escapeHtml(item.explain[lang])}`;
+    }
+    if(timedOut) $('timeoutNote').textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
+    $('nextBtn').textContent = qIndex === runQuestions.length-1 ? UI[lang].finishBtn : UI[lang].nextBtn;
+  }
+
   function renderQuestion(){
     answered = false;
     const item = runQuestions[qIndex];
@@ -2168,7 +2213,7 @@
     if(item.options[i].correct) score++;
 
     const verdict = item.options[i].correct ? UI[lang].correctWord : UI[lang].wrongWord;
-    $('qExplain').innerHTML = `<strong>${verdict}.</strong> ${item.explain[lang]}`;
+    $('qExplain').innerHTML = `<strong>${verdict}.</strong> ${escapeHtml(item.explain[lang])}`;
     $('qExplain').classList.remove('hidden');
     $('nextRow').classList.remove('hidden');
   }
@@ -2357,7 +2402,10 @@
   });
 
   function getLocalBoard(){
-    return JSON.parse(localStorage.getItem('cq_board') || '[]');
+    try{
+      const rows = JSON.parse(localStorage.getItem('cq_board') || '[]');
+      return Array.isArray(rows) ? rows.filter(r=>r && typeof r.name === 'string' && Number.isFinite(r.score) && r.total > 0) : [];
+    }catch(e){ return []; }
   }
 
   function saveLocalAttempt(total){
@@ -2370,7 +2418,7 @@
       mine: true
     });
     board = board.sort((a,b)=>b.score-a.score).slice(0,10);
-    localStorage.setItem('cq_board', JSON.stringify(board));
+    try{ localStorage.setItem('cq_board', JSON.stringify(board)); }catch(e){}
   }
 
   function renderLeaderboard(){
@@ -2806,8 +2854,8 @@
   // The bar tracks what is actually happening rather than counting down a
   // fixed timer, but it never disappears so fast that it just flickers.
   const splashStart = Date.now();
-  const SPLASH_MIN = 1600;    // let the shield finish drawing
-  const SPLASH_MAX = 6000;    // never trap anyone behind a hung request
+  const SPLASH_MIN = 250;
+  const SPLASH_MAX = 1800;    // do not hold the interface behind a slow API
   let splashDone = false;
 
   function splashStep(pct, statusKey){
@@ -2861,12 +2909,80 @@
     deadline:0,          // ms epoch, from the server
     strikes:0,
     live:false,          // exam in progress -> anti-cheat armed
-    done:false,
+    done:false, practice:false, submitting:false, navigating:false, saveQueue:Promise.resolve(),
     mcqLeft:0,
     saveTimer:null, mcqTick:null, clockTick:null, pingTick:null,
     lastTrip:0,          // de-dupes events that fire in pairs
     settings:null
   };
+
+  function startPractice(kind){
+    if(EXAM.live || EXAM.submitting) return;
+    const bank = window.HACKNFIX_SAMPLES?.exam || [];
+    const pool = bank.filter(q=>kind === 'all' || q.qtype === kind);
+    if(!pool.length) return;
+    stopMcqTimer(); stopExamClock();
+    EXAM.questions = pool.map((q,i)=>({...JSON.parse(JSON.stringify(q)),
+      id:'practice-'+i, choice:null, text:''}));
+    EXAM.practice = true;
+    EXAM.attempt = null; EXAM.token = null; EXAM.idx = 0;
+    EXAM.done = false; EXAM.strikes = 0; EXAM.navigating = false;
+    EXAM.saveQueue = Promise.resolve();
+    EXAM.cfg = {mcq_seconds:60,max_violations:3,require_fullscreen:false,
+      block_copy:false,detect_tab_switch:false,end_on_exit:false};
+    EXAM.deadline = Date.now() + 60*60*1000;
+    $('practiceBanner').classList.remove('hidden');
+    $('practiceReview').classList.add('hidden');
+    $('strikeChip').classList.add('hidden');
+    showScreen('screen-exam');
+    startExamClock(); renderExamQuestion();
+  }
+  function updateExamOverview(){
+    const answeredCount = EXAM.questions.filter(q=>q.choice != null || (q.text || '').trim()).length;
+    const num = n=>lang === 'bn' ? bnNum(n) : n;
+    $('examAnswered').textContent = num(answeredCount) + ' / ' + num(EXAM.questions.length) + ' ' + UI[lang].answeredLabel;
+    $('questionMap').querySelectorAll('button').forEach((b,i)=>{
+      const q = EXAM.questions[i];
+      b.classList.toggle('answered',q.choice != null || !!(q.text || '').trim());
+    });
+  }
+  function renderQuestionMap(){
+    const host = $('questionMap');
+    host.replaceChildren();
+    EXAM.questions.forEach((q,i)=>{
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = lang === 'bn' ? bnNum(i+1) : i+1;
+      b.classList.toggle('current',i===EXAM.idx);
+      b.setAttribute('aria-label',(i+1) + '. ' + q.qtype);
+      if(i===EXAM.idx) b.setAttribute('aria-current','step');
+      // Live MCQs remain sequential; written answers can be revisited.
+      b.disabled = !EXAM.practice && (q.qtype==='mcq' || currentQ()?.qtype==='mcq');
+      b.addEventListener('click',async ()=>{
+        if(EXAM.navigating || EXAM.submitting || EXAM.done) return;
+        EXAM.navigating = true;
+        try{ flushText(); EXAM.idx=i; renderExamQuestion(); }
+        finally{ EXAM.navigating=false; }
+      });
+      host.append(b);
+    });
+  }
+  function renderPracticeReview(){
+    const host = $('practiceReview');
+    host.replaceChildren(); host.classList.remove('hidden');
+    EXAM.questions.forEach((q,i)=>{
+      const item = document.createElement('details');
+      item.className = 'practice-panel';
+      const summary = document.createElement('summary');
+      summary.textContent = (i+1) + '. ' + q.prompt;
+      const answer = document.createElement('p');
+      answer.textContent = UI[lang].yourAnswer + ': ' +
+        (q.qtype === 'mcq' ? q.options[q.choice]?.text || UI[lang].noAnswer : q.text || UI[lang].noAnswer);
+      const guide = document.createElement('p');
+      guide.textContent = UI[lang].reviewAnswer + ': ' +
+        (q.qtype === 'mcq' ? q.options.find(o=>o.correct)?.text : q.model_answer);
+      item.append(summary,answer,guide); host.append(item);
+    });
+  }
 
   // ---------- helpers ----------
   const examSb = ()=> window.HacknFix && window.HacknFix.client;
@@ -2900,6 +3016,7 @@
 
   // Turn a raised Postgres error into something a student can act on.
   function examError(e){
+    if(e?.code === 'PGRST202') return UI[lang].examUnavailable;
     const raw = (e && (e.message || e.error_description || '')) + '';
     const map = {
       exam_closed:      'examErrClosed',
@@ -2950,6 +3067,9 @@
       pick.disabled = true;
       tag.className = 'mode-tag shut';
       tag.textContent = UI[lang].examNotInstalled;
+      $('examStartRow').classList.add('hidden');
+      $('examClosedNote').classList.remove('hidden');
+      $('examClosedNote').textContent = UI[lang].examUnavailable;
       return;
     }
     if($('examTitle')) $('examTitle').textContent = s.exam_title || 'Final Exam';
@@ -3040,21 +3160,30 @@
     btn.textContent = UI[lang].examStarting;
 
     try{
+      let resumeToken = null;
+      try{ resumeToken = localStorage.getItem('hnf_exam_' + examField('exId').toUpperCase()); }catch(e){}
       const { data, error } = await sb.rpc('exam_start', {
         p_name:       examField('exName'),
         p_student_id: examField('exId'),
         p_batch:      examField('exBatch'),
         p_email:      examField('exEmail'),
         p_phone:      examField('exPhone'),
-        p_user_agent: navigator.userAgent.slice(0,400)
+        p_user_agent: navigator.userAgent.slice(0,400),
+        p_resume_token: resumeToken
       });
       if(error) throw error;
 
       EXAM.attempt   = data.attempt;
+      EXAM.practice  = false;
+      $('exScoreRows').classList.remove('hidden');
+      $('practiceBanner').classList.add('hidden');
+      $('practiceReview').classList.add('hidden');
       EXAM.token     = data.token;
+      try{ localStorage.setItem('hnf_exam_' + examField('exId').toUpperCase(), data.token); }catch(e){}
       EXAM.questions = data.questions || [];
       EXAM.cfg       = Object.assign(EXAM.cfg, data.config || {});
-      EXAM.deadline  = new Date(data.deadline).getTime();
+      EXAM.deadline  = Number.isFinite(data.seconds_left)
+        ? Date.now() + data.seconds_left * 1000 : new Date(data.deadline).getTime();
       EXAM.strikes   = data.violations || 0;
       EXAM.done      = false;
 
@@ -3087,7 +3216,7 @@
 
   function sectionOf(q){ return q ? q.qtype : 'mcq'; }
 
-  function renderExamQuestion(){
+  function renderExamQuestion(translateOnly = false){
     const q = currentQ();
     if(!q) return;
     const L = UI[lang];
@@ -3113,7 +3242,12 @@
     $('exTextWrap').classList.toggle('hidden', isMcq);
     $('mcqTimer').classList.toggle('hidden', !isMcq);
 
-    if(isMcq) renderMcq(q); else renderWritten(q);
+    if(!translateOnly){
+      if(isMcq) renderMcq(q); else renderWritten(q);
+    }else if(!isMcq){
+      $('exAnswer').placeholder = L[q.qtype === 'practical' ? 'phPractical' : 'phWritten'];
+      countWords();
+    }
 
     $('exNextBtn').textContent = (EXAM.idx === total - 1) ? L.examSubmitBtn : L.nextBtn;
 
@@ -3125,16 +3259,22 @@
     $('exPrevBtn').classList.toggle('hidden',
       isMcq || !prev || prev.qtype === 'mcq');
 
-    window.scrollTo({top:0, behavior:'smooth'});
+    renderQuestionMap();
+    updateExamOverview();
+    if(!translateOnly) window.scrollTo({top:0, behavior:'auto'});
   }
 
   async function goPrev(){
+    if(EXAM.navigating || EXAM.submitting || EXAM.done) return;
     const q = currentQ();
     if(!q || q.qtype === 'mcq' || EXAM.idx === 0) return;
     if(EXAM.questions[EXAM.idx - 1].qtype === 'mcq') return;
-    await flushText();
-    EXAM.idx--;
-    renderExamQuestion();
+    EXAM.navigating = true;
+    try{
+      flushText();
+      EXAM.idx--;
+      renderExamQuestion();
+    }finally{ EXAM.navigating = false; }
   }
 
   function renderMcq(q){
@@ -3149,6 +3289,7 @@
         q.choice = i;
         host.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
+        updateExamOverview();
         saveAnswer(q, {choice:i});
       });
       host.appendChild(b);
@@ -3180,7 +3321,19 @@
   }
 
   // ---------- saving ----------
-  async function saveAnswer(q, patch){
+  function saveAnswer(q, patch){
+    q.unsaved = patch;
+    const pending = EXAM.saveQueue.then(()=>persistAnswer(q, patch));
+    EXAM.saveQueue = pending.catch(()=>{});
+    return pending;
+  }
+
+  async function persistAnswer(q, patch){
+    if(EXAM.practice){
+      if(q.unsaved === patch) delete q.unsaved;
+      if('text' in patch) setSaveState('saved');
+      return true;
+    }
     const sb = examSb();
     if(!sb || !EXAM.attempt || EXAM.done) return;
     const body = {
@@ -3193,10 +3346,17 @@
     try{
       const { error } = await sb.rpc('exam_save_answer', body);
       if(error) throw error;
-      if('text' in patch) setSaveState('saved');
+      if(q.unsaved === patch) delete q.unsaved;
+      if('text' in patch && currentQ() === q && !q.unsaved) setSaveState('saved');
+      return true;
     }catch(e){
-      if((e.message||'').indexOf('time_up') !== -1) return finishExam(true, 'time');
-      if('text' in patch) setSaveState('failed');
+      if((e.message||'').indexOf('time_up') !== -1){
+        if(!EXAM.submitting) setTimeout(()=>finishExam(true, 'time'), 0);
+        return true;
+      }
+      if('text' in patch){ if(currentQ() === q) setSaveState('failed'); }
+      else examToast(UI[lang].save_failed, true);
+      return false;
     }
   }
 
@@ -3204,6 +3364,7 @@
     const q = currentQ();
     if(!q || q.qtype === 'mcq') return;
     q.text = $('exAnswer').value;
+    updateExamOverview();
     countWords();
     setSaveState('saving');
     clearTimeout(EXAM.saveTimer);
@@ -3260,7 +3421,7 @@
     EXAM.clockTick = setInterval(paintExamClock, 1000);
     // Resync against the server every half minute, so a student who
     // changes their device clock gains nothing.
-    EXAM.pingTick = setInterval(pingExam, 30000);
+    if(!EXAM.practice) EXAM.pingTick = setInterval(pingExam, 30000);
   }
 
   function paintExamClock(){
@@ -3299,24 +3460,28 @@
 
   // ---------- navigation ----------
   async function goNext(auto){
-    const q = currentQ();
-    if(!q) return;
+    if(EXAM.navigating || EXAM.submitting || EXAM.done) return;
+    EXAM.navigating = true;
+    try{
+      const q = currentQ();
+      if(!q) return;
 
-    if(q.qtype !== 'mcq'){
-      // Make them put something down rather than skipping by accident -
-      // but never block an automatic move.
-      if(!auto && !($('exAnswer').value || '').trim()){
-        return examToast(UI[lang].errBlank, true);
+      if(q.qtype !== 'mcq'){
+        // Make them put something down rather than skipping by accident -
+        // but never block an automatic move.
+        if(!auto && !($('exAnswer').value || '').trim()){
+          return examToast(UI[lang].errBlank, true);
+        }
+        flushText();
       }
-      await flushText();
-    }
 
-    if(EXAM.idx >= EXAM.questions.length - 1){
-      if(auto) return finishExam(true, 'timeout-last');
-      return confirmSubmit();
-    }
-    EXAM.idx++;
-    renderExamQuestion();
+      if(EXAM.idx >= EXAM.questions.length - 1){
+        if(auto) return finishExam(true, 'timeout-last');
+        return confirmSubmit();
+      }
+      EXAM.idx++;
+      renderExamQuestion();
+    }finally{ EXAM.navigating = false; }
   }
 
   function confirmSubmit(){
@@ -3337,8 +3502,8 @@
 
   // ---------- submit ----------
   async function finishExam(auto, reason){
-    if(EXAM.done) return;
-    EXAM.done = true;
+    if(EXAM.done || EXAM.submitting) return;
+    EXAM.submitting = true;
 
     // Disarm first, so submitting does not trip its own alarms (leaving
     // fullscreen at the end is not a violation).
@@ -3346,29 +3511,44 @@
     stopMcqTimer();
     stopExamClock();
 
+    if(EXAM.practice){
+      await flushText();
+      await EXAM.saveQueue;
+      EXAM.done = true;
+      EXAM.submitting = false;
+      const mcqs = EXAM.questions.filter(q=>q.qtype === 'mcq');
+      const got = mcqs.reduce((sum,q)=>sum + (q.options[q.choice]?.correct ? q.marks : 0),0);
+      showExamResult({mcq_score:got,mcq_total:mcqs.reduce((sum,q)=>sum+q.marks,0),awaiting:0},false,null);
+      $('exScoreRows').classList.toggle('hidden',mcqs.length===0);
+      $('exDoneTitle').textContent = UI[lang].practiceComplete;
+      $('exDoneSub').textContent = UI[lang].practiceNotice;
+      $('exPendingNote').textContent = UI[lang].practiceReviewHint;
+      $('exRef').classList.add('hidden');
+      renderPracticeReview();
+      return;
+    }
     const sb = examSb();
-    if(!sb) return;
-
-    try{ await flushText(); }catch(e){}
+    if(!sb){ EXAM.submitting = false; return; }
 
     try{
+      await flushText();
+      await EXAM.saveQueue;
+      for(const q of EXAM.questions){
+        if(q.unsaved && !await saveAnswer(q, q.unsaved)) throw new Error(UI[lang].save_failed);
+      }
       const { data, error } = await sb.rpc('exam_submit', {
         p_attempt:EXAM.attempt, p_token:EXAM.token,
         p_auto:!!auto, p_reason:reason || null
       });
       if(error) throw error;
+      EXAM.done = true;
       showExamResult(data, auto, reason);
     }catch(e){
-      // Already submitted from another tab is a success, not a failure.
-      if((e.message||'').indexOf('already_submitted') !== -1){
-        showExamResult({mcq_score:0,mcq_total:0,awaiting:0}, auto, reason);
-      }else{
-        examToast(examError(e), true);
-        showScreen('screen-exam-done');
-        $('exDoneTitle').textContent = UI[lang].examErrSubmit;
-        $('exDoneSub').textContent   = examError(e);
-      }
-    }
+      examToast(examError(e), true);
+      showWarn({title:UI[lang].examErrSubmit, body:examError(e),
+        okKey:'examSubmitBtn', danger:false, allowCancel:false,
+        onOk:()=>finishExam(auto, reason)});
+    }finally{ EXAM.submitting = false; }
   }
 
   function showExamResult(res, auto, reason){
@@ -3651,7 +3831,7 @@
   }
 
   // ---------- warning / confirm overlay ----------
-  function showWarn({title, body, count, okKey, danger, onOk}){
+  function showWarn({title, body, count, okKey, danger, onOk, allowCancel = true}){
     const old = document.getElementById('warnBack');
     if(old) old.remove();
 
@@ -3690,7 +3870,7 @@
     row.style.cssText = 'display:flex;gap:10px;margin-top:8px;';
 
     // A confirm needs a way out; a warning does not.
-    if(onOk && okKey === 'examSubmitBtn'){
+    if(allowCancel && onOk && okKey === 'examSubmitBtn'){
       const cancel = document.createElement('button');
       cancel.className = 'btn btn-ghost';
       cancel.style.flex = '1';
@@ -3714,6 +3894,15 @@
     document.body.appendChild(back);
     setTimeout(()=>ok.focus(), 60);
   }
+
+  $('exitPractice').addEventListener('click',()=>{
+    clearTimeout(EXAM.saveTimer); stopMcqTimer(); stopExamClock();
+    EXAM.practice=false; EXAM.done=true; showScreen('screen-choose');
+  });
+  $('toggleQuestionMap').addEventListener('click',()=>{
+    const hidden = $('questionMap').classList.toggle('hidden');
+    $('toggleQuestionMap').setAttribute('aria-expanded',String(!hidden));
+  });
 
   // ---------- wiring ----------
   $('pickQuiz').addEventListener('click', ()=>showScreen('screen-register'));
@@ -3749,8 +3938,14 @@
   splashStep(15, 'loadStart');
   loadFromServer();
   loadExamSettings();
-  trackVisit();
-  startStats();
+  const route = new URLSearchParams(location.search);
+  const practice = route.get('practice');
+  if(['all','mcq','written'].includes(practice)) startPractice(practice);
+  else{
+    trackVisit();
+    if(route.get('mode') === 'quiz') showScreen('screen-register');
+    if(route.get('mode') === 'exam') showScreen('screen-exam-reg');
+  }
   setTimeout(hideSplash, SPLASH_MAX);   // safety net
 })();
 </script>

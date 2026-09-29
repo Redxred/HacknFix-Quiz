@@ -623,6 +623,7 @@
   :root[data-theme="dark"] .pill.written{background:#3A2E12;color:#FCD34D;}
   :root[data-theme="dark"] .pill.practical{background:#132D1E;color:#86EFAC;}
 </style>
+<link rel="stylesheet" href="portal.css">
 </head>
 <body>
 
@@ -634,7 +635,7 @@
       <span>HacknFix</span><span class="tag">Admin</span>
     </div>
     <h1>Sign in</h1>
-    <p class="sub">Use the admin account you created in Supabase (Authentication &rsaquo; Users).</p>
+    <p class="sub">Your quiz and final exam, each with its own workspace. Sign in to manage questions, results and settings.</p>
 
     <div class="msg err hidden" id="loginMsg"></div>
 
@@ -665,20 +666,47 @@
   </div>
 
   <main>
-    <div class="tabs">
+    <section id="adminHome">
+      <div class="portal-hero">
+        <p class="portal-kicker">HacknFix / Control center</p>
+        <h1 class="portal-title">Two experiences. Your control.</h1>
+        <p class="portal-description">Choose a workspace to manage its question bank, participants and settings.</p>
+      </div>
+      <div class="portal-grid">
+        <button class="portal-tile" id="manageQuiz" type="button">
+          <span class="portal-symbol" aria-hidden="true">Q</span>
+          <h2>Awareness Quiz</h2>
+          <p>Small questions. Better digital habits. Manage the bilingual quiz for everyone.</p>
+          <span class="portal-pills"><span>বাংলা + English</span><span>Leaderboard</span><span>Visitor insights</span></span>
+          <span class="tile-link">Manage quiz <span aria-hidden="true">↗</span></span>
+        </button>
+        <button class="portal-tile exam" id="manageExam" type="button">
+          <span class="portal-symbol" aria-hidden="true">E</span>
+          <h2>Final Exam</h2>
+          <p>Build a paper, follow submissions and mark written answers in one place.</p>
+          <span class="portal-pills"><span>MCQ</span><span>Written / CQ</span><span>Practical</span></span>
+          <span class="tile-link">Manage final exam <span aria-hidden="true">↗</span></span>
+        </button>
+      </div>
+    </section>
+    <div class="workspace-head hidden" id="workspaceHead">
+      <div><p class="portal-kicker" id="workspaceKicker">Quiz workspace</p><h1 id="workspaceTitle">Awareness Quiz</h1><p id="workspaceSub"></p></div>
+      <div class="workspace-actions"><a class="btn btn-ghost btn-sm" id="workspacePreview" href="index.html" target="_blank" rel="noopener">Student view ↗</a><button class="btn btn-ghost btn-sm" id="workspaceHome" type="button">← Workspaces</button></div>
+    </div>
+    <nav class="tabs hidden" id="workspaceTabs" aria-label="Workspace pages">
       <button class="tab active" data-tab="dashboard" type="button">Dashboard</button>
       <button class="tab" data-tab="questions" type="button">Questions</button>
       <button class="tab" data-tab="results" type="button">Results</button>
       <button class="tab" data-tab="feedback" type="button">Feedback<span class="badge hidden" id="fbBadge">0</span></button>
       <button class="tab" data-tab="settings" type="button">Site settings</button>
-      <span class="tab-split"></span>
+      <button class="tab" data-tab="exam-dashboard" type="button">Exam dashboard</button>
       <button class="tab" data-tab="exam-questions" type="button">Exam questions</button>
       <button class="tab" data-tab="exam-results" type="button">Exam results<span class="badge hidden" id="exBadge">0</span></button>
       <button class="tab" data-tab="exam-settings" type="button">Exam settings</button>
-    </div>
+    </nav>
 
     <!-- ---------- DASHBOARD ---------- -->
-    <section id="tab-dashboard" class="viz">
+    <section id="tab-dashboard" class="viz hidden">
       <div class="setup-note hidden" id="analyticsSetup"></div>
 
       <!-- one filter row, above everything it scopes -->
@@ -949,6 +977,47 @@
       </div>
     </section>
 
+    <section id="tab-exam-dashboard" class="hidden">
+      <div class="exam-dash-toolbar">
+        <div><p class="portal-kicker">Final exam / Overview</p><h2>Exam control room</h2><p class="sub" id="edUpdated" aria-live="polite">Waiting for data…</p></div>
+        <div class="workspace-actions"><button class="btn btn-ghost btn-sm" id="edLive" type="button" aria-pressed="true">● Live · 20s</button><button class="btn btn-ghost btn-sm" id="edRefresh" type="button">Refresh</button></div>
+      </div>
+      <div class="portal-note hidden" id="edError" role="status"></div>
+      <div class="exam-control card">
+        <div><span class="pill" id="edOpenState">Loading status…</span><h3 id="edTitle">Final Exam</h3><p class="sub">Control new registrations. Closing the exam does not submit papers already running.</p></div>
+        <div class="workspace-actions"><button class="btn btn-primary" id="edToggleOpen" type="button" disabled>Loading…</button><button class="btn btn-ghost" data-exam-page="exam-settings" type="button">Exam settings</button></div>
+      </div>
+      <div class="exam-metrics">
+        <div class="stat"><div class="n" id="edStudents">—</div><div class="l">Registered students</div></div>
+        <div class="stat"><div class="n" id="edActive">—</div><div class="l">Within exam time</div></div>
+        <div class="stat"><div class="n" id="edExpired">—</div><div class="l">Expired, not submitted</div></div>
+        <button class="stat metric-action" id="edMarkQueue" type="button"><div class="n" id="edWaiting">—</div><div class="l">Waiting for marking ↗</div></button>
+        <div class="stat"><div class="n" id="edGraded">—</div><div class="l">Papers marked</div></div>
+        <button class="stat metric-action" id="edFlagQueue" type="button"><div class="n" id="edFlagged">—</div><div class="l">Flagged papers ↗</div></button>
+        <div class="stat"><div class="n" id="edAverage">—</div><div class="l">Average · marked papers</div></div>
+        <div class="stat"><div class="n" id="edAuto">—</div><div class="l">Auto-submitted</div></div>
+      </div>
+      <p class="exam-scope" id="edCompletion">All-time totals. Flags record browser events and need human review.</p>
+      <div class="card">
+        <div class="exam-panel-head"><div><h2>Attempt monitor</h2><p class="sub">Up to 100 attempts, earliest deadline first. Saved questions may include blank drafts. This is recorded activity, not an online-presence indicator.</p></div></div>
+        <div class="bank-tools"><input type="search" id="edSearch" aria-label="Search monitored students" placeholder="Find a name, student ID or batch…"><select id="edMonitorMode" aria-label="Monitor status"><option value="active">Within exam time</option><option value="expired">Expired, not submitted</option></select><label class="exam-check"><input type="checkbox" id="edOnlyFlagged">Flagged only</label></div>
+        <div class="table-wrap"><table><thead><tr><th>Student / batch</th><th>Saved questions</th><th>Last answer save</th><th>Time left</th><th>Flags</th><th></th></tr></thead><tbody id="edMonitorRows"></tbody></table></div>
+        <p class="exam-scope" id="edMonitorNote">Loading attempts…</p>
+      </div>
+      <div class="exam-dashboard-grid">
+        <div class="card"><div class="exam-panel-head"><h2>Submission activity</h2><select id="edDays" aria-label="Activity period"><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option></select></div><p class="sub" id="edTrendScope">Up to 1,000 submissions in the selected period, in your local timezone.</p><div id="edTrend" class="exam-trend" aria-label="Submissions by day"></div><div class="exam-chart-key"><span>Submissions per day</span><span id="edTrendTotal"></span></div></div>
+        <div class="card"><h2>Score distribution</h2><p class="sub">Marked papers in the activity period above. Unmarked papers are excluded.</p><div id="edScores" class="exam-score-bars"></div><div class="exam-scope" id="edScoreNote"></div></div>
+      </div>
+      <div class="exam-dashboard-grid">
+        <div class="card"><div class="exam-panel-head"><h2>Marking queue</h2><button class="btn btn-ghost btn-sm" id="edAllMarking" type="button">View all ↗</button></div><p class="sub">The 10 oldest submissions waiting for a grade.</p><div id="edQueue" class="exam-feed"></div></div>
+        <div class="card"><h2>Recent results</h2><p class="sub">The 10 most recently submitted papers. Scores are provisional until marked.</p><div id="edRecent" class="exam-feed"></div></div>
+      </div>
+      <div class="exam-dashboard-grid">
+        <div class="card"><h2>Recent violation events</h2><p class="sub">Latest 30 events across all attempts. Open a paper to review the context before taking action.</p><div id="edViolations" class="exam-feed exam-feed-scroll"></div></div>
+        <div class="card"><div class="exam-panel-head"><h2>Exam readiness</h2><button class="btn btn-ghost btn-sm" data-exam-page="exam-questions" type="button">Question bank ↗</button></div><p class="sub">Question availability and settings for new papers.</p><div id="edReadiness"></div><div id="edRules" class="portal-pills"></div></div>
+      </div>
+    </section>
+
     <!-- ---------- EXAM QUESTIONS ---------- -->
     <section id="tab-exam-questions" class="hidden">
       <div class="stats">
@@ -977,12 +1046,19 @@
         <div class="exam-q-filters">
           <button class="btn btn-sm btn-primary" type="button" data-qf="all">All</button>
           <button class="btn btn-sm btn-ghost" type="button" data-qf="mcq">MCQ</button>
-          <button class="btn btn-sm btn-ghost" type="button" data-qf="written">Written</button>
+          <button class="btn btn-sm btn-ghost" type="button" data-qf="written">Written / CQ</button>
           <button class="btn btn-sm btn-ghost" type="button" data-qf="practical">Practical</button>
           <span style="flex:1;"></span>
           <button class="btn btn-primary btn-sm" id="addExQBtn" type="button">+ Add question</button>
         </div>
 
+        <div class="bank-tools">
+          <input id="examBankSearch" type="search" aria-label="Search exam questions" placeholder="Search questions or marking notes…">
+          <button class="btn btn-ghost btn-sm" id="importSamples" type="button">+ Add 32 sample questions</button>
+          <a class="btn btn-ghost btn-sm" href="index.html?practice=all" target="_blank" rel="noopener">Try sample paper ↗</a>
+        </div>
+        <p class="sub">Samples: 20 MCQs, 8 written/CQ and 4 practical tasks. Samples are public practice material; edit or replace them before a graded exam. Importing again skips existing samples.</p>
+        <div class="bank-count" id="examBankCount" aria-live="polite"></div>
         <div id="exQList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
       </div>
     </section>
@@ -1184,6 +1260,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="sample-questions.js"></script>
+<script src="exam-dashboard.js"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -1250,22 +1328,24 @@
     }
     $('loginBtn').disabled = true;
     $('loginBtn').textContent = 'Signing in…';
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    $('loginBtn').disabled = false;
-    $('loginBtn').textContent = 'Sign in';
-    if(error){
-      msg.textContent = error.message;
+    try{
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      enterApp(data.session);
+    }catch(error){
+      msg.textContent = error.message || 'Could not sign in. Please try again.';
       msg.classList.remove('hidden');
-      return;
+    }finally{
+      $('loginBtn').disabled = false;
+      $('loginBtn').textContent = 'Sign in';
     }
-    enterApp(data.session);
   }
 
   function enterApp(session){
     $('loginScreen').classList.add('hidden');
     $('appScreen').classList.remove('hidden');
     $('whoAmI').textContent = session.user.email;
-    loadEverything();
+    showAdminHome();
   }
 
   $('logoutBtn').addEventListener('click', async ()=>{
@@ -1273,42 +1353,67 @@
     location.reload();
   });
 
-  // ---------------- tabs ----------------
-  document.querySelectorAll('.tab').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      const target = btn.getAttribute('data-tab');
-      ['dashboard','questions','results','feedback','settings',
-       'exam-questions','exam-results','exam-settings'].forEach(t=>{
-        $('tab-'+t).classList.toggle('hidden', t !== target);
-      });
-
-      // The charts measure their container, which is zero-wide while the
-      // tab is hidden - so they are drawn when the tab actually opens.
-      if(target === 'dashboard'){ loadDashboard(true); startDashLive(); }
-      else stopDashLive();
-      if(target === 'feedback') loadFeedback();
-      // The exam tabs are refreshed on open so a paper submitted while
-      // you were on another tab shows up without a manual reload.
-      if(target === 'exam-questions') loadExamQuestions();
-      if(target === 'exam-results')   loadExamAttempts();
-      if(target === 'exam-settings')  loadExamSettingsAdmin();
-    });
-  });
-
-  // ---------------- loading ----------------
-  async function loadEverything(){
-    await Promise.all([
-      loadQuestions(), loadAttempts(), loadSettings(),
-      loadDashboard(), loadFeedback(),
-      // The exam half. These resolve even when the exam tables are
-      // missing - loadExamQuestions() shows the "run the schema" note
-      // rather than throwing and taking the whole panel down with it.
-      loadExamSettingsAdmin().then(loadExamQuestions).then(loadExamAttempts)
-    ]);
-    startDashLive();
+  // Load only the selected workspace page; the home screen starts no polls.
+  let workspace = null;
+  const workspacePages = {
+    quiz:['dashboard','questions','results','feedback','settings'],
+    exam:['exam-dashboard','exam-questions','exam-results','exam-settings']
+  };
+  function showAdminHome(){
+    workspace = null;
+    stopDashLive();
+    examDashboard.leave();
+    $('adminHome').classList.remove('hidden');
+    $('workspaceHead').classList.add('hidden');
+    $('workspaceTabs').classList.add('hidden');
+    Object.values(workspacePages).flat().forEach(t=>$('tab-'+t).classList.add('hidden'));
   }
+  function openWorkspace(mode){
+    workspace = mode;
+    $('adminHome').classList.add('hidden');
+    $('workspaceHead').classList.remove('hidden');
+    $('workspaceTabs').classList.remove('hidden');
+    $('workspaceTitle').textContent = mode === 'quiz' ? 'Awareness Quiz' : 'Final Exam';
+    $('workspaceKicker').textContent = mode === 'quiz' ? 'Quiz workspace' : 'Exam workspace';
+    $('workspaceSub').textContent = mode === 'quiz' ? 'Questions, scores, feedback and quiz settings.' : 'Question bank, student papers and exam settings.';
+    $('workspacePreview').href = mode === 'quiz' ? 'index.html?mode=quiz' : 'index.html?mode=exam';
+    document.querySelectorAll('.tab').forEach(btn=>{
+      btn.classList.toggle('hidden', !workspacePages[mode].includes(btn.dataset.tab));
+    });
+    openTab(workspacePages[mode][0]);
+  }
+  async function openTab(target){
+    if(!workspace || !workspacePages[workspace].includes(target)) return;
+    document.querySelectorAll('.tab').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.tab === target);
+      btn.setAttribute('aria-current', btn.dataset.tab === target ? 'page' : 'false');
+    });
+    Object.values(workspacePages).flat().forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==target));
+    stopDashLive();
+    examDashboard.leave();
+    try{
+      if(target === 'exam-dashboard') await examDashboard.enter();
+      if(target === 'dashboard'){
+        await Promise.all([loadDashboard(), loadAttempts()]);
+        if(workspace === 'quiz' && !$('tab-dashboard').classList.contains('hidden')) startDashLive();
+      }
+      if(target === 'questions') await loadQuestions();
+      if(target === 'results') await loadAttempts();
+      if(target === 'feedback') await loadFeedback();
+      if(target === 'settings') await loadSettings();
+      if(target === 'exam-questions' || target === 'exam-settings'){
+        await loadExamSettingsAdmin();
+        await loadExamQuestions();
+      }
+      if(target === 'exam-results') await loadExamAttempts();
+    }catch(e){ toast('Could not load this page. Please try again.',true); }
+  }
+  $('manageQuiz').addEventListener('click',()=>openWorkspace('quiz'));
+  $('manageExam').addEventListener('click',()=>openWorkspace('exam'));
+  $('workspaceHome').addEventListener('click',showAdminHome);
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click',()=>openTab(btn.dataset.tab));
+  });
 
   async function loadQuestions(){
     const { data, error } = await sb.from('questions')
@@ -2640,9 +2745,11 @@
     const wrap = $('exQList');
     wrap.innerHTML = '';
 
-    const list = examQFilter === 'all'
-      ? examQuestions
-      : examQuestions.filter(q=>q.qtype === examQFilter);
+    const search = $('examBankSearch').value.trim().toLowerCase();
+    const list = examQuestions.filter(q=>
+      (examQFilter === 'all' || q.qtype === examQFilter) &&
+      (!search || (q.prompt + ' ' + (q.model_answer || '')).toLowerCase().includes(search)));
+    $('examBankCount').textContent = list.length + ' of ' + examQuestions.length + ' questions';
 
     if(!list.length){
       wrap.innerHTML = '<div class="empty">Nothing here yet. Add your first question above.</div>';
@@ -3091,6 +3198,9 @@
     $('modalHost').append(back);
 
     const host = $('mkAnswers');
+    const canGrade = att.status !== 'in_progress';
+    $('mkFinalize').disabled = !canGrade;
+    if(!canGrade) $('mkFinalize').textContent = 'Awaiting submission';
     answers.forEach(an=>{
       const box = document.createElement('div');
       box.className = 'mk-ans ' + an.qtype;
@@ -3186,6 +3296,9 @@
           refreshMarkTotals();
           toast('Saved');
         });
+        save.disabled = !canGrade;
+        mark.disabled = !canGrade;
+        fb.disabled = !canGrade;
 
         grade.append(mark, outOf, fb, save, state);
         box.append(grade);
@@ -3342,6 +3455,24 @@
   }
 
   // ---------------- wiring ----------------
+  $('examBankSearch').addEventListener('input',renderExamQuestions);
+  $('importSamples').addEventListener('click',async ()=>{
+    const btn = $('importSamples');
+    btn.disabled = true;
+    btn.textContent = 'Adding samples…';
+    try{
+      const {data,error} = await sb.from('exam_questions').select('qtype,prompt');
+      if(error) throw error;
+      const existing = new Set((data || []).map(q=>q.qtype + ':' + q.prompt));
+      const samples = (window.HACKNFIX_SAMPLES?.exam || []).filter(q=>!existing.has(q.qtype + ':' + q.prompt));
+      if(!samples.length){ toast('All sample questions are already in the bank.'); return; }
+      const result = await sb.from('exam_questions').insert(samples);
+      if(result.error) throw result.error;
+      toast('Added ' + samples.length + ' sample questions.');
+      await loadExamQuestions();
+    }catch(e){ toast('Could not add questions: ' + e.message,true); }
+    finally{ btn.disabled = false; btn.textContent = '+ Add 32 sample questions'; }
+  });
   $('addExQBtn').addEventListener('click', ()=>openExamEditor(null));
   $('exRefreshBtn').addEventListener('click', loadExamAttempts);
   $('exCsvBtn').addEventListener('click', exportExamCsv);
@@ -3363,6 +3494,10 @@
     });
   });
 
+  const examDashboard = window.HNFExamDashboard.create({
+    sb, toast, openTab, openPaper:openExamPaper,
+    openResults:(filter)=>{ $('exFilter').value=filter; $('exSearch').value=''; openTab('exam-results'); }
+  });
   init();
 })();
 </script>

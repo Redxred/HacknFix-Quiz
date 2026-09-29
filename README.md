@@ -18,3 +18,40 @@ tab or open developer tools is logged against the paper. Correct answers
 never leave the database, so there is nothing in the page to read.
 
 See [SETUP.md](SETUP.md) to get it running.
+
+Run locally with `npm start` (Python required), then visit
+<http://localhost:8000>. The admin panel is at `/admin.html`.
+
+The admin opens on two separate workspaces: **Awareness Quiz** and
+**Final Exam**. Each has its own questions, results and settings.
+
+Final Exam opens on its own dashboard: all-time totals, current and expired
+attempts, saved-question progress, time remaining, marking queues, recent
+results and violation events, submission trends, score distribution, and
+question-bank readiness. Open or close new registrations from this page.
+It refreshes every 20 seconds, pauses in a background tab, and stops when
+you leave the dashboard. Monitoring shows saved activity, not verified
+online presence. List and chart limits are labelled in the interface.
+
+Try the new public practice bank immediately, without registration:
+
+- `/index.html?practice=mcq` — 20 MCQs.
+- `/index.html?practice=written` — 8 written/CQ questions.
+- `/index.html?practice=all` — all 32 samples, including 4 practical tasks.
+
+Practice answers stay in memory and disappear when you leave. At the end,
+students can review MCQ answers and written marking points. Practice does
+not create an exam attempt or send answers to Supabase.
+
+To put the samples in the live bank, sign in to **Final Exam → Exam
+questions → Add 32 sample questions**, or run `sample-questions.sql` in
+Supabase. Existing samples are skipped. These questions and answer guides
+are public; replace them with your own material for a graded exam.
+
+The interface uses CSS depth and hover effects, supports reduced motion,
+and has no continuously rendering 3D scene. The exam provides a question
+map and answer count; live MCQs still cannot be revisited.
+
+Run `npm install` and `npm test` for the local browser and database checks.
+After editing `sample-questions.js`, run `npm run samples:build` to update
+both SQL seed files.

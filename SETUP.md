@@ -76,6 +76,9 @@ is logged in, so you don't want strangers creating their own accounts.
 
 ## Step 5 — Run it
 
+With Python installed, `npm start` also serves the site at
+<http://localhost:8000>. No frontend build is needed.
+
 Open the folder in a terminal and start any static file server:
 
 ```bash
@@ -97,6 +100,40 @@ browsers block parts of the setup; serve them over `http://` as above.
 ---
 
 ## Using the admin panel
+
+After signing in, choose **Awareness Quiz** or **Final Exam**. Use
+**Workspaces** to return to this choice. Quiz controls and final-exam
+controls appear separately, and only the page you open loads its data.
+
+**Final Exam dashboard** is the first page in the exam workspace. It uses
+the existing exam tables and `exam_stats()` function; no additional SQL
+migration is required for the dashboard.
+
+- All-time student and paper totals, pending marking, flagged papers,
+  average marked score, and automatic submissions.
+- Current attempts and expired attempts that were never submitted, with
+  saved-question counts, last save times, remaining time and paper review.
+  A saved draft may be blank. These records do not prove a student is online.
+- The oldest 10 papers waiting for marking, 10 recent submissions, and
+  the latest 30 violation events with links to the associated papers.
+- Activity over 7, 14 or 30 days and a score distribution of marked papers.
+  Charts use up to 1,000 submissions in that period; the page labels a
+  truncated sample. Global metric tiles are not limited by these lists.
+- Question availability, timer settings and monitoring rules, plus quick
+  controls for registration, marking queues, questions and exam settings.
+
+The attempt monitor loads up to 100 records per status view, earliest
+deadline first. Search and flag filters apply to those loaded records.
+Closing registrations affects new starts; it does not force-submit active
+papers. Papers still in progress can be reviewed but their grading controls
+are disabled. Live refresh runs every 20 seconds and pauses when the tab is
+hidden or you move to another admin page. Read failures are shown explicitly.
+
+The Final Exam question bank includes a search field and **Add 32 sample
+questions**: 20 MCQs, 8 written/CQ questions and 4 practical tasks. Importing
+again skips samples already present. Students can try these immediately
+from the public practice area, without a database update or registration.
+Practice is local and does not submit scores or answers.
 
 **Dashboard tab** — who is actually showing up.
 
@@ -170,9 +207,10 @@ The site now opens on a choice of two things:
 2. In the admin panel, open **Exam settings** and tick **The exam is
    open**. Until you do, the Final Exam card shows as closed.
 
-The schema seeds five MCQs, two written questions and two practical
-tasks so you can try a paper immediately. Replace them under **Exam
-questions**.
+On a fresh database, the schema seeds 25 MCQs, 10 written/CQ questions
+and 6 practical tasks, including the expanded public practice bank.
+Replace public samples with your own material under **Exam questions**
+before using them for a graded assessment.
 
 ### How a paper works
 
@@ -189,6 +227,29 @@ draw from your active questions, in three sections:
 Answers save as they are typed. A student who is knocked offline, or who
 closes the tab by accident, gets back into the same paper with the same
 questions, the same answers and the original clock still running.
+
+Resuming requires the secret token saved in the browser that started the
+exam. Re-entering a student ID in another browser cannot retrieve that
+student's paper. Clearing browser storage removes this recovery token.
+
+### Updating an existing installation
+
+Run the updated `supabase-schema.sql` in the Supabase SQL Editor before
+using the updated exam page. The exam start function now accepts a resume
+token; the old function signature is removed. Apply this between exam
+sessions: browsers running the previous version did not save recovery
+tokens. Existing questions and results are preserved.
+
+The local public API key cannot install this database update. Until it is
+applied, the updated exam registration will report a missing RPC signature.
+
+### Running the regression checks
+
+Run `npm install`, then `npm test`. The browser tests use installed Microsoft
+Edge by default. Set `BROWSER_CHANNEL=chrome` to use installed Chrome instead.
+They launch their own local server and simulate Supabase responses; the SQL
+tests use a temporary PostgreSQL-compatible PGlite database. Tests do not
+write to the hosted Supabase project.
 
 ### Anti-cheating — what actually works
 
