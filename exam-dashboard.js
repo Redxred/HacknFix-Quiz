@@ -16,7 +16,7 @@
   };
   const paperFields = 'id,status,started_at,submitted_at,deadline,violation_count,auto_submitted,mcq_score,written_score,practical_score,mcq_total,written_total,practical_total,exam_students(name,student_id,batch)';
   window.HNFExamDashboard = {
-    create({ sb, toast, openTab, openPaper, openResults }) {
+    create({ sb, toast, openTab, openPaper, downloadPaper, openResults }) {
       let active = false, live = true, poll = null, clock = null, request = null, generation = 0;
       let settings = null, monitored = [], changingOpen = false, settingsVersion = 0;
       const set = (id, value) => { $(id).textContent = value; };
@@ -124,7 +124,17 @@
           const s = student(a), result = score(a);
           details.append(el('strong', s.name || 'Unknown student'), el('small', [s.student_id, s.batch, when(a.submitted_at)].filter(Boolean).join(' · ')));
           details.append(el('small', a.status === 'graded' ? `Marked · ${result.got}/${result.total}` : 'Awaiting marking · MCQ ' + a.mcq_score + '/' + a.mcq_total));
-          row.append(details, paperButton(a, marking ? 'Mark paper' : 'Review')); host.append(row);
+          const actions = el('div', null, 'exam-feed-actions');
+          actions.append(paperButton(a, marking ? 'Mark paper' : 'Review'));
+          if (!marking) {
+            const excel = el('button', 'Excel', 'btn btn-ghost btn-sm');
+            excel.type = 'button';
+            excel.title = 'Download full exam paper with student details, questions and answers';
+            excel.setAttribute('aria-label', 'Download full paper Excel for ' + (s.name || s.student_id || 'student'));
+            excel.addEventListener('click', () => downloadPaper(a, excel));
+            actions.append(excel);
+          }
+          row.append(details, actions); host.append(row);
         });
       }
       function renderViolations(rows) {

@@ -84,6 +84,9 @@ body.exam-live .option { animation:none!important;transition:background-color .1
 .exam-feed-item strong { font-size:.87rem; }
 .exam-feed-item small { display:block;color:var(--muted);line-height:1.6;font-size:.76rem; }
 .exam-feed-item .btn { flex-shrink:0; }
+.exam-feed-actions { display:flex;align-items:center;gap:8px;flex-shrink:0; }
+#edRecent .exam-feed-item { flex-wrap:wrap; }
+#edRecent .exam-feed-item > div:first-child { flex:1 1 180px; }
 .exam-feed-scroll { max-height:380px;overflow:auto; }
 .exam-readiness-row { display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:.85rem; }
 .exam-readiness-row strong { text-align:right; }

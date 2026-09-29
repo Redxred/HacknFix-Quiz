@@ -3704,6 +3704,7 @@
 
   const examDashboard = window.HNFExamDashboard.create({
     sb, toast, openTab, openPaper:openExamPaper,
+    downloadPaper:(a,button)=>runExcel(button,()=>downloadExamOne(a)),
     openResults:(filter)=>{ $('exFilter').value=filter; $('exSearch').value=''; openTab('exam-results'); }
   });
   init();

@@ -448,6 +448,55 @@ test('dashboard reports failed reads and never claims an unsuccessful status cha
   }finally{await page.close();}
 });
 
+test('Recent results exports the correct full student paper beside Review',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
+  try{
+    await page.click('#manageExam');
+    await page.waitForSelector('#edRecent .exam-feed-item');
+    for(const i of [0,1]){
+      const row=page.locator('#edRecent .exam-feed-item').nth(i);
+      assert.equal(await row.getByRole('button',{name:'Review',exact:true}).count(),1);
+      const button=row.getByRole('button',{name:'Download full paper Excel for Exam student '+i,exact:true});
+      const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
+      assert.match(download.suggestedFilename(),new RegExp('STU-'+i+'-exam-'+i+'\\.xlsx$'));
+      const book=await inspectExcel(download,'dashboard-student-'+i+'.xlsx');
+      assert.deepEqual(book.names,['Student result','Answers','Violation log','Grader note']);
+      assert.deepEqual(book.counts,[2,4,2,2]);
+      assert.deepEqual(book.samples[0][1].slice(0,5),['Exam student '+i,'STU-'+i,'A','exam'+i+'@example.com','01700000000']);
+      assert.deepEqual(book.samples[1][1].slice(2,6),['Safe choice?','1. Yes\n2. No','Yes','Yes']);
+      assert.equal(book.samples[1][2][6],'A complete answer');
+      assert.equal(book.samples[1][3][6],'<form>Student code</form>');
+      assert.equal(await button.isEnabled(),true);
+    }
+    assert.equal(await page.locator('#tab-exam-dashboard').isVisible(),true);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.locator('#edRecent').screenshot({path:path.join(__dirname,'../test-results/recent-results-excel-mobile.png')});
+    await page.setViewportSize({width:1440,height:1100});
+    await page.locator('#edRecent').screenshot({path:path.join(__dirname,'../test-results/recent-results-excel-desktop.png')});
+    await page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Review',exact:true}).click();
+    await page.waitForSelector('#mkExcel');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('Recent results Excel reports failures and lets the admin retry',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failReviewId:'exam-0'});
+  try{
+    await page.click('#manageExam');
+    const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
+    let downloads=0;page.on('download',()=>downloads++);
+    await button.click();
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Paper request failed'));
+    assert.equal(downloads,0);
+    assert.equal(await button.isEnabled(),true);
+    assert.equal(await button.innerText(),'Excel');
+    await page.evaluate(()=>window.reviewFailureCleared=true);
+    const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
+    assert.deepEqual((await inspectExcel(download,'dashboard-student-retry.xlsx')).counts,[2,4,2,2]);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
 test('all quiz and exam results export as valid Excel files beyond the loaded page',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
   try{
