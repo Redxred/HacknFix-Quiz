@@ -1092,14 +1092,22 @@
             <option value="flagged">Flagged only</option>
           </select>
           <button class="btn btn-ghost" id="exRefreshBtn" type="button">Refresh</button>
-          <button class="btn btn-primary" id="examExcelAll" type="button">Download all Excel</button>
+          <button class="btn btn-ghost" id="examExcelAll" type="button">All results summary Excel</button>
           <button class="btn btn-ghost" id="exCsvBtn" type="button">Export visible CSV</button>
         </div>
+        <div class="paper-export-tools">
+          <label><input type="checkbox" id="exSelectVisible">Select shown papers</label>
+          <label><input type="checkbox" id="exSelectAll">Select all papers (all pages)</label>
+          <button class="btn btn-ghost" id="exClearSelection" type="button" disabled>Clear selection</button>
+          <button class="btn btn-primary" id="exDownloadSelected" type="button" disabled>Download selected full papers</button>
+          <span id="exSelectionStatus" role="status" aria-live="polite">0 papers selected</span>
+        </div>
+        <p class="sub">One Excel workbook with results, every question and MCQ option, student answers, marks, feedback and violation logs. Selection stays when you search or filter. Unfinished papers contain the answers saved so far.</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>#</th><th>Student</th><th>ID</th><th>Batch</th>
+                <th>Select</th><th>#</th><th>Student</th><th>ID</th><th>Batch</th>
                 <th>MCQ</th><th>Written</th><th>Practical</th><th>Total</th>
                 <th>Flags</th><th>Status</th><th>Submitted</th><th></th>
               </tr>
@@ -1338,27 +1346,43 @@
     window.HacknFixExcel.download([{name:'Quiz result',headers:quizExcelHeaders,rows:[quizExcelRow(a)]}],
       'hacknfix-quiz-' + excelSlug(a.name) + '-' + String(a.id||'').slice(0,8) + '.xlsx');
   }
-  async function downloadExamOne(a,loadedReview){
-    const result = loadedReview ? {data:loadedReview,error:null} : await sb.rpc('exam_review',{p_attempt:a.id});
-    if(result.error || !result.data) throw result.error || new Error('Paper unavailable.');
-    const {attempt,student,answers=[],violations=[]} = result.data;
-    const answerHeaders = ['Question #','Type','Question','Selected answer','Correct answer',
+  function examPaperSheets(reviews,individual=false){
+    const identityHeaders = individual ? [] : ['Name','Student ID','Attempt ID'];
+    const answerHeaders = ['Question #','Type','Question','All MCQ options','Selected answer','Correct answer',
       'Written / practical answer','Awarded','Maximum','Marked','Correct MCQ','Feedback','Marking notes'];
-    const answerRows = answers.map(an=>{
-      const opts = an.options || [];
-      return [an.position,an.qtype,an.prompt||'',
-        an.qtype==='mcq' ? opts[an.choice]?.text||'' : '',
-        an.qtype==='mcq' ? opts.find(o=>o.correct)?.text||'' : '',
-        an.text||'',an.awarded??'',an.max_marks??'',an.graded?'Yes':'No',
-        an.qtype==='mcq' ? (an.is_correct?'Yes':'No') : '',an.feedback||'',an.model||''];
-    });
-    window.HacknFixExcel.download([
-      {name:'Student result',headers:examExcelHeaders,rows:[examExcelRow(attempt,student)]},
-      {name:'Answers',headers:answerHeaders,rows:answerRows},
-      {name:'Violation log',headers:['Kind','Details','Recorded (UTC)'],
-        rows:violations.map(v=>[v.kind||'',v.detail||'',v.at||''])},
-      {name:'Grader note',headers:['Note'],rows:[[attempt.grader_note||'']]}
-    ],'hacknfix-exam-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
+    const sheets = [
+      {name:individual?'Student result':'Student results',headers:examExcelHeaders,rows:[]},
+      {name:'Answers',headers:[...identityHeaders,...answerHeaders],rows:[]},
+      {name:'Violation log',headers:[...identityHeaders,'Kind','Details','Recorded (UTC)'],rows:[]},
+      {name:'Grader note',headers:[...identityHeaders,'Note'],rows:[]}
+    ];
+    for(const {attempt,student,answers=[],violations=[]} of reviews){
+      const identity = individual ? [] : [student.name||'',student.student_id||'',attempt.id];
+      sheets[0].rows.push(examExcelRow(attempt,student));
+      for(const an of answers){
+        const opts = an.options || [];
+        sheets[1].rows.push([...identity,an.position,an.qtype,an.prompt||'',
+          an.qtype==='mcq' ? opts.map((o,i)=>(i+1)+'. '+o.text).join('\n') : '',
+          an.qtype==='mcq' ? opts[an.choice]?.text||'' : '',
+          an.qtype==='mcq' ? opts.find(o=>o.correct)?.text||'' : '',
+          an.text||'',an.awarded??'',an.max_marks??'',an.graded?'Yes':'No',
+          an.qtype==='mcq' && an.is_correct!=null ? (an.is_correct?'Yes':'No') : '',an.feedback||'',an.model||'']);
+      }
+      for(const v of violations) sheets[2].rows.push([...identity,v.kind||'',v.detail||'',v.at||'']);
+      sheets[3].rows.push([...identity,attempt.grader_note||'']);
+    }
+    return sheets;
+  }
+  async function fetchExamPaper(id){
+    const {data,error} = await sb.rpc('exam_review',{p_attempt:id});
+    if(error || !data?.attempt || !data?.student) throw new Error('Paper '+id+': '+(error?.message||'unavailable'));
+    return data;
+  }
+  async function downloadExamOne(a){
+    const review = await fetchExamPaper(a.id);
+    const {attempt,student} = review;
+    window.HacknFixExcel.download(examPaperSheets([review],true),
+      'hacknfix-exam-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
   }
 
   // 95 -> "1m 35s"
@@ -2778,6 +2802,9 @@
 
   let examQuestions = [];
   let examAttempts  = [];
+  const selectedExamIds = new Set();
+  let allExamIds = null;
+  let examSelectionBusy = false;
   let examSettings  = null;
   let examQFilter   = 'all';
   let examInstalled = true;
@@ -3137,6 +3164,57 @@
   }
 
   // ---------------- papers ----------------
+  function updateExamSelection(message){
+    const visible = filteredExamAttempts();
+    const shownSelected = visible.filter(a=>selectedExamIds.has(a.id)).length;
+    $('exSelectVisible').checked = visible.length>0 && shownSelected===visible.length;
+    $('exSelectVisible').indeterminate = shownSelected>0 && shownSelected<visible.length;
+    $('exSelectVisible').disabled = examSelectionBusy || !visible.length;
+    $('exSelectAll').checked = !!allExamIds?.size && [...allExamIds].every(id=>selectedExamIds.has(id));
+    $('exSelectAll').indeterminate = selectedExamIds.size>0 && !$('exSelectAll').checked;
+    $('exSelectAll').disabled = examSelectionBusy;
+    $('exClearSelection').disabled = examSelectionBusy || !selectedExamIds.size;
+    $('exDownloadSelected').disabled = examSelectionBusy || !selectedExamIds.size;
+    $('exSelectionStatus').textContent = message || selectedExamIds.size+' papers selected';
+    document.querySelectorAll('#exAttemptRows input[type="checkbox"]').forEach(box=>{
+      box.checked = selectedExamIds.has(box.value);
+      box.disabled = examSelectionBusy;
+    });
+  }
+  async function selectAllExamPapers(){
+    if(!$('exSelectAll').checked){ selectedExamIds.clear(); updateExamSelection(); return; }
+    examSelectionBusy = true;
+    updateExamSelection('Selecting papers from all pages…');
+    try{
+      const rows = await allResultRows('exam_attempts','id','started_at');
+      allExamIds = new Set(rows.map(a=>a.id));
+      selectedExamIds.clear();
+      allExamIds.forEach(id=>selectedExamIds.add(id));
+      if(!rows.length) toast('No exam papers to select.',true);
+    }catch(e){ toast('Could not select all papers: '+(e.message||e),true); }
+    finally{ examSelectionBusy = false; updateExamSelection(); }
+  }
+  async function downloadSelectedExamPapers(){
+    const ids = [...selectedExamIds];
+    if(examSelectionBusy || !ids.length) return;
+    examSelectionBusy = true;
+    updateExamSelection('Loading papers: 0 / '+ids.length);
+    try{
+      const reviews = [];
+      // Limit requests so a large export leaves room for normal exam traffic.
+      for(let offset=0;offset<ids.length;offset+=3){
+        const batch = await Promise.allSettled(ids.slice(offset,offset+3).map(fetchExamPaper));
+        const failed = batch.find(result=>result.status==='rejected');
+        if(failed) throw failed.reason;
+        reviews.push(...batch.map(result=>result.value));
+        updateExamSelection('Loading papers: '+reviews.length+' / '+ids.length);
+      }
+      window.HacknFixExcel.download(examPaperSheets(reviews),
+        'hacknfix-full-papers-'+ids.length+'-'+excelDate()+'.xlsx');
+      toast('Downloaded '+ids.length+' full exam papers in one Excel workbook.');
+    }catch(e){ toast('No file downloaded. '+(e.message||e)+'. Please retry.',true); }
+    finally{ examSelectionBusy = false; updateExamSelection(); }
+  }
   async function loadExamAttempts(){
     const { data, error } = await sb.from('exam_attempts')
       .select('*, exam_students(*)')
@@ -3223,10 +3301,22 @@
       act.className = 'result-actions';
       act.append(mkBtn(a.status === 'in_progress' ? 'View' : 'Mark', 'btn-ghost',
         ()=>openExamPaper(a)));
-      const excel = mkBtn('Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
+      const excel = mkBtn('Full paper Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
       act.append(excel);
 
+      const selectionCell = document.createElement('td');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = a.id;
+      checkbox.setAttribute('aria-label','Select paper for '+(s.name||'student')+' ('+(s.student_id||a.id)+')');
+      checkbox.addEventListener('change',()=>{
+        if(checkbox.checked) selectedExamIds.add(a.id);
+        else selectedExamIds.delete(a.id);
+        updateExamSelection();
+      });
+      selectionCell.append(checkbox);
       tr.append(
+        selectionCell,
         cell(i + 1),
         cell(s.name || '—'),
         cell(s.student_id || '—'),
@@ -3239,8 +3329,11 @@
         cell(a.submitted_at ? fmtWhen(a.submitted_at) : '—'),
         act
       );
+      const labels = ['Select','#','Student','ID','Batch','MCQ','Written','Practical','Total','Flags','Status','Submitted','Actions'];
+      [...tr.children].forEach((td,index)=>td.dataset.label=labels[index]);
       rows.append(tr);
     });
+    updateExamSelection();
   }
 
   // ---------------- marking one paper ----------------
@@ -3293,7 +3386,7 @@
 
         <div class="modal-actions">
           <button class="btn btn-ghost" type="button" id="mkClose">Close</button>
-          <button class="btn btn-ghost" type="button" id="mkExcel">Download Excel</button>
+          <button class="btn btn-ghost" type="button" id="mkExcel">Download full paper Excel</button>
           <button class="btn btn-primary" type="button" id="mkFinalize">Finish marking</button>
         </div>
       </div>`;
@@ -3421,7 +3514,7 @@
 
     function close(){ back.remove(); loadExamAttempts(); }
     $('mkClose').addEventListener('click', close);
-    $('mkExcel').addEventListener('click',()=>runExcel($('mkExcel'),()=>downloadExamOne(a,data)));
+    $('mkExcel').addEventListener('click',()=>runExcel($('mkExcel'),()=>downloadExamOne(a)));
     back.addEventListener('click', e=>{ if(e.target === back) close(); });
 
     $('mkFinalize').addEventListener('click', async ()=>{
@@ -3579,6 +3672,17 @@
   $('addExQBtn').addEventListener('click', ()=>openExamEditor(null));
   $('exRefreshBtn').addEventListener('click', loadExamAttempts);
   $('examExcelAll').addEventListener('click',()=>runExcel($('examExcelAll'),downloadExamAll));
+  $('exSelectAll').addEventListener('change',selectAllExamPapers);
+  $('exSelectVisible').addEventListener('change',()=>{
+    const checked = $('exSelectVisible').checked;
+    filteredExamAttempts().forEach(a=>{
+      if(checked) selectedExamIds.add(a.id);
+      else selectedExamIds.delete(a.id);
+    });
+    updateExamSelection();
+  });
+  $('exClearSelection').addEventListener('click',()=>{ selectedExamIds.clear(); updateExamSelection(); });
+  $('exDownloadSelected').addEventListener('click',downloadSelectedExamPapers);
   $('exCsvBtn').addEventListener('click', exportExamCsv);
   $('exSearch').addEventListener('input', renderExamAttempts);
   $('exFilter').addEventListener('change', renderExamAttempts);

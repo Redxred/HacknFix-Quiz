@@ -337,11 +337,22 @@ shows a red count of papers waiting on you. Open one to:
 
 Search by name, student ID, batch or email; filter to just the flagged ones;
 export the visible rows to CSV.
-**Download all Excel** fetches every paper, including older pages. The Excel
-button on a paper downloads four sheets: the student result, question-level
-answers and marks, violation events, and the grader's note. The workbook is
-created in your browser from the admin-only data already available to this
-page. The CSV button exports only the loaded, visible papers.
+**Full paper Excel** on a row downloads four sheets: the student result,
+questions (including every MCQ option), student answers and marks, violation
+events, and the grader's note. To export several students together, tick their
+row checkboxes and click **Download selected full papers**. **Select shown
+papers** follows the current search and filter. **Select all papers (all
+pages)** selects the whole database, including papers beyond the 500 shown;
+untick individual rows to exclude them. Selection persists through searches
+and filters until you clear it or reload the page.
+
+The combined Excel workbook includes student and attempt IDs on its answer,
+violation and note sheets. Unfinished papers include answers saved so far.
+Progress is shown while papers load; a failed request keeps the selection for
+retry and does not download an incomplete workbook. **All results summary
+Excel** exports only the summary scores for every paper. Workbooks are created
+in your browser using admin-only data. The CSV button exports only the loaded,
+visible papers. These export controls need no additional SQL migration.
 
 **Exam settings** — how many questions of each type, seconds per MCQ, minutes
 for the written and practical sections, the pass mark, the violation limit,

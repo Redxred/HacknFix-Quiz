@@ -27,9 +27,14 @@ The admin opens on two separate workspaces: **Awareness Quiz** and
 
 Both Results pages can download an Excel workbook for **all** student
 results, fetched across every database page. Each result row has an Excel
-button for an individual download. Individual exam workbooks include the
-student's answer sheet, marking feedback and violation log. The existing
-CSV option exports only the rows currently loaded and visible.
+button for an individual download. In Final Exam Results, **Full paper Excel**
+includes every question, all MCQ options, student answers, marks, feedback and
+the violation log. Use the row checkboxes to choose papers, **Select shown
+papers** for the current filter, or **Select all papers (all pages)** for the
+whole database, then **Download selected full papers**. The combined workbook
+identifies each answer by student and attempt; selection survives filtering.
+**All results summary Excel** provides scores without the full papers. The CSV
+option exports only the rows currently loaded and visible.
 
 Final Exam opens on its own dashboard: all-time totals, current and expired
 attempts, saved-question progress, time remaining, marking queues, recent

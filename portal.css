@@ -68,6 +68,12 @@ body.exam-live .option { animation:none!important;transition:background-color .1
 .exam-check { display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap; }
 .result-actions { white-space:nowrap; }
 .result-actions .btn + .btn { margin-left:6px; }
+.paper-export-tools { display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft); }
+.paper-export-tools label { display:flex;align-items:center;gap:8px;font-size:.83rem;margin:0; }
+.paper-export-tools input[type="checkbox"],#exAttemptRows input[type="checkbox"] { width:18px;height:18px;flex-shrink:0;accent-color:var(--primary);cursor:pointer; }
+#exSelectionStatus { width:100%;font-size:.82rem;color:var(--muted); }
+#exAttemptRows .result-actions { white-space:normal; }
+@media(max-width:640px) { #exAttemptRows .result-actions { flex-wrap:wrap;gap:8px; } }
 .exam-row-detail { display:block;color:var(--muted);font-size:.76rem; }
 #edMonitorRows td { vertical-align:middle; }
 #edMonitorRows progress { display:block;width:90px;height:7px;margin-top:6px;accent-color:var(--primary); }

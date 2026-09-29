@@ -118,10 +118,12 @@ async function pageFor(options = {}) {
         }
         if(name === 'exam_stats' && options.failDashboard) return {data:null,error:{message:'Stats unavailable'}};
         if(name === 'exam_review' && options.exportData){
+          if(options.failReviewId===body.p_attempt && !window.reviewFailureCleared) return {data:null,error:{message:'Paper request failed'}};
           const attempt=examExportRows.find(a=>a.id===body.p_attempt);
           return {data:{attempt,student:attempt.exam_students,answers:[
             {position:1,qtype:'mcq',prompt:'Safe choice?',options:[{text:'Yes',correct:true},{text:'No',correct:false}],choice:0,awarded:1,max_marks:1,graded:true,is_correct:true},
-            {position:2,qtype:'written',prompt:'Explain',text:'A complete answer',awarded:7,max_marks:10,graded:true,model:'Marking notes'}],
+            {position:2,qtype:'written',prompt:'Explain',text:'A complete answer',awarded:7,max_marks:10,graded:true,model:'Marking notes'},
+            {position:3,qtype:'practical',prompt:'Build a safe form',text:'<form>Student code</form>',awarded:null,max_marks:5,graded:false,feedback:'Review pending'}],
             violations:[{kind:'blur',detail:'Window lost focus',at:stamp(-1)}]},error:null};
         }
         let data = name === 'exam_stats' ? (options.dashboard ? {students:5,in_progress:3,submitted:1,graded:1,flagged:1,auto:0,avg_percent:80} : {students:0,in_progress:0,submitted:0,graded:0,flagged:0,auto:0,avg_percent:0})
@@ -155,15 +157,17 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  book=ET.fromstring(z.read('xl/workbook.xml'))
  names=[s.attrib['name'] for s in book.findall('.//'+base+'sheet')]
  counts=[]
+ samples=[]
  formulas=0
  risky=False
  for n in range(1,len(names)+1):
   sheet=ET.fromstring(z.read('xl/worksheets/sheet%d.xml'%n))
   rows=sheet.findall('.//'+base+'sheetData/'+base+'row')
   counts.append(len(rows))
+  samples.append([[(''.join(c.itertext())) for c in row] for row in rows[:4]])
   formulas+=len(sheet.findall('.//'+base+'f'))
   risky=risky or any((t.text or '').startswith('=HYPERLINK') for t in sheet.findall('.//'+base+'t'))
- print(json.dumps({'names':names,'counts':counts,'formulas':formulas,'riskyAsText':risky},ensure_ascii=True))`;
+ print(json.dumps({'names':names,'counts':counts,'samples':samples,'formulas':formulas,'riskyAsText':risky},ensure_ascii=True))`;
   return JSON.parse(execFileSync('python',['-c',inspect,file],{encoding:'utf8'}));
 }
 
@@ -476,14 +480,114 @@ test('all quiz and exam results export as valid Excel files beyond the loaded pa
     const [examOne]=await Promise.all([page.waitForEvent('download'),page.locator('#exAttemptRows tr:first-child .result-actions button').nth(1).click()]);
     const one=await inspectExcel(examOne,'exam-one.xlsx');
     assert.deepEqual(one.names,['Student result','Answers','Violation log','Grader note']);
-    assert.deepEqual(one.counts,[2,3,2,2]);
+    assert.deepEqual(one.counts,[2,4,2,2]);
+    assert.equal(one.samples[1][1][3],'1. Yes\n2. No');
+    assert.equal(one.samples[1][3][6],'<form>Student code</form>');
     await page.locator('#exAttemptRows tr:first-child .result-actions button').first().click();
     await page.waitForSelector('#mkExcel');
     const [fromPaper]=await Promise.all([page.waitForEvent('download'),page.click('#mkExcel')]);
-    assert.deepEqual((await inspectExcel(fromPaper,'exam-paper-modal.xlsx')).counts,[2,3,2,2]);
+    assert.deepEqual((await inspectExcel(fromPaper,'exam-paper-modal.xlsx')).counts,[2,4,2,2]);
     await page.click('#mkClose');
     assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='attempts').length),5);
     assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='exam_attempts').length),4);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('full paper selection survives filtering and exports only selected students',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
+  try{
+    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await page.waitForSelector('#exAttemptRows tr');
+    assert.equal(await page.locator('#exDownloadSelected').isDisabled(),true);
+    await page.locator('#exAttemptRows input[value="exam-0"]').check();
+    await page.fill('#exSearch','Exam student 1');
+    await page.locator('#exAttemptRows input[value="exam-1"]').check();
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),'2 papers selected');
+    await page.fill('#exSearch','no visible match');
+    assert.equal(await page.locator('#exSelectVisible').isDisabled(),true);
+    const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
+    const book=await inspectExcel(download,'exam-selected.xlsx');
+    assert.deepEqual(book.names,['Student results','Answers','Violation log','Grader note']);
+    assert.deepEqual(book.counts,[3,7,3,3]);
+    assert.equal(book.samples[0][1][1],'STU-0');
+    assert.equal(book.samples[0][2][1],'STU-1');
+    assert.equal(book.samples[1][1][2],'exam-0');
+    assert.equal(book.samples[1][1][6],'1. Yes\n2. No');
+    assert.equal(book.samples[1][2][9],'A complete answer');
+    assert.equal(book.samples[1][3][9],'<form>Student code</form>');
+    assert.equal(book.formulas,0);
+    await page.fill('#exSearch','');
+    assert.equal(await page.locator('#exAttemptRows input[value="exam-0"]').isChecked(),true);
+    assert.equal(await page.locator('#exSelectVisible').evaluate(el=>el.indeterminate),true);
+    await page.click('#exClearSelection');
+    await page.fill('#exSearch','Exam student 49');
+    const shown=await page.locator('#exAttemptRows tr').count();
+    await page.check('#exSelectVisible');
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),shown+' papers selected');
+    await page.uncheck('#exSelectVisible');
+    assert.equal(await page.locator('#exDownloadSelected').isDisabled(),true);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('select all full papers includes older database pages and allows exclusions',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
+  try{
+    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await page.waitForSelector('#exAttemptRows tr');
+    assert.equal(await page.locator('#exAttemptRows tr').count(),500);
+    await page.fill('#exSearch','no visible match');
+    await page.check('#exSelectAll');
+    await page.waitForFunction(()=>document.getElementById('exSelectionStatus').textContent==='1105 papers selected');
+    await page.fill('#exSearch','');
+    await page.locator('#exAttemptRows input[value="exam-0"]').uncheck();
+    assert.equal(await page.locator('#exSelectAll').evaluate(el=>el.indeterminate),true);
+    const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
+    const book=await inspectExcel(download,'exam-full-all-except-one.xlsx');
+    assert.deepEqual(book.counts,[1105,3313,1105,1105]);
+    const reviewed=await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_review').map(c=>c.body.p_attempt));
+    assert.equal(new Set(reviewed).size,1104);
+    assert.equal(reviewed.includes('exam-0'),false);
+    assert.equal(reviewed.includes('exam-1104'),true);
+    await page.check('#exSelectAll');
+    await page.waitForFunction(()=>document.getElementById('exSelectionStatus').textContent==='1105 papers selected');
+    await page.uncheck('#exSelectAll');
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),'0 papers selected');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('failed full paper fetch preserves selection and can retry without a partial download',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failReviewId:'exam-1'});
+  try{
+    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await page.locator('#exAttemptRows input[value="exam-0"]').check();
+    await page.locator('#exAttemptRows input[value="exam-1"]').check();
+    let downloads=0;page.on('download',()=>downloads++);
+    await page.click('#exDownloadSelected');
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Paper request failed'));
+    assert.equal(downloads,0);
+    assert.equal(await page.locator('#exDownloadSelected').isEnabled(),true);
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),'2 papers selected');
+    await page.evaluate(()=>window.reviewFailureCleared=true);
+    const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
+    assert.deepEqual((await inspectExcel(download,'exam-selected-retry.xlsx')).counts,[3,7,3,3]);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('failed select all preserves the existing selection',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failPage:true});
+  try{
+    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await page.locator('#exAttemptRows input[value="exam-0"]').check();
+    await page.click('#exSelectAll');
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Page failed'));
+    assert.equal(await page.locator('#exSelectionStatus').innerText(),'1 papers selected');
+    assert.equal(await page.locator('#exSelectAll').isEnabled(),true);
+    assert.equal(await page.locator('#exSelectAll').isChecked(),false);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });
