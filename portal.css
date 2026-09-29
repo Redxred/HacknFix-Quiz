@@ -66,6 +66,8 @@ body.exam-live .option { animation:none!important;transition:background-color .1
 .exam-panel-head { margin-bottom:12px; }
 .exam-panel-head select,#edMonitorMode { width:auto;max-width:100%; }
 .exam-check { display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap; }
+.result-actions { white-space:nowrap; }
+.result-actions .btn + .btn { margin-left:6px; }
 .exam-row-detail { display:block;color:var(--muted);font-size:.76rem; }
 #edMonitorRows td { vertical-align:middle; }
 #edMonitorRows progress { display:block;width:90px;height:7px;margin-top:6px;accent-color:var(--primary); }

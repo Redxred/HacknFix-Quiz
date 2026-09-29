@@ -25,6 +25,12 @@ Run locally with `npm start` (Python required), then visit
 The admin opens on two separate workspaces: **Awareness Quiz** and
 **Final Exam**. Each has its own questions, results and settings.
 
+Both Results pages can download an Excel workbook for **all** student
+results, fetched across every database page. Each result row has an Excel
+button for an individual download. Individual exam workbooks include the
+student's answer sheet, marking feedback and violation log. The existing
+CSV option exports only the rows currently loaded and visible.
+
 Final Exam opens on its own dashboard: all-time totals, current and expired
 attempts, saved-question progress, time remaining, marking queues, recent
 results and violation events, submission trends, score distribution, and

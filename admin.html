@@ -842,7 +842,8 @@
         <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
           <input type="text" id="searchBox" placeholder="Search name, phone or email…" style="flex:1;min-width:200px;">
           <button class="btn btn-ghost" id="refreshBtn" type="button">Refresh</button>
-          <button class="btn btn-primary" id="csvBtn" type="button">Export CSV</button>
+          <button class="btn btn-primary" id="quizExcelAll" type="button">Download all Excel</button>
+          <button class="btn btn-ghost" id="csvBtn" type="button">Export visible CSV</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -1091,7 +1092,8 @@
             <option value="flagged">Flagged only</option>
           </select>
           <button class="btn btn-ghost" id="exRefreshBtn" type="button">Refresh</button>
-          <button class="btn btn-primary" id="exCsvBtn" type="button">Export CSV</button>
+          <button class="btn btn-primary" id="examExcelAll" type="button">Download all Excel</button>
+          <button class="btn btn-ghost" id="exCsvBtn" type="button">Export visible CSV</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -1262,12 +1264,102 @@
 <script src="config.js"></script>
 <script src="sample-questions.js"></script>
 <script src="exam-dashboard.js"></script>
+<script src="excel-export.js"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
   const sb = window.HacknFix && window.HacknFix.client;
 
   const ICON_KEYS = ['social','gift','call','lock','link','wifi','key','phone','job','alert'];
+
+  const excelDate = () => new Date().toISOString().slice(0,10);
+  const excelSlug = value => String(value || 'student').replace(/[^A-Za-z0-9._-]+/g,'-').slice(0,50) || 'student';
+  // Pages are ordered by timestamp and id so ties do not skip a result.
+  async function allResultRows(table, columns, dateColumn){
+    const fetched = [], pageSize = 1000, until = new Date().toISOString();
+    for(let offset=0;;){
+      const {data,error} = await sb.from(table).select(columns)
+        .lte(dateColumn,until).order(dateColumn,{ascending:false})
+        .order('id',{ascending:false}).range(offset,offset+pageSize-1);
+      if(error) throw error;
+      const page = data || [];
+      if(!page.length) break;
+      fetched.push(...page);
+      offset += page.length;
+    }
+    return fetched;
+  }
+  async function runExcel(button, action){
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = 'Preparing Excel…';
+    try{ await action(); }
+    catch(e){ toast('Could not download Excel: ' + (e.message || e),true); }
+    finally{ button.disabled = false; button.textContent = label; }
+  }
+  const quizExcelHeaders = ['Name','Phone','Email','Score','Total','Percent','Duration (seconds)','Language','Completed (UTC)','Attempt ID'];
+  function quizExcelRow(a){
+    return [a.name || '',a.phone || '',a.email || '',a.score,a.total,
+      a.total ? Math.round(a.score/a.total*100) : 0,a.duration_seconds ?? '',
+      a.lang || '',a.created_at || '',a.id || ''];
+  }
+  const examExcelHeaders = ['Name','Student ID','Batch','Email','Phone','MCQ score','MCQ total',
+    'Written score','Written total','Practical score','Practical total','Total score','Total possible',
+    'Percent','Status','Violations','Auto-submitted','Submit reason','Started (UTC)',
+    'Deadline (UTC)','Submitted (UTC)','Graded (UTC)','Attempt ID'];
+  function examExcelRow(a,s){
+    const total = (a.mcq_total||0)+(a.written_total||0)+(a.practical_total||0);
+    const got = (a.mcq_score||0)+(a.written_score||0)+(a.practical_score||0);
+    return [s.name||'',s.student_id||'',s.batch||'',s.email||'',s.phone||'',
+      a.mcq_score||0,a.mcq_total||0,a.written_score||0,a.written_total||0,
+      a.practical_score||0,a.practical_total||0,got,total,
+      total ? Math.round(got/total*100) : 0,a.status||'',a.violation_count||0,
+      a.auto_submitted?'Yes':'No',a.submit_reason||'',a.started_at||'',a.deadline||'',
+      a.submitted_at||'',a.graded_at||'',a.id||''];
+  }
+  async function downloadQuizAll(){
+    const rows = await allResultRows('attempts','id,name,phone,email,score,total,duration_seconds,lang,created_at','created_at');
+    if(!rows.length) return toast('No quiz results to download.',true);
+    window.HacknFixExcel.download([{name:'Quiz results',headers:quizExcelHeaders,rows:rows.map(quizExcelRow)}],
+      'hacknfix-quiz-all-' + excelDate() + '.xlsx');
+    toast('Downloaded ' + rows.length + ' quiz results.');
+  }
+  async function downloadExamAll(){
+    const rows = await allResultRows('exam_attempts',
+      'id,status,started_at,deadline,submitted_at,graded_at,mcq_score,mcq_total,written_score,written_total,practical_score,practical_total,violation_count,auto_submitted,submit_reason,exam_students(name,student_id,batch,email,phone)',
+      'started_at');
+    if(!rows.length) return toast('No exam results to download.',true);
+    window.HacknFixExcel.download([{name:'Exam results',headers:examExcelHeaders,
+      rows:rows.map(a=>examExcelRow(a,a.exam_students||{}))}],
+      'hacknfix-exam-all-' + excelDate() + '.xlsx');
+    toast('Downloaded ' + rows.length + ' exam results.');
+  }
+  function downloadQuizOne(a){
+    window.HacknFixExcel.download([{name:'Quiz result',headers:quizExcelHeaders,rows:[quizExcelRow(a)]}],
+      'hacknfix-quiz-' + excelSlug(a.name) + '-' + String(a.id||'').slice(0,8) + '.xlsx');
+  }
+  async function downloadExamOne(a,loadedReview){
+    const result = loadedReview ? {data:loadedReview,error:null} : await sb.rpc('exam_review',{p_attempt:a.id});
+    if(result.error || !result.data) throw result.error || new Error('Paper unavailable.');
+    const {attempt,student,answers=[],violations=[]} = result.data;
+    const answerHeaders = ['Question #','Type','Question','Selected answer','Correct answer',
+      'Written / practical answer','Awarded','Maximum','Marked','Correct MCQ','Feedback','Marking notes'];
+    const answerRows = answers.map(an=>{
+      const opts = an.options || [];
+      return [an.position,an.qtype,an.prompt||'',
+        an.qtype==='mcq' ? opts[an.choice]?.text||'' : '',
+        an.qtype==='mcq' ? opts.find(o=>o.correct)?.text||'' : '',
+        an.text||'',an.awarded??'',an.max_marks??'',an.graded?'Yes':'No',
+        an.qtype==='mcq' ? (an.is_correct?'Yes':'No') : '',an.feedback||'',an.model||''];
+    });
+    window.HacknFixExcel.download([
+      {name:'Student result',headers:examExcelHeaders,rows:[examExcelRow(attempt,student)]},
+      {name:'Answers',headers:answerHeaders,rows:answerRows},
+      {name:'Violation log',headers:['Kind','Details','Recorded (UTC)'],
+        rows:violations.map(v=>[v.kind||'',v.detail||'',v.at||''])},
+      {name:'Grader note',headers:['Note'],rows:[[attempt.grader_note||'']]}
+    ],'hacknfix-exam-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
+  }
 
   // 95 -> "1m 35s"
   function fmtDuration(sec){
@@ -1802,6 +1894,11 @@
       tr.append(when);
 
       const act = document.createElement('td');
+      act.className = 'result-actions';
+      act.append(mkBtn('Excel', 'btn-ghost', ()=>{
+        try{ downloadQuizOne(a); }
+        catch(e){ toast('Could not download Excel: ' + e.message,true); }
+      }));
       act.append(mkBtn('Delete', 'btn-danger', async ()=>{
         if(!confirm('Delete this attempt by ' + (a.name || 'Guest') + '?')) return;
         const { error } = await sb.from('attempts').delete().eq('id', a.id);
@@ -1838,6 +1935,7 @@
   }
 
   // ---------------- CSV ----------------
+  $('quizExcelAll').addEventListener('click',()=>runExcel($('quizExcelAll'),downloadQuizAll));
   $('csvBtn').addEventListener('click', ()=>{
     const rows = filteredAttempts();
     if(!rows.length) return toast('Nothing to export', true);
@@ -3122,8 +3220,11 @@
       }
 
       const act = document.createElement('td');
+      act.className = 'result-actions';
       act.append(mkBtn(a.status === 'in_progress' ? 'View' : 'Mark', 'btn-ghost',
         ()=>openExamPaper(a)));
+      const excel = mkBtn('Excel', 'btn-ghost', ()=>runExcel(excel,()=>downloadExamOne(a)));
+      act.append(excel);
 
       tr.append(
         cell(i + 1),
@@ -3192,6 +3293,7 @@
 
         <div class="modal-actions">
           <button class="btn btn-ghost" type="button" id="mkClose">Close</button>
+          <button class="btn btn-ghost" type="button" id="mkExcel">Download Excel</button>
           <button class="btn btn-primary" type="button" id="mkFinalize">Finish marking</button>
         </div>
       </div>`;
@@ -3319,6 +3421,7 @@
 
     function close(){ back.remove(); loadExamAttempts(); }
     $('mkClose').addEventListener('click', close);
+    $('mkExcel').addEventListener('click',()=>runExcel($('mkExcel'),()=>downloadExamOne(a,data)));
     back.addEventListener('click', e=>{ if(e.target === back) close(); });
 
     $('mkFinalize').addEventListener('click', async ()=>{
@@ -3475,6 +3578,7 @@
   });
   $('addExQBtn').addEventListener('click', ()=>openExamEditor(null));
   $('exRefreshBtn').addEventListener('click', loadExamAttempts);
+  $('examExcelAll').addEventListener('click',()=>runExcel($('examExcelAll'),downloadExamAll));
   $('exCsvBtn').addEventListener('click', exportExamCsv);
   $('exSearch').addEventListener('input', renderExamAttempts);
   $('exFilter').addEventListener('change', renderExamAttempts);

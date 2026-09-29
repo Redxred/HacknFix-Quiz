@@ -176,6 +176,9 @@ without deleting it — useful for drafting.
 **Results tab** — every completed attempt, with name, phone, email, score and
 time. Search across the list, delete individual rows, or hit **Export CSV**
 to open the whole thing in Excel (বাংলা names come through correctly).
+Use **Download all Excel** for a complete `.xlsx` workbook across every
+database page, or the **Excel** button on a row for one attempt. The CSV
+button exports the currently loaded and visible rows.
 
 **Site settings tab**
 - *Quiz is open* — turn it off to close the quiz. Visitors see your closed
@@ -333,7 +336,12 @@ shows a red count of papers waiting on you. Open one to:
 - press **Finish marking** once everything has a mark.
 
 Search by name, student ID, batch or email; filter to just the flagged ones;
-export the lot to CSV.
+export the visible rows to CSV.
+**Download all Excel** fetches every paper, including older pages. The Excel
+button on a paper downloads four sheets: the student result, question-level
+answers and marks, violation events, and the grader's note. The workbook is
+created in your browser from the admin-only data already available to this
+page. The CSV button exports only the loaded, visible papers.
 
 **Exam settings** — how many questions of each type, seconds per MCQ, minutes
 for the written and practical sections, the pass mark, the violation limit,

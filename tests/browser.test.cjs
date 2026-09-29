@@ -4,12 +4,13 @@ const { chromium } = require('playwright');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const {execFileSync} = require('node:child_process');
 let browser, server, base;
 before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','portal.css','sample-questions.js','exam-dashboard.js'].includes(name)) { res.writeHead(404).end(); return; }
+    if (!['index.html','admin.html','config.js','portal.css','sample-questions.js','exam-dashboard.js','excel-export.js'].includes(name)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
@@ -50,17 +51,30 @@ async function pageFor(options = {}) {
       attempt('expired-1','in_progress',-2,'Expired student'),attempt('pending-1','submitted',-1,'Pending student'),
       attempt('graded-1','graded',-1,'Marked student')
     ] : [];
+    const quizExportRows = options.exportData ? Array.from({length:1205},(_,i)=>({
+      id:`quiz-${i}`,name:i===0?'=HYPERLINK("https://bad.example","click")':i===1?'রহিম':`Quiz student ${i}`,
+      phone:'01700000000',email:`student${i}@example.com`,score:i%10,total:10,
+      duration_seconds:80,lang:'en',created_at:stamp(-i)
+    })) : [];
+    const examExportRows = options.exportData ? Array.from({length:1105},(_,i)=>({
+      id:`exam-${i}`,status:'graded',started_at:stamp(-i),deadline:stamp(30),
+      submitted_at:stamp(-i),graded_at:stamp(-i),violation_count:i===0?1:0,
+      auto_submitted:false,submit_reason:'',mcq_score:8,mcq_total:10,
+      written_score:7,written_total:10,practical_score:0,practical_total:0,
+      exam_students:{name:`Exam student ${i}`,student_id:`STU-${i}`,batch:'A',email:`exam${i}@example.com`,phone:'01700000000'}
+    })) : [];
     const client = {
       from(table) {
         window.calls.push({name:'from',table});
-        let inserted = null, update = null, head = false, operations = [], sort = null, limit = null;
+        let inserted = null, update = null, head = false, operations = [], sort = null, limit = null, range = null;
         const data = table === 'questions' ? [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
           options:[{bn:'সঠিক',en:'Correct',correct:true},{bn:'ভুল',en:'Wrong',correct:false}],
           explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}]
           : table === 'settings' ? {quiz_open:true,quiz_length:1,timer_seconds:30}
           : table === 'exam_settings' ? settings
           : table === 'exam_questions' ? (window.mockBank ||= [])
-          : table === 'exam_attempts' ? monitorData
+          : table === 'exam_attempts' ? (options.exportData ? examExportRows : monitorData)
+          : table === 'attempts' ? quizExportRows
           : table === 'exam_violations' && options.dashboard ? [{attempt:'active-2',kind:'tab-switch',detail:'Window hidden',at:stamp(-1),exam_attempts:{exam_students:{name:'Rafi'}}}] : [];
         const chain = new Proxy({}, {get:(_, key) => key === 'then'
           ? resolve => {
@@ -78,6 +92,11 @@ async function pageFor(options = {}) {
                 rows = rows.filter(r=>operations.every(([op,k,v])=>op==='eq'?r[k]===v:op==='neq'?r[k]!==v:op==='gt'?r[k]>v:op==='gte'?r[k]>=v:r[k]<=v));
                 if(sort) rows = [...rows].sort((a,b)=>(a[sort[0]]>b[sort[0]]?1:-1)*(sort[1]?.ascending===false?-1:1));
                 if(limit!=null) rows = rows.slice(0,limit);
+                if(range){
+                  window.calls.push({name:'range',table,from:range[0],to:range[1]});
+                  if(options.failPage && range[0]>=1000){resolve({data:null,error:{message:'Page failed'}});return;}
+                  rows = rows.slice(range[0],Math.min(range[1]+1,range[0]+(options.apiCap||1000)));
+                }
               }
               resolve({data:head?null:rows,count:Array.isArray(rows)?rows.length:1,error:null});
             }
@@ -86,6 +105,7 @@ async function pageFor(options = {}) {
           : key === 'select' ? (cols,opts)=>{head=!!opts?.head;return chain;}
           : ['eq','neq','gt','gte','lte'].includes(key) ? (k,v)=>{operations.push([key,k,v]);return chain;}
           : key === 'order' ? (k,opts)=>{sort=[k,opts];return chain;}
+          : key === 'range' ? (from,to)=>{range=[from,to];return chain;}
           : key === 'limit' ? n=>{limit=n;return chain;} : () => chain});
         return chain;
       },
@@ -97,6 +117,13 @@ async function pageFor(options = {}) {
           return {error:{message:'Network unavailable'}};
         }
         if(name === 'exam_stats' && options.failDashboard) return {data:null,error:{message:'Stats unavailable'}};
+        if(name === 'exam_review' && options.exportData){
+          const attempt=examExportRows.find(a=>a.id===body.p_attempt);
+          return {data:{attempt,student:attempt.exam_students,answers:[
+            {position:1,qtype:'mcq',prompt:'Safe choice?',options:[{text:'Yes',correct:true},{text:'No',correct:false}],choice:0,awarded:1,max_marks:1,graded:true,is_correct:true},
+            {position:2,qtype:'written',prompt:'Explain',text:'A complete answer',awarded:7,max_marks:10,graded:true,model:'Marking notes'}],
+            violations:[{kind:'blur',detail:'Window lost focus',at:stamp(-1)}]},error:null};
+        }
         let data = name === 'exam_stats' ? (options.dashboard ? {students:5,in_progress:3,submitted:1,graded:1,flagged:1,auto:0,avg_percent:80} : {students:0,in_progress:0,submitted:0,graded:0,flagged:0,auto:0,avg_percent:0})
           : name === 'exam_start' ? {attempt:'attempt',token:'token',questions,config:settings,
           deadline:new Date(Date.now()+600000).toISOString(),seconds_left:600,violations:0}
@@ -116,6 +143,28 @@ async function pageFor(options = {}) {
   await page.goto(base + (options.admin ? '/admin.html' : '/') + (options.query || ''));
   if(!options.admin) await page.waitForFunction(() => !document.getElementById('splash'));
   return {page,errors};
+}
+
+async function inspectExcel(download, filename) {
+  const dir = path.join(__dirname,'../test-results'); fs.mkdirSync(dir,{recursive:true});
+  const file = path.join(dir,filename); await download.saveAs(file);
+  const inspect = `import sys,json,zipfile,xml.etree.ElementTree as ET
+with zipfile.ZipFile(sys.argv[1]) as z:
+ assert z.testzip() is None
+ base='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+ book=ET.fromstring(z.read('xl/workbook.xml'))
+ names=[s.attrib['name'] for s in book.findall('.//'+base+'sheet')]
+ counts=[]
+ formulas=0
+ risky=False
+ for n in range(1,len(names)+1):
+  sheet=ET.fromstring(z.read('xl/worksheets/sheet%d.xml'%n))
+  rows=sheet.findall('.//'+base+'sheetData/'+base+'row')
+  counts.append(len(rows))
+  formulas+=len(sheet.findall('.//'+base+'f'))
+  risky=risky or any((t.text or '').startswith('=HYPERLINK') for t in sheet.findall('.//'+base+'t'))
+ print(json.dumps({'names':names,'counts':counts,'formulas':formulas,'riskyAsText':risky},ensure_ascii=True))`;
+  return JSON.parse(execFileSync('python',['-c',inspect,file],{encoding:'utf8'}));
 }
 
 test('quiz language switch preserves answer, timer and score; corrupt storage is recoverable', async () => {
@@ -391,6 +440,63 @@ test('dashboard reports failed reads and never claims an unsuccessful status cha
     await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Update rejected'));
     assert.equal(await page.locator('#edOpenState').innerText(),'Open for new attempts');
     assert.equal(await page.locator('#edToggleOpen').isEnabled(),true);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('all quiz and exam results export as valid Excel files beyond the loaded page',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
+  try{
+    await page.click('#manageQuiz');
+    await page.click('[data-tab="results"]');
+    await page.waitForSelector('#attemptRows tr');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.fill('#searchBox','no visible match');
+    const [quizAll]=await Promise.all([page.waitForEvent('download'),page.click('#quizExcelAll')]);
+    assert.match(quizAll.suggestedFilename(),/\.xlsx$/);
+    const quiz=await inspectExcel(quizAll,'quiz-all.xlsx');
+    assert.deepEqual(quiz.names,['Quiz results']);
+    assert.deepEqual(quiz.counts,[1206]);
+    assert.equal(quiz.formulas,0);
+    assert.equal(quiz.riskyAsText,true);
+    await page.fill('#searchBox','');
+    const [quizOne]=await Promise.all([page.waitForEvent('download'),page.locator('#attemptRows tr:first-child .result-actions button').first().click()]);
+    assert.deepEqual((await inspectExcel(quizOne,'quiz-one.xlsx')).counts,[2]);
+    await page.click('#workspaceHome');await page.click('#manageExam');
+    await page.click('[data-tab="exam-results"]');
+    await page.waitForSelector('#exAttemptRows tr');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.fill('#exSearch','no visible match');
+    const [examAll]=await Promise.all([page.waitForEvent('download'),page.click('#examExcelAll')]);
+    const exam=await inspectExcel(examAll,'exam-all.xlsx');
+    assert.deepEqual(exam.names,['Exam results']);
+    assert.deepEqual(exam.counts,[1106]);
+    assert.equal(exam.formulas,0);
+    await page.fill('#exSearch','');
+    const [examOne]=await Promise.all([page.waitForEvent('download'),page.locator('#exAttemptRows tr:first-child .result-actions button').nth(1).click()]);
+    const one=await inspectExcel(examOne,'exam-one.xlsx');
+    assert.deepEqual(one.names,['Student result','Answers','Violation log','Grader note']);
+    assert.deepEqual(one.counts,[2,3,2,2]);
+    await page.locator('#exAttemptRows tr:first-child .result-actions button').first().click();
+    await page.waitForSelector('#mkExcel');
+    const [fromPaper]=await Promise.all([page.waitForEvent('download'),page.click('#mkExcel')]);
+    assert.deepEqual((await inspectExcel(fromPaper,'exam-paper-modal.xlsx')).counts,[2,3,2,2]);
+    await page.click('#mkClose');
+    assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='attempts').length),5);
+    assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='exam_attempts').length),4);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('Excel download reports a page failure without producing a partial file',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failPage:true});
+  try{
+    await page.click('#manageQuiz');await page.click('[data-tab="results"]');
+    let downloads=0;page.on('download',()=>downloads++);
+    await page.click('#quizExcelAll');
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Page failed'));
+    assert.equal(downloads,0);
+    assert.equal(await page.locator('#quizExcelAll').isEnabled(),true);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });
