@@ -120,9 +120,10 @@ async function pageFor(options = {}) {
         if(name === 'exam_review' && options.exportData){
           if(options.failReviewId===body.p_attempt && !window.reviewFailureCleared) return {data:null,error:{message:'Paper request failed'}};
           const attempt=examExportRows.find(a=>a.id===body.p_attempt);
+          if(options.emptyReviewAnswers) return {data:{attempt,student:attempt.exam_students,answers:[]},error:null};
           return {data:{attempt,student:attempt.exam_students,answers:[
             {position:1,qtype:'mcq',prompt:'Safe choice?',options:[{text:'Yes',correct:true},{text:'No',correct:false}],choice:0,awarded:1,max_marks:1,graded:true,is_correct:true},
-            {position:2,qtype:'written',prompt:'Explain',text:'A complete answer',awarded:7,max_marks:10,graded:true,model:'Marking notes'},
+            {position:2,qtype:'written',prompt:'Explain',text:options.longAnswer||'A complete answer',awarded:7,max_marks:10,graded:true,model:'Marking notes'},
             {position:3,qtype:'practical',prompt:'Build a safe form',text:'<form>Student code</form>',awarded:null,max_marks:5,graded:false,feedback:'Review pending'}],
             violations:[{kind:'blur',detail:'Window lost focus',at:stamp(-1)}]},error:null};
         }
@@ -160,14 +161,21 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  samples=[]
  formulas=0
  risky=False
+ bodyWrapped=False
+ readableHeights=False
  for n in range(1,len(names)+1):
   sheet=ET.fromstring(z.read('xl/worksheets/sheet%d.xml'%n))
   rows=sheet.findall('.//'+base+'sheetData/'+base+'row')
   counts.append(len(rows))
-  samples.append([[(''.join(c.itertext())) for c in row] for row in rows[:4]])
+  if n==1:
+   formats=ET.fromstring(z.read('xl/styles.xml')).find(base+'cellXfs')
+   cells=[c for row in rows[1:] for c in row]
+   bodyWrapped=bool(cells) and all(formats[int(c.attrib.get('s','0'))].find(base+'alignment') is not None and formats[int(c.attrib.get('s','0'))].find(base+'alignment').attrib.get('wrapText')=='1' for c in cells)
+   readableHeights=all(30<=float(row.attrib.get('ht','0'))<=409 for row in rows)
+  samples.append([[(''.join(c.itertext())) for c in row] for row in rows[:300 if n==1 else 4]])
   formulas+=len(sheet.findall('.//'+base+'f'))
   risky=risky or any((t.text or '').startswith('=HYPERLINK') for t in sheet.findall('.//'+base+'t'))
- print(json.dumps({'names':names,'counts':counts,'samples':samples,'formulas':formulas,'riskyAsText':risky},ensure_ascii=True))`;
+ print(json.dumps({'names':names,'counts':counts,'samples':samples,'formulas':formulas,'riskyAsText':risky,'bodyWrapped':bodyWrapped,'readableHeights':readableHeights},ensure_ascii=True))`;
   return JSON.parse(execFileSync('python',['-c',inspect,file],{encoding:'utf8'}));
 }
 
@@ -460,12 +468,19 @@ test('Recent results exports the correct full student paper beside Review',async
       const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
       assert.match(download.suggestedFilename(),new RegExp('STU-'+i+'-exam-'+i+'\\.xlsx$'));
       const book=await inspectExcel(download,'dashboard-student-'+i+'.xlsx');
-      assert.deepEqual(book.names,['Student result','Answers','Violation log','Grader note']);
-      assert.deepEqual(book.counts,[2,4,2,2]);
-      assert.deepEqual(book.samples[0][1].slice(0,5),['Exam student '+i,'STU-'+i,'A','exam'+i+'@example.com','01700000000']);
-      assert.deepEqual(book.samples[1][1].slice(2,6),['Safe choice?','1. Yes\n2. No','Yes','Yes']);
-      assert.equal(book.samples[1][2][6],'A complete answer');
-      assert.equal(book.samples[1][3][6],'<form>Student code</form>');
+      assert.deepEqual(book.names,['Full exam paper','Student result','Answers','Violation log','Grader note']);
+      assert.equal(book.samples[0][1][0],'Student name');
+      assert.equal(book.samples[0][1][1],'Exam student '+i);
+      assert.ok(book.samples[0].some(row=>row[0]==='Question 1 · MCQ'&&row[1]==='Safe choice?'));
+      assert.ok(book.samples[0].some(row=>row[0]==='Student answer'&&row[1]==='Option 1: Yes'));
+      assert.ok(book.samples[0].some(row=>row[0]==='Question 2 · Written / CQ'&&row[1]==='Explain'));
+      assert.ok(book.samples[0].some(row=>row[0]==='Student answer'&&row[1]==='A complete answer'));
+      assert.ok(book.samples[0].some(row=>row[0]==='Student answer'&&row[1]==='<form>Student code</form>'));
+      assert.deepEqual(book.counts.slice(1),[2,4,2,2]);
+      assert.deepEqual(book.samples[1][1].slice(0,5),['Exam student '+i,'STU-'+i,'A','exam'+i+'@example.com','01700000000']);
+      assert.deepEqual(book.samples[2][1].slice(2,6),['Safe choice?','1. Yes\n2. No','Yes','Yes']);
+      assert.equal(book.samples[2][2][6],'A complete answer');
+      assert.equal(book.samples[2][3][6],'<form>Student code</form>');
       assert.equal(await button.isEnabled(),true);
     }
     assert.equal(await page.locator('#tab-exam-dashboard').isVisible(),true);
@@ -475,6 +490,41 @@ test('Recent results exports the correct full student paper beside Review',async
     await page.locator('#edRecent').screenshot({path:path.join(__dirname,'../test-results/recent-results-excel-desktop.png')});
     await page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Review',exact:true}).click();
     await page.waitForSelector('#mkExcel');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('full paper first sheet preserves a long multiline answer without hiding it in one cell',async ()=>{
+  const longAnswer=('বাংলা উত্তর: check input and explain the fix.\n'.repeat(380))+'FINAL ANSWER LINE';
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,longAnswer});
+  try{
+    await page.click('#manageExam');
+    const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
+    const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
+    const book=await inspectExcel(download,'full-paper-long-answer.xlsx');
+    assert.equal(book.bodyWrapped,true);
+    assert.equal(book.readableHeights,true);
+    const paper=book.samples[0];
+    const start=paper.findIndex(row=>row[0]==='Question 2 · Written / CQ');
+    const end=paper.findIndex(row=>row[0]==='Question 3 · Practical');
+    const answerRows=paper.slice(start,end).filter(row=>row[0].startsWith('Student answer'));
+    assert.ok(answerRows.length>1);
+    assert.equal(answerRows.map(row=>row[1]).join(''),longAnswer);
+    assert.ok(answerRows.every(row=>row[1].length<=600));
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('full paper export rejects an empty answer response instead of downloading only a summary',async ()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,emptyReviewAnswers:true});
+  try{
+    await page.click('#manageExam');
+    let downloads=0;page.on('download',()=>downloads++);
+    const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
+    await button.click();
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('No question and answer records'));
+    assert.equal(downloads,0);
+    assert.equal(await button.isEnabled(),true);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });
@@ -492,7 +542,7 @@ test('Recent results Excel reports failures and lets the admin retry',async ()=>
     assert.equal(await button.innerText(),'Excel');
     await page.evaluate(()=>window.reviewFailureCleared=true);
     const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
-    assert.deepEqual((await inspectExcel(download,'dashboard-student-retry.xlsx')).counts,[2,4,2,2]);
+    assert.deepEqual((await inspectExcel(download,'dashboard-student-retry.xlsx')).counts.slice(1),[2,4,2,2]);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });
@@ -528,14 +578,14 @@ test('all quiz and exam results export as valid Excel files beyond the loaded pa
     await page.fill('#exSearch','');
     const [examOne]=await Promise.all([page.waitForEvent('download'),page.locator('#exAttemptRows tr:first-child .result-actions button').nth(1).click()]);
     const one=await inspectExcel(examOne,'exam-one.xlsx');
-    assert.deepEqual(one.names,['Student result','Answers','Violation log','Grader note']);
-    assert.deepEqual(one.counts,[2,4,2,2]);
-    assert.equal(one.samples[1][1][3],'1. Yes\n2. No');
-    assert.equal(one.samples[1][3][6],'<form>Student code</form>');
+    assert.deepEqual(one.names,['Full exam paper','Student result','Answers','Violation log','Grader note']);
+    assert.deepEqual(one.counts.slice(1),[2,4,2,2]);
+    assert.equal(one.samples[2][1][3],'1. Yes\n2. No');
+    assert.equal(one.samples[2][3][6],'<form>Student code</form>');
     await page.locator('#exAttemptRows tr:first-child .result-actions button').first().click();
     await page.waitForSelector('#mkExcel');
     const [fromPaper]=await Promise.all([page.waitForEvent('download'),page.click('#mkExcel')]);
-    assert.deepEqual((await inspectExcel(fromPaper,'exam-paper-modal.xlsx')).counts,[2,4,2,2]);
+    assert.deepEqual((await inspectExcel(fromPaper,'exam-paper-modal.xlsx')).counts.slice(1),[2,4,2,2]);
     await page.click('#mkClose');
     assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='attempts').length),5);
     assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='exam_attempts').length),4);
@@ -557,14 +607,14 @@ test('full paper selection survives filtering and exports only selected students
     assert.equal(await page.locator('#exSelectVisible').isDisabled(),true);
     const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
     const book=await inspectExcel(download,'exam-selected.xlsx');
-    assert.deepEqual(book.names,['Student results','Answers','Violation log','Grader note']);
-    assert.deepEqual(book.counts,[3,7,3,3]);
-    assert.equal(book.samples[0][1][1],'STU-0');
-    assert.equal(book.samples[0][2][1],'STU-1');
-    assert.equal(book.samples[1][1][2],'exam-0');
-    assert.equal(book.samples[1][1][6],'1. Yes\n2. No');
-    assert.equal(book.samples[1][2][9],'A complete answer');
-    assert.equal(book.samples[1][3][9],'<form>Student code</form>');
+    assert.deepEqual(book.names,['Full exam paper','Student results','Answers','Violation log','Grader note']);
+    assert.deepEqual(book.counts.slice(1),[3,7,3,3]);
+    assert.equal(book.samples[1][1][1],'STU-0');
+    assert.equal(book.samples[1][2][1],'STU-1');
+    assert.equal(book.samples[2][1][2],'exam-0');
+    assert.equal(book.samples[2][1][6],'1. Yes\n2. No');
+    assert.equal(book.samples[2][2][9],'A complete answer');
+    assert.equal(book.samples[2][3][9],'<form>Student code</form>');
     assert.equal(book.formulas,0);
     await page.fill('#exSearch','');
     assert.equal(await page.locator('#exAttemptRows input[value="exam-0"]').isChecked(),true);
@@ -595,7 +645,7 @@ test('select all full papers includes older database pages and allows exclusions
     assert.equal(await page.locator('#exSelectAll').evaluate(el=>el.indeterminate),true);
     const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
     const book=await inspectExcel(download,'exam-full-all-except-one.xlsx');
-    assert.deepEqual(book.counts,[1105,3313,1105,1105]);
+    assert.deepEqual(book.counts.slice(1),[1105,3313,1105,1105]);
     const reviewed=await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_review').map(c=>c.body.p_attempt));
     assert.equal(new Set(reviewed).size,1104);
     assert.equal(reviewed.includes('exam-0'),false);
@@ -622,7 +672,7 @@ test('failed full paper fetch preserves selection and can retry without a partia
     assert.equal(await page.locator('#exSelectionStatus').innerText(),'2 papers selected');
     await page.evaluate(()=>window.reviewFailureCleared=true);
     const [download]=await Promise.all([page.waitForEvent('download'),page.click('#exDownloadSelected')]);
-    assert.deepEqual((await inspectExcel(download,'exam-selected-retry.xlsx')).counts,[3,7,3,3]);
+    assert.deepEqual((await inspectExcel(download,'exam-selected-retry.xlsx')).counts.slice(1),[3,7,3,3]);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });

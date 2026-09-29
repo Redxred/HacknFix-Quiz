@@ -37,10 +37,22 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     const correct = (await db.query('select shown_options from exam_answers where attempt=$1 and question=$2',
       [paper.attempt, mcq.id])).rows[0].shown_options.findIndex(o => o.correct);
     await db.query('select exam_save_answer($1,$2,$3,$4,null)', [paper.attempt,paper.token,mcq.id,correct]);
+    const written = paper.questions.find(q=>q.qtype==='written');
+    const writtenAnswer = 'Student written answer\nবাংলা উত্তর with all details';
+    await db.query('select exam_save_answer($1,$2,$3,null,$4)',[paper.attempt,paper.token,written.id,writtenAnswer]);
     const submit = async () => (await db.query('select exam_submit($1,$2) as result', [paper.attempt,paper.token])).rows[0].result;
     const result = await submit();
     assert.ok(result.mcq_score > 0);
     assert.deepEqual(await submit(), result);
+    await db.exec('set role authenticated');
+    const review = (await db.query('select exam_review($1) as result',[paper.attempt])).rows[0].result;
+    assert.equal(review.student.name,'Test Student');
+    assert.equal(review.answers.length,paper.questions.length);
+    assert.equal(review.answers.find(a=>a.prompt===written.prompt).text,writtenAnswer);
+    assert.equal(review.answers.find(a=>a.prompt===mcq.prompt).choice,correct);
+    assert.ok(review.answers.find(a=>a.prompt===mcq.prompt).options[correct].correct);
+    assert.equal('token' in review.attempt,false);
+    await db.exec('reset role');
     await assert.rejects(start('TEST-1',paper.token), /already_attempted/);
     const expired = await start('TEST-2');
     await db.query("update exam_attempts set deadline=now()-interval '1 minute' where id=$1", [expired.attempt]);

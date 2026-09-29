@@ -49,21 +49,28 @@
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
   }
-  function worksheet(headers, rows) {
+  function worksheet(headers, rows, layout = {}) {
     if (rows.length > 1048575) throw new Error('This export exceeds the Excel sheet limit.');
-    const widths = headers.map((h, i) => Math.max(12, Math.min(44,
+    const widths = layout.widths || headers.map((h, i) => Math.max(12, Math.min(44,
       Math.max(String(h).length, ...rows.slice(0, 50).map(row => String(row[i] ?? '').length)) + 2)));
     const cols = '<cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols>';
     const cell = (value, col, row, header = false) => {
       const ref = letters(col) + row;
       if (!header && typeof value === 'number' && Number.isFinite(value))
-        return `<c r="${ref}"><v>${value}</v></c>`;
-      return `<c r="${ref}"${header ? ' s="1"' : ''} t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
+        return `<c r="${ref}" s="2"><v>${value}</v></c>`;
+      return `<c r="${ref}" s="${header ? 1 : 2}" t="inlineStr"><is><t xml:space="preserve">${esc(value)}</t></is></c>`;
     };
-    const line = (values, row, header = false) => `<row r="${row}">${values.map((v, i) => cell(v, i, row, header)).join('')}</row>`;
+    const line = (values, row, header = false) => {
+      const lines = Math.max(1,...values.map((v,i)=>String(v??'').split('\n').reduce((n,text)=>
+        n+Math.max(1,Math.ceil(Array.from(text).reduce((w,char)=>w+(char.charCodeAt(0)>255?2:1),0)/Math.max(1,widths[i]-3))),0)));
+      const height = layout.readable ? ` ht="${Math.min(409,Math.max(30,lines*16+12))}" customHeight="1"` : '';
+      return `<row r="${row}"${height}>${values.map((v, i) => cell(v, i, row, header)).join('')}</row>`;
+    };
     const body = [line(headers, 1, true), ...rows.map((r, i) => line(r, i + 2))].join('');
     const last = letters(headers.length - 1) + (rows.length + 1);
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:${last}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData><autoFilter ref="A1:${last}"/></worksheet>`;
+    const filter = layout.autoFilter===false ? '' : `<autoFilter ref="A1:${last}"/>`;
+    const printing = layout.readable ? '<printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/>' : '';
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${layout.readable?'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>':''}<dimension ref="A1:${last}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData>${filter}${printing}</worksheet>`;
   }
   function workbook(sheets) {
     if (!sheets.length) throw new Error('Nothing to export.');
@@ -73,18 +80,18 @@
       if (!name) name = `Sheet ${i + 1}`;
       if (names.has(name.toLowerCase())) name = `Sheet ${i + 1}`;
       names.add(name.toLowerCase());
-      return { name, headers: sheet.headers, rows: sheet.rows };
+      return { ...sheet, name };
     });
     const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${clean.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`;
     const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
     const book = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${clean.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`;
     const bookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${clean.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${clean.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-    const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F6B4C"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>';
+    const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F6B4C"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="1" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs></styleSheet>';
     const entries = [
       ['[Content_Types].xml', contentTypes], ['_rels/.rels', rels],
       ['xl/workbook.xml', book], ['xl/_rels/workbook.xml.rels', bookRels],
       ['xl/styles.xml', styles],
-      ...clean.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, worksheet(s.headers, s.rows)])
+      ...clean.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, worksheet(s.headers, s.rows, s)])
     ];
     return zip(entries);
   }

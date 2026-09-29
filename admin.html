@@ -1272,7 +1272,7 @@
 <script src="config.js"></script>
 <script src="sample-questions.js"></script>
 <script src="exam-dashboard.js"></script>
-<script src="excel-export.js"></script>
+<script src="excel-export.js?v=full-paper-2"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -1346,6 +1346,62 @@
     window.HacknFixExcel.download([{name:'Quiz result',headers:quizExcelHeaders,rows:[quizExcelRow(a)]}],
       'hacknfix-quiz-' + excelSlug(a.name) + '-' + String(a.id||'').slice(0,8) + '.xlsx');
   }
+  function readableExamPaper(reviews){
+    const rows = [];
+    // Keep long answers in consecutive, readable rows rather than hiding
+    // thousands of characters inside one Excel cell with a limited height.
+    function add(label,value){
+      const chars = Array.from(String(value ?? ''));
+      let chunk = '', lines = 1, count = 0, part = 0;
+      function flush(){ rows.push([label+(part++?' (continued)':''),chunk]); chunk=''; lines=1; count=0; }
+      for(const char of chars){
+        if(count>=600 || (char==='\n' && lines>=8)) flush();
+        chunk += char; count++;
+        if(char==='\n') lines++;
+      }
+      if(chunk || !chars.length) flush();
+    }
+    for(const {attempt,student,answers,violations=[]} of reviews){
+      const summary = examExcelRow(attempt,student);
+      add('Student name',student.name);
+      add('Student ID',student.student_id);
+      add('Batch',student.batch);
+      add('Email',student.email);
+      add('Phone',student.phone);
+      add('Attempt ID',attempt.id);
+      add('Exam status',attempt.status);
+      add('Started (UTC)',attempt.started_at);
+      add('Submitted (UTC)',attempt.submitted_at || 'Not submitted');
+      add('Total score',summary[11]+' / '+summary[12]+(attempt.status==='graded'?'':' (provisional)'));
+      add('MCQ / Written / Practical',summary[5]+'/'+summary[6]+' · '+summary[7]+'/'+summary[8]+' · '+summary[9]+'/'+summary[10]);
+      add('Questions in this paper',answers.length);
+      for(const answer of [...answers].sort((a,b)=>a.position-b.position)){
+        rows.push(['','']);
+        const type = {mcq:'MCQ',written:'Written / CQ',practical:'Practical'}[answer.qtype] || answer.qtype;
+        add('Question '+answer.position+' · '+type,answer.prompt || 'Question text unavailable');
+        if(answer.qtype==='mcq'){
+          const options = answer.options || [];
+          options.forEach((option,i)=>add('Option '+(i+1),option.text));
+          const chosen = answer.choice==null ? null : options[answer.choice];
+          add('Student answer',chosen ? 'Option '+(answer.choice+1)+': '+chosen.text : 'Not answered');
+          const correct = options.findIndex(o=>o.correct);
+          add('Correct answer',correct<0?'Not available':'Option '+(correct+1)+': '+options[correct].text);
+        }else{
+          add('Student answer',answer.text || 'Not answered');
+        }
+        add('Marks',answer.graded ? (answer.awarded??0)+' / '+answer.max_marks : 'Not marked / '+answer.max_marks);
+        if(answer.feedback) add('Feedback',answer.feedback);
+        if(answer.model) add('Marking notes',answer.model);
+      }
+      rows.push(['','']);
+      add('Grader note',attempt.grader_note || 'None');
+      add('Violation log',violations.length ? violations.length+' recorded events' : 'No recorded events');
+      for(const violation of violations) add(violation.kind||'Event',[violation.at,violation.detail].filter(Boolean).join('\n'));
+      rows.push(['','']);
+    }
+    return {name:'Full exam paper',headers:['Full exam paper','Student details, questions and answers'],
+      rows,widths:[30,100],readable:true,autoFilter:false};
+  }
   function examPaperSheets(reviews,individual=false){
     const identityHeaders = individual ? [] : ['Name','Student ID','Attempt ID'];
     const answerHeaders = ['Question #','Type','Question','All MCQ options','Selected answer','Correct answer',
@@ -1371,18 +1427,19 @@
       for(const v of violations) sheets[2].rows.push([...identity,v.kind||'',v.detail||'',v.at||'']);
       sheets[3].rows.push([...identity,attempt.grader_note||'']);
     }
-    return sheets;
+    return [readableExamPaper(reviews),...sheets];
   }
   async function fetchExamPaper(id){
     const {data,error} = await sb.rpc('exam_review',{p_attempt:id});
     if(error || !data?.attempt || !data?.student) throw new Error('Paper '+id+': '+(error?.message||'unavailable'));
+    if(!Array.isArray(data.answers) || !data.answers.length) throw new Error('No question and answer records were returned for paper '+id+'. A full paper cannot be downloaded');
     return data;
   }
   async function downloadExamOne(a){
     const review = await fetchExamPaper(a.id);
     const {attempt,student} = review;
     window.HacknFixExcel.download(examPaperSheets([review],true),
-      'hacknfix-exam-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
+      'hacknfix-full-exam-paper-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
   }
 
   // 95 -> "1m 35s"

@@ -31,6 +31,9 @@ button for an individual download. In Final Exam Results, **Full paper Excel**
 includes every question, all MCQ options, student answers, marks, feedback and
 the violation log. The dashboard's **Recent results** also has an **Excel**
 button beside **Review** for the same individual full-paper download.
+The workbook opens on **Full exam paper**, with student details followed by
+each question and the student's answer. Long answers continue on additional
+rows so the whole response stays readable. Summary and analysis sheets follow.
 Use the row checkboxes to choose papers, **Select shown
 papers** for the current filter, or **Select all papers (all pages)** for the
 whole database, then **Download selected full papers**. The combined workbook
