@@ -53,6 +53,12 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     assert.ok(review.answers.find(a=>a.prompt===mcq.prompt).options[correct].correct);
     assert.equal('token' in review.attempt,false);
     await db.exec('reset role');
+    await db.query("update exam_questions set prompt='Edited after exam', model_answer='Changed guide' where id=$1",[mcq.id]);
+    await db.exec('set role authenticated');
+    const historic = (await db.query('select exam_review($1) as result',[paper.attempt])).rows[0].result;
+    assert.equal(historic.answers.find(a=>a.answer_id===review.answers.find(r=>r.prompt===mcq.prompt).answer_id).prompt,mcq.prompt);
+    await db.exec('reset role');
+    await assert.rejects(db.query('delete from exam_questions where id=$1',[mcq.id]),/foreign key constraint/);
     await assert.rejects(start('TEST-1',paper.token), /already_attempted/);
     const expired = await start('TEST-2');
     await db.query("update exam_attempts set deadline=now()-interval '1 minute' where id=$1", [expired.attempt]);
@@ -90,6 +96,33 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     assert.equal((await db.query("select attempts::int as n from subject_analytics_totals('graphic')")).rows[0].n,1);
     const videoTotals = (await db.query("select visitors::int,finished::int,feedbacks::int from subject_analytics_totals('video')")).rows[0];
     assert.deepEqual(videoTotals,{visitors:1,finished:1,feedbacks:1});
+    const videoDaily = (await db.query("select visitors::int,attempts::int,feedbacks::int from subject_analytics_daily('video',1)")).rows[0];
+    assert.deepEqual(videoDaily,{visitors:1,attempts:1,feedbacks:1});
     await db.exec('reset role');
+  } finally { await db.close(); }
+});
+
+test('schema upgrade preserves answers from older exam papers', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec('create role anon; create role authenticated;');
+    const schema = fs.readFileSync(path.join(__dirname, '../supabase-schema.sql'), 'utf8');
+    await db.exec(schema);
+    const question = (await db.query('select id,prompt,hint,model_answer from exam_questions limit 1')).rows[0];
+    const student = (await db.query("insert into exam_students(student_id,name,batch,email,phone) values ('OLD-1','Old Student','Batch','old@example.com','01700000000') returning id")).rows[0].id;
+    const attempt = (await db.query("insert into exam_attempts(student,deadline) values ($1,now()+interval '1 hour') returning id",[student])).rows[0].id;
+    await db.query('insert into exam_answers(attempt,question,qtype,prompt_snapshot,hint_snapshot,model_snapshot) values ($1,$2,$3,$4,$5,$6)',
+      [attempt,question.id,'written',question.prompt,question.hint,question.model_answer]);
+    await db.exec(`alter table exam_answers alter column prompt_snapshot drop not null;
+      alter table exam_answers alter column hint_snapshot drop not null;
+      alter table exam_answers alter column model_snapshot drop not null;
+      update exam_answers set prompt_snapshot=null,hint_snapshot=null,model_snapshot=null;
+      alter table exam_answers drop constraint exam_answers_question_fkey;
+      alter table exam_answers add constraint exam_answers_question_fkey
+        foreign key(question) references exam_questions(id) on delete cascade;`);
+    await db.exec(schema);
+    const saved = (await db.query('select prompt_snapshot,hint_snapshot,model_snapshot from exam_answers where attempt=$1',[attempt])).rows[0];
+    assert.deepEqual(saved,{prompt_snapshot:question.prompt,hint_snapshot:question.hint,model_snapshot:question.model_answer});
+    await assert.rejects(db.query('delete from exam_questions where id=$1',[question.id]),/foreign key constraint/);
   } finally { await db.close(); }
 });

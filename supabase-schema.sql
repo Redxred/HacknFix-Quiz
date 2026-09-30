@@ -703,9 +703,12 @@ alter table public.exam_attempts
 create table if not exists public.exam_answers (
   id            uuid primary key default gen_random_uuid(),
   attempt       uuid not null references public.exam_attempts(id) on delete cascade,
-  question      uuid not null references public.exam_questions(id) on delete cascade,
+  question      uuid not null references public.exam_questions(id) on delete restrict,
   qtype         text not null,
   position      int  not null default 0,
+  prompt_snapshot text not null,
+  hint_snapshot text not null default '',
+  model_snapshot text not null default '',
   -- The option order this student saw, so a shuffled MCQ can still be
   -- reviewed and re-graded correctly months later.
   shown_options jsonb not null default '[]'::jsonb,
@@ -721,6 +724,37 @@ create table if not exists public.exam_answers (
 );
 
 create index if not exists exam_ans_attempt_idx on public.exam_answers (attempt, position);
+
+-- Older installations kept only a reference to the editable question bank.
+-- Copy its current text into existing papers once, then keep future papers
+-- independent of later question edits. Questions used by a paper cannot be
+-- deleted, because their answer rows must remain available for review.
+alter table public.exam_answers add column if not exists prompt_snapshot text;
+alter table public.exam_answers add column if not exists hint_snapshot text;
+alter table public.exam_answers add column if not exists model_snapshot text;
+update public.exam_answers a set
+  prompt_snapshot = coalesce(a.prompt_snapshot, q.prompt),
+  hint_snapshot = coalesce(a.hint_snapshot, q.hint),
+  model_snapshot = coalesce(a.model_snapshot, q.model_answer)
+from public.exam_questions q
+where a.question = q.id
+  and (a.prompt_snapshot is null or a.hint_snapshot is null or a.model_snapshot is null);
+alter table public.exam_answers alter column prompt_snapshot set not null;
+alter table public.exam_answers alter column hint_snapshot set not null;
+alter table public.exam_answers alter column model_snapshot set not null;
+do $migration$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.exam_answers'::regclass
+      and conname = 'exam_answers_question_fkey' and confdeltype <> 'r'
+  ) then
+    alter table public.exam_answers drop constraint exam_answers_question_fkey;
+    alter table public.exam_answers add constraint exam_answers_question_fkey
+      foreign key (question) references public.exam_questions(id) on delete restrict;
+  end if;
+end
+$migration$;
 
 -- Every anti-cheat trip, with a timestamp. This is the part that
 -- survives a student clearing their console.
@@ -985,9 +1019,11 @@ begin
     end if;
 
     insert into public.exam_answers
-      (attempt, question, qtype, position, shown_options, max_marks)
+      (attempt, question, qtype, position, prompt_snapshot, hint_snapshot,
+       model_snapshot, shown_options, max_marks)
     values
-      (v_id, v_row.id, v_row.qtype, v_pos, v_opts, greatest(v_row.marks, 1));
+      (v_id, v_row.id, v_row.qtype, v_pos, v_row.prompt, v_row.hint,
+       v_row.model_answer, v_opts, greatest(v_row.marks, 1));
   end loop;
 
   if v_pos = 0 then
@@ -1038,8 +1074,8 @@ as $fn$
       'id',       a.question,
       'qtype',    a.qtype,
       'position', a.position,
-      'prompt',   q.prompt,
-      'hint',     q.hint,
+      'prompt',   a.prompt_snapshot,
+      'hint',     a.hint_snapshot,
       'marks',    a.max_marks,
       'options',  public.exam_public_options(a.shown_options),
       'choice',   a.choice,
@@ -1047,7 +1083,6 @@ as $fn$
     ) order by a.position
   ), '[]'::jsonb)
   from public.exam_answers a
-  join public.exam_questions q on q.id = a.question
   where a.attempt = p_attempt;
 $fn$;
 
@@ -1328,8 +1363,8 @@ as $fn$
           'answer_id',  an.id,
           'qtype',      an.qtype,
           'position',   an.position,
-          'prompt',     q.prompt,
-          'model',      q.model_answer,
+          'prompt',     an.prompt_snapshot,
+          'model',      an.model_snapshot,
           'options',    an.shown_options,
           'choice',     an.choice,
           'text',       an.answer_text,
@@ -1341,7 +1376,6 @@ as $fn$
         ) order by an.position
       ), '[]'::jsonb)
       from public.exam_answers an
-      join public.exam_questions q on q.id = an.question
       where an.attempt = a.id
     ),
     'violations', (

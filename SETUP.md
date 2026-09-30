@@ -332,6 +332,11 @@ one correct option. Written and practical questions take **marking notes**:
 what a full-mark answer contains. Only you ever see those, and they sit
 beside the student's answer while you mark, so you are not re-deciding the
 standard on every paper. Exam questions are English only.
+Once a question has appeared in a paper, hide it instead of deleting it.
+The database preserves that paper's question text and marking notes even if
+you later edit the question bank. Re-running the schema copies the current
+question text into older papers; text changed before that migration cannot
+be recovered automatically.
 
 **Exam results** — every paper, with the MCQ section already marked. The tab
 shows a red count of papers waiting on you. Open one to:

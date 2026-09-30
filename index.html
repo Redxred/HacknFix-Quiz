@@ -2702,6 +2702,7 @@
     };
   }
 
+  let visitReady = Promise.resolve();
   async function trackVisit(){
     if(!sb) return;
     const c = detectClient();
@@ -2727,6 +2728,7 @@
   async function markVisit(event){
     if(!sb) return;
     try{
+      await visitReady;
       await sb.rpc(isSubjectQuiz ? 'subject_mark_visit' : 'mark_visit', { p_session: sessionId(), p_event: event, ...(isSubjectQuiz ? {p_subject:quizSubject} : {}) });
     }catch(e){
       console.warn('Visit not marked:', e.message || e);
@@ -3996,7 +3998,7 @@
   const practice = route.get('practice');
   if(['all','mcq','written'].includes(practice)) startPractice(practice);
   else{
-    if(isSubjectQuiz || route.get('subject') === 'cyber' || route.get('mode')) trackVisit();
+    if(isSubjectQuiz || route.get('subject') === 'cyber' || route.get('mode')) visitReady = trackVisit();
     if(route.get('subject') === 'cyber') showScreen('screen-choose');
     if(isSubjectQuiz) showScreen('screen-register');
     if(route.get('mode') === 'quiz') showScreen('screen-register');

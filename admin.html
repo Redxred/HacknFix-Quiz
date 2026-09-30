@@ -3088,9 +3088,11 @@
   }
 
   async function removeExamQuestion(q){
-    if(!confirm('Delete this question?\n\nPapers that already used it keep their copy, so past results stay correct.')) return;
+    if(!confirm('Delete this question?\n\nQuestions already used in an exam paper cannot be deleted. Hide them instead.')) return;
     const { error } = await sb.from('exam_questions').delete().eq('id', q.id);
-    if(error) return toast(error.message, true);
+    if(error) return toast(error.code === '23503'
+      ? 'This question is used in an exam paper. Hide it instead to preserve past results.'
+      : error.message, true);
     toast('Question deleted');
     loadExamQuestions();
   }
