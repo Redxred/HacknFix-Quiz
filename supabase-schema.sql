@@ -1666,3 +1666,217 @@ insert into public.exam_questions
 select 'practical', 'Write a checklist to investigate a suspicious email using a saved sample without following its links or opening its attachments. State what evidence you would preserve.', '[]'::jsonb,
   15, 'Preserve the message and headers, inspect sender/reply-to and domains as text, review authentication results in context, identify requests and pressure tactics, report through the official channel and preserve evidence without executing content.', 'Use numbered steps or clear pseudocode.', 104, true
 where not exists (select 1 from public.exam_questions where qtype='practical' and prompt='Write a checklist to investigate a suspicious email using a saved sample without following its links or opening its attachments. State what evidence you would preserve.');
+
+-- ============================================================
+-- SUBJECT QUIZZES: Video Editing, Graphic Design, Basic Computer
+-- Each subject has isolated rows and the same quiz/admin features.
+-- ============================================================
+create table if not exists public.subject_settings (
+  subject text primary key check (subject in ('video','graphic','computer')),
+  quiz_open boolean not null default true,
+  quiz_length int not null default 4,
+  show_leaderboard boolean not null default true,
+  timer_seconds int not null default 0,
+  welcome_title_bn text not null default '', welcome_title_en text not null default '',
+  welcome_sub_bn text not null default '', welcome_sub_en text not null default '',
+  closed_msg_bn text not null default 'কুইজটি এখন বন্ধ আছে।',
+  closed_msg_en text not null default 'This quiz is closed right now.',
+  updated_at timestamptz not null default now()
+);
+insert into public.subject_settings (subject,welcome_title_bn,welcome_title_en,welcome_sub_bn,welcome_sub_en) values
+ ('video','ভিডিও এডিটিংয়ে আপনি কতটা দক্ষ?','How sharp is your video editing workflow?','এডিটিং, অডিও ও এক্সপোর্ট সম্পর্কে দক্ষতা যাচাই করুন।','Test your workflow, pacing, audio and export choices.'),
+ ('graphic','ডিজাইন সিদ্ধান্তে আপনি কতটা দক্ষ?','How strong are your design decisions?','লেআউট, টাইপোগ্রাফি, রং ও ডিজাইন ডেলিভারি যাচাই করুন।','Explore layout, typography, color and design delivery.'),
+ ('computer','কম্পিউটার ব্যবহারে আপনি কতটা আত্মবিশ্বাসী?','How confident are you with a computer?','ফাইল, শর্টকাট, ডকুমেন্ট ও নিরাপদ ব্যবহার শিখুন।','Build confidence with files, shortcuts, documents and safe habits.')
+on conflict (subject) do nothing;
+
+create table if not exists public.subject_questions (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null references public.subject_settings(subject),
+  sort_order int not null default 0, icon text not null default 'alert',
+  q_bn text not null, q_en text not null, options jsonb not null,
+  explain_bn text not null default '', explain_en text not null default '',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  unique (subject,q_en)
+);
+create index if not exists subject_questions_order_idx on public.subject_questions(subject,sort_order);
+create table if not exists public.subject_attempts (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null references public.subject_settings(subject),
+  name text not null default 'Guest', phone text, email text,
+  score int not null, total int not null, lang text not null default 'bn',
+  duration_seconds int, created_at timestamptz not null default now()
+);
+create index if not exists subject_attempts_scope_idx on public.subject_attempts(subject,created_at desc);
+create table if not exists public.subject_feedback (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null references public.subject_settings(subject),
+  name text not null default 'Guest', contact text, rating int not null default 0,
+  message text not null default '', lang text not null default 'bn',
+  session_id text, is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists subject_feedback_scope_idx on public.subject_feedback(subject,created_at desc);
+create table if not exists public.subject_visits (
+  id uuid primary key default gen_random_uuid(),
+  subject text not null references public.subject_settings(subject),
+  session_id text not null, first_seen timestamptz not null default now(),
+  last_seen timestamptz not null default now(), page_views int not null default 1,
+  device text not null default 'unknown', browser text not null default 'unknown',
+  os text not null default 'unknown', referrer text not null default 'direct',
+  lang text not null default 'bn', screen text, timezone text,
+  started_quiz boolean not null default false, finished_quiz boolean not null default false,
+  gave_feedback boolean not null default false,
+  unique(subject,session_id)
+);
+create index if not exists subject_visits_scope_idx on public.subject_visits(subject,first_seen desc);
+
+alter table public.subject_settings enable row level security;
+alter table public.subject_questions enable row level security;
+alter table public.subject_attempts enable row level security;
+alter table public.subject_feedback enable row level security;
+alter table public.subject_visits enable row level security;
+drop policy if exists "subject_settings_read" on public.subject_settings;
+drop policy if exists "subject_settings_admin" on public.subject_settings;
+drop policy if exists "subject_questions_read" on public.subject_questions;
+drop policy if exists "subject_questions_admin" on public.subject_questions;
+drop policy if exists "subject_attempts_admin" on public.subject_attempts;
+drop policy if exists "subject_feedback_admin" on public.subject_feedback;
+drop policy if exists "subject_visits_admin" on public.subject_visits;
+create policy "subject_settings_read" on public.subject_settings for select to anon,authenticated using (true);
+create policy "subject_settings_admin" on public.subject_settings for all to authenticated using (true) with check (true);
+create policy "subject_questions_read" on public.subject_questions for select to anon using (is_active);
+create policy "subject_questions_admin" on public.subject_questions for all to authenticated using (true) with check (true);
+create policy "subject_attempts_admin" on public.subject_attempts for all to authenticated using (true) with check (true);
+create policy "subject_feedback_admin" on public.subject_feedback for all to authenticated using (true) with check (true);
+create policy "subject_visits_admin" on public.subject_visits for all to authenticated using (true) with check (true);
+grant select on public.subject_settings,public.subject_questions to anon;
+grant select,insert,update,delete on public.subject_settings,public.subject_questions,public.subject_attempts,public.subject_feedback,public.subject_visits to authenticated;
+revoke all on public.subject_attempts,public.subject_feedback,public.subject_visits from anon;
+
+create or replace function public.subject_submit_attempt(
+ p_subject text,p_name text,p_phone text,p_email text,p_score int,p_total int,p_lang text,p_duration int default null
+) returns uuid language plpgsql security definer set search_path=public as $fn$
+declare v_id uuid; v_open boolean;
+begin
+ if p_subject not in ('video','graphic','computer') then raise exception 'invalid_subject'; end if;
+ select quiz_open into v_open from public.subject_settings where subject=p_subject;
+ if not coalesce(v_open,false) then raise exception 'quiz_closed'; end if;
+ if p_total<=0 or p_total>100 or p_score<0 or p_score>p_total then raise exception 'invalid_score'; end if;
+ insert into public.subject_attempts(subject,name,phone,email,score,total,lang,duration_seconds)
+ values(p_subject,left(coalesce(nullif(trim(p_name),''),'Guest'),60),left(nullif(trim(p_phone),''),20),
+ left(nullif(trim(p_email),''),120),p_score,p_total,case when p_lang in ('bn','en') then p_lang else 'bn' end,
+ case when p_duration between 0 and 86400 then p_duration else null end) returning id into v_id;
+ return v_id;
+end $fn$;
+create or replace function public.subject_leaderboard(p_subject text,p_limit int default 10)
+returns table(id uuid,name text,score int,total int,created_at timestamptz)
+language sql stable security definer set search_path=public as $fn$
+ select a.id,a.name,a.score,a.total,a.created_at from public.subject_attempts a
+ where a.subject=p_subject and p_subject in ('video','graphic','computer')
+ order by a.score desc,a.created_at asc limit greatest(1,least(coalesce(p_limit,10),50));
+$fn$;
+create or replace function public.subject_quiz_stats(p_subject text)
+returns table(total_attempts bigint,avg_percent int,best_score int)
+language sql stable security definer set search_path=public as $fn$
+ select count(*)::bigint,coalesce(round(avg(case when total>0 then score::numeric/total*100 else 0 end))::int,0),
+ coalesce(max(score),0) from public.subject_attempts where subject=p_subject and p_subject in ('video','graphic','computer');
+$fn$;
+create or replace function public.subject_track_visit(
+ p_subject text,p_session text,p_device text default 'unknown',p_browser text default 'unknown',
+ p_os text default 'unknown',p_referrer text default 'direct',p_lang text default 'bn',
+ p_screen text default null,p_timezone text default null
+) returns void language plpgsql security definer set search_path=public as $fn$
+begin
+ if p_subject not in ('video','graphic','computer') or p_session is null or length(trim(p_session))<8 or length(p_session)>64 then return; end if;
+ insert into public.subject_visits(subject,session_id,device,browser,os,referrer,lang,screen,timezone)
+ values(p_subject,trim(p_session),left(coalesce(nullif(trim(p_device),''),'unknown'),20),
+ left(coalesce(nullif(trim(p_browser),''),'unknown'),30),left(coalesce(nullif(trim(p_os),''),'unknown'),30),
+ left(coalesce(nullif(trim(p_referrer),''),'direct'),120),case when p_lang in ('bn','en') then p_lang else 'bn' end,
+ left(nullif(trim(p_screen),''),20),left(nullif(trim(p_timezone),''),80))
+ on conflict(subject,session_id) do update set last_seen=now(),page_views=subject_visits.page_views+1,
+ lang=excluded.lang,device=case when subject_visits.device='unknown' then excluded.device else subject_visits.device end,
+ browser=case when subject_visits.browser='unknown' then excluded.browser else subject_visits.browser end,
+ os=case when subject_visits.os='unknown' then excluded.os else subject_visits.os end;
+end $fn$;
+create or replace function public.subject_mark_visit(p_subject text,p_session text,p_event text)
+returns void language plpgsql security definer set search_path=public as $fn$
+begin
+ if p_subject not in ('video','graphic','computer') or p_session is null or p_event not in ('start','finish','feedback') then return; end if;
+ update public.subject_visits set last_seen=now(),started_quiz=started_quiz or p_event='start',
+ finished_quiz=finished_quiz or p_event='finish',gave_feedback=gave_feedback or p_event='feedback'
+ where subject=p_subject and session_id=trim(p_session);
+end $fn$;
+create or replace function public.subject_submit_feedback(
+ p_subject text,p_name text,p_contact text,p_rating int,p_message text,p_lang text default 'bn',p_session text default null
+) returns uuid language plpgsql security definer set search_path=public as $fn$
+declare v_id uuid; v_msg text:=left(coalesce(trim(p_message),''),2000);
+begin
+ if p_subject not in ('video','graphic','computer') then raise exception 'invalid_subject'; end if;
+ if p_rating<0 or p_rating>5 or (p_rating=0 and v_msg='') then raise exception 'invalid_feedback'; end if;
+ insert into public.subject_feedback(subject,name,contact,rating,message,lang,session_id)
+ values(p_subject,left(coalesce(nullif(trim(p_name),''),'Guest'),60),left(nullif(trim(p_contact),''),120),p_rating,v_msg,
+ case when p_lang in ('bn','en') then p_lang else 'bn' end,left(nullif(trim(p_session),''),64)) returning id into v_id;
+ perform public.subject_mark_visit(p_subject,p_session,'feedback'); return v_id;
+end $fn$;
+
+create or replace function public.subject_analytics_daily(p_subject text,p_days int default 14,p_tz text default 'Asia/Dhaka')
+returns table(day date,visitors bigint,page_views bigint,started bigint,finished bigint,attempts bigint,feedbacks bigint)
+language sql stable as $fn$
+ with b as (select greatest(1,least(coalesce(p_days,14),90)) n,coalesce(nullif(trim(p_tz),''),'UTC') tz),
+ days as (select generate_series(timezone(b.tz,now())::date-(b.n-1),timezone(b.tz,now())::date,interval '1 day')::date as day from b),
+ v as (select timezone(b.tz,x.first_seen)::date as day,count(*) visitors,sum(x.page_views) page_views,
+ count(*) filter(where x.started_quiz) started,count(*) filter(where x.finished_quiz) finished
+ from public.subject_visits x cross join b where x.subject=p_subject group by 1),
+ a as (select timezone(b.tz,x.created_at)::date as day,count(*) attempts from public.subject_attempts x cross join b where x.subject=p_subject group by 1),
+ f as (select timezone(b.tz,x.created_at)::date as day,count(*) feedbacks from public.subject_feedback x cross join b where x.subject=p_subject group by 1)
+ select d.day,coalesce(v.visitors,0)::bigint,coalesce(v.page_views,0)::bigint,coalesce(v.started,0)::bigint,
+ coalesce(v.finished,0)::bigint,coalesce(a.attempts,0)::bigint,coalesce(f.feedbacks,0)::bigint
+ from days d left join v on v.day=d.day left join a on a.day=d.day left join f on f.day=d.day order by d.day;
+$fn$;
+create or replace function public.subject_analytics_totals(p_subject text,p_tz text default 'Asia/Dhaka')
+returns table(visitors bigint,page_views bigint,started bigint,finished bigint,visitors_today bigint,
+ attempts bigint,attempts_today bigint,feedbacks bigint,unread_feedback bigint,avg_rating numeric)
+language sql stable as $fn$
+ with b as (select coalesce(nullif(trim(p_tz),''),'UTC') tz)
+ select (select count(*) from public.subject_visits where subject=p_subject),
+ (select coalesce(sum(page_views),0)::bigint from public.subject_visits where subject=p_subject),
+ (select count(*) from public.subject_visits where subject=p_subject and started_quiz),
+ (select count(*) from public.subject_visits where subject=p_subject and finished_quiz),
+ (select count(*) from public.subject_visits x,b where x.subject=p_subject and timezone(b.tz,x.first_seen)::date=timezone(b.tz,now())::date),
+ (select count(*) from public.subject_attempts where subject=p_subject),
+ (select count(*) from public.subject_attempts x,b where x.subject=p_subject and timezone(b.tz,x.created_at)::date=timezone(b.tz,now())::date),
+ (select count(*) from public.subject_feedback where subject=p_subject),
+ (select count(*) from public.subject_feedback where subject=p_subject and not is_read),
+ (select round(avg(rating)::numeric,2) from public.subject_feedback where subject=p_subject and rating>0);
+$fn$;
+
+revoke all on function public.subject_submit_attempt(text,text,text,text,int,int,text,int) from public;
+revoke all on function public.subject_leaderboard(text,int) from public;
+revoke all on function public.subject_quiz_stats(text) from public;
+revoke all on function public.subject_track_visit(text,text,text,text,text,text,text,text,text) from public;
+revoke all on function public.subject_mark_visit(text,text,text) from public;
+revoke all on function public.subject_submit_feedback(text,text,text,int,text,text,text) from public;
+revoke all on function public.subject_analytics_daily(text,int,text) from public;
+revoke all on function public.subject_analytics_totals(text,text) from public;
+grant execute on function public.subject_submit_attempt(text,text,text,text,int,int,text,int),public.subject_leaderboard(text,int),
+ public.subject_quiz_stats(text),public.subject_track_visit(text,text,text,text,text,text,text,text,text),
+ public.subject_mark_visit(text,text,text),public.subject_submit_feedback(text,text,text,int,text,text,text) to anon,authenticated;
+grant execute on function public.subject_analytics_daily(text,int,text),public.subject_analytics_totals(text,text) to authenticated;
+
+-- SUBJECT STARTER QUESTIONS (generated from subjects.js)
+insert into public.subject_questions
+ (subject,sort_order,icon,q_bn,q_en,options,explain_bn,explain_en,is_active) values
+ ('video',1,'alert','ক্লায়েন্টের ভিডিও এডিট করার আগে প্রথমে কী করা উচিত?','What is the best first step before editing a client video?','[{"bn":"সব ক্লিপ টাইমলাইনে এলোমেলোভাবে রাখুন","en":"Drop all clips on the timeline randomly","correct":false},{"bn":"ফুটেজ দেখে ফোল্ডার ও নাম গুছিয়ে নিন","en":"Review and organize footage and folders","correct":true},{"bn":"প্রথমেই সব ক্লিপে ট্রানজিশন দিন","en":"Add transitions to every clip first","correct":false}]'::jsonb,'ফুটেজ গুছিয়ে রাখলে এডিটিং দ্রুত হয় এবং ফাইল হারায় না।','Organized footage makes editing faster and prevents missing assets.',true),
+ ('video',2,'alert','ইন্টারভিউ ভিডিওতে কোন কাট সাধারণত বেশি স্বাভাবিক লাগে?','Which edit usually creates the smoothest interview cut?','[{"bn":"প্রতিটি শব্দের মাঝে জুম ট্রানজিশন","en":"A zoom transition after every word","correct":false},{"bn":"বি-রোল দিয়ে জাম্প কাট ঢেকে দিন","en":"Cover a jump cut with relevant B-roll","correct":true},{"bn":"শব্দ ছাড়া পুরো ক্লিপ চালান","en":"Play the whole clip without sound","correct":false}]'::jsonb,'প্রাসঙ্গিক বি-রোল গল্পকে শক্তিশালী করে এবং জাম্প কাট ঢাকে।','Relevant B-roll supports the story and hides jump cuts.',true),
+ ('video',3,'alert','মিউজিকের নিচে কথা শোনা যাচ্ছে না। কী ঠিক করবেন?','Dialogue is hard to hear under music. What should you adjust?','[{"bn":"শুধু ভিডিওর উজ্জ্বলতা বাড়ান","en":"Increase video brightness","correct":false},{"bn":"মিউজিকের লেভেল কমিয়ে কথার অডিও পরিষ্কার করুন","en":"Lower music and balance dialogue audio","correct":true},{"bn":"আরও মিউজিক যোগ করুন","en":"Add more music","correct":false}]'::jsonb,'কথা স্পষ্ট রাখতে মিউজিক ও স্পিচের লেভেল ব্যালেন্স করুন।','The dialogue should remain clear; balance music against speech.',true),
+ ('video',4,'alert','চূড়ান্ত ভিডিও দেওয়ার আগে কী যাচাই করবেন?','What should you check before delivering the final export?','[{"bn":"শুধু ফাইলের নাম","en":"Only the filename","correct":false},{"bn":"রেজোলিউশন, ফ্রেম রেট, অডিও ও পুরো ভিডিও","en":"Resolution, frame rate, audio and the full playback","correct":true},{"bn":"শুধু থাম্বনেইল","en":"Only the thumbnail","correct":false}]'::jsonb,'পুরো ভিডিও ও এক্সপোর্ট সেটিং যাচাই করলে ভুল ধরা পড়ে।','A full playback and export settings check catches delivery errors.',true),
+ ('graphic',1,'alert','পোস্টারে স্পষ্ট ভিজুয়াল হায়ারার্কি কীভাবে তৈরি হয়?','What creates a clear visual hierarchy in a poster?','[{"bn":"সব লেখা একই আকারে রাখুন","en":"Make all text the same size","correct":false},{"bn":"গুরুত্ব অনুযায়ী আকার, ওজন ও ফাঁকা জায়গা ব্যবহার করুন","en":"Use size, weight and spacing by importance","correct":true},{"bn":"সব জায়গায় উজ্জ্বল রং দিন","en":"Use bright color everywhere","correct":false}]'::jsonb,'হায়ারার্কি দর্শককে আগে গুরুত্বপূর্ণ তথ্য দেখতে সাহায্য করে।','Hierarchy guides the viewer to the most important information first.',true),
+ ('graphic',2,'alert','পটভূমির ওপর লেখার কনট্রাস্ট কেন জরুরি?','Why is contrast important for text on a background?','[{"bn":"শুধু ফাইল ছোট করার জন্য","en":"To make the file smaller","correct":false},{"bn":"লেখা সহজে পড়ার জন্য","en":"To make text easy to read","correct":true},{"bn":"সব রং একই দেখানোর জন্য","en":"To make all colors look the same","correct":false}]'::jsonb,'ভালো কনট্রাস্ট লেখা পড়া সহজ করে।','Good contrast improves readability and accessibility.',true),
+ ('graphic',3,'alert','পরে লোগো এডিট করতে চাইলে ক্লায়েন্টকে কোন ফাইল দেওয়া ভালো?','Which file is most useful for a client who may edit a logo later?','[{"bn":"শুধু কম রেজোলিউশনের JPG","en":"Only a low-resolution JPG","correct":false},{"bn":"সম্পাদনাযোগ্য ভেক্টর সোর্স ফাইল","en":"An editable vector source file","correct":true},{"bn":"স্ক্রিনশট","en":"A screenshot","correct":false}]'::jsonb,'ভেক্টর ফাইল মান না হারিয়ে বড় করা ও বদলানো যায়।','An editable vector file can be resized and updated without quality loss.',true),
+ ('graphic',4,'alert','প্রিন্টের জন্য ডিজাইন প্রস্তুত করার নিরাপদ উপায় কী?','What is the safest way to prepare a design for print?','[{"bn":"যেকোনো RGB স্ক্রিনশট পাঠান","en":"Send any RGB screenshot","correct":false},{"bn":"ব্লিড, রেজোলিউশন ও প্রিন্টারের রং নির্দেশনা যাচাই করুন","en":"Check bleed, resolution and printer color requirements","correct":true},{"bn":"সব লেখা র‍্যাস্টার করুন","en":"Rasterize all text without checking","correct":false}]'::jsonb,'প্রিন্টের নির্দেশনা যাচাই করলে কাটাছেঁড়া ও মানের সমস্যা কমে।','Print specifications prevent cut-off edges and poor output.',true),
+ ('computer',1,'alert','নির্বাচিত লেখা কপি করার শর্টকাট কোনটি?','Which shortcut usually copies selected text?','[{"bn":"Ctrl + C","en":"Ctrl + C","correct":true},{"bn":"Ctrl + V","en":"Ctrl + V","correct":false},{"bn":"Ctrl + Z","en":"Ctrl + Z","correct":false}]'::jsonb,'Ctrl + C কপি করে; Ctrl + V পেস্ট করে।','Ctrl + C copies; Ctrl + V pastes.',true),
+ ('computer',2,'alert','গুরুত্বপূর্ণ ডকুমেন্ট পরে খুঁজে পেতে কোথায় রাখবেন?','Where should you save an important document so you can find it again?','[{"bn":"নাম ছাড়া যেকোনো ফোল্ডারে","en":"In a random unnamed folder","correct":false},{"bn":"ভালো নামে নির্দিষ্ট ফোল্ডারে, ব্যাকআপসহ","en":"In a named folder with a backup","correct":true},{"bn":"শুধু রিসাইকেল বিনে","en":"Only in the recycle bin","correct":false}]'::jsonb,'নাম, ফোল্ডার ও ব্যাকআপ ফাইল খুঁজে পেতে ও ফেরত আনতে সাহায্য করে।','Clear names, folders and backups make files easier to find and recover.',true),
+ ('computer',3,'alert','স্প্রেডশিটে ফর্মুলা সাধারণত কোন চিহ্ন দিয়ে শুরু হয়?','What does a spreadsheet formula normally start with?','[{"bn":"=","en":"= ","correct":true},{"bn":"#","en":"#","correct":false},{"bn":"@","en":"@","correct":false}]'::jsonb,'স্প্রেডশিটে ফর্মুলা সাধারণত সমান চিহ্ন দিয়ে শুরু হয়।','Spreadsheet formulas commonly begin with an equals sign.',true),
+ ('computer',4,'alert','অচেনা প্রেরকের অপ্রত্যাশিত ফাইল এলে কী করবেন?','You receive an unexpected attachment from an unknown sender. What should you do?','[{"bn":"সঙ্গে সঙ্গে খুলুন","en":"Open it immediately","correct":false},{"bn":"প্রেরক যাচাই করে সন্দেহজনক ফাইল না খুলুন","en":"Verify the sender and avoid opening suspicious files","correct":true},{"bn":"সবাইকে পাঠান","en":"Forward it to everyone","correct":false}]'::jsonb,'অপ্রত্যাশিত ফাইলে ক্ষতিকর সফটওয়্যার থাকতে পারে; আগে যাচাই করুন।','Unexpected attachments may contain malware; verify before opening.',true)
+on conflict (subject,q_en) do nothing;

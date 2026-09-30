@@ -971,8 +971,21 @@
 
 <main>
 
+  <section id="screen-subjects" class="card subject-home">
+    <p class="portal-kicker" data-t="portalKicker">শিখুন · অনুশীলন করুন · এগিয়ে যান</p>
+    <h1 class="hero-title" id="subjectHomeTitle">Choose your subject</h1>
+    <p class="hero-sub" id="subjectHomeSub">Explore a short quiz in your field, or open the Cyber Security final exam.</p>
+    <div class="subject-grid" aria-label="Subjects">
+      <button class="subject-card tone-cyber" id="subjectCyber" type="button" data-subject="cyber"><span class="subject-icon" aria-hidden="true">◈</span><span class="subject-copy"><strong>Cyber Security</strong><small>Awareness quiz and final exam</small></span><span class="subject-arrow" aria-hidden="true">↗</span></button>
+      <button class="subject-card tone-video" id="subjectVideo" type="button" data-subject="video"><span class="subject-icon" aria-hidden="true">▶</span><span class="subject-copy"><strong>Video Editing</strong><small>Workflow, audio and export</small></span><span class="subject-arrow" aria-hidden="true">↗</span></button>
+      <button class="subject-card tone-graphic" id="subjectGraphic" type="button" data-subject="graphic"><span class="subject-icon" aria-hidden="true">✦</span><span class="subject-copy"><strong>Graphic Design</strong><small>Layout, color and typography</small></span><span class="subject-arrow" aria-hidden="true">↗</span></button>
+      <button class="subject-card tone-computer" id="subjectComputer" type="button" data-subject="computer"><span class="subject-icon" aria-hidden="true">⌘</span><span class="subject-copy"><strong>Basic Computer</strong><small>Files, shortcuts and documents</small></span><span class="subject-arrow" aria-hidden="true">↗</span></button>
+    </div>
+  </section>
+
   <!-- SCREEN 0: PICK A MODE -->
-  <section id="screen-choose" class="card">
+  <section id="screen-choose" class="card hidden">
+    <button class="btn btn-ghost btn-sm subject-back" id="subjectBack" type="button">← Subjects</button>
     <p class="portal-kicker" data-t="portalKicker">শিখুন · অনুশীলন করুন · এগিয়ে যান</p>
     <div class="welcome-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
@@ -1134,6 +1147,7 @@
 
   <!-- SCREEN 1: REGISTER -->
   <section id="screen-register" class="card hidden">
+    <button class="btn btn-ghost btn-sm subject-back" id="quizBack" type="button">← Subjects</button>
     <div class="welcome-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
     </div>
@@ -1221,6 +1235,7 @@
       <button class="btn btn-ghost" id="retakeBtn" type="button" data-t="retakeBtn">আবার দিন</button>
       <button class="btn btn-primary" id="shareBtn" type="button" data-t="shareBtn">শেয়ার করুন</button>
     </div>
+    <button class="btn btn-ghost subject-result-home" id="resultSubjects" type="button">Browse subjects</button>
 
     <div id="boardSection">
       <div class="board-head">
@@ -1252,6 +1267,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="sample-questions.js"></script>
+<script src="subjects.js?v=subjects-1"></script>
 <script>
 (function(){
   // ---------- i18n ----------
@@ -1575,13 +1591,29 @@
     theme = localStorage.getItem('cq_theme') || '';
   }catch(e){}
   let user = null;
+  const route = new URLSearchParams(location.search);
+  const quizSubject = ['cyber','video','graphic','computer'].includes(route.get('subject')) ? route.get('subject') : 'cyber';
+  const subjectInfo = window.HNFSubjects[quizSubject];
+  const isSubjectQuiz = quizSubject !== 'cyber';
+  document.body.dataset.subject = quizSubject;
+  if(isSubjectQuiz) document.querySelector('#screen-register .welcome-icon').textContent = subjectInfo.icon;
+  if(isSubjectQuiz){
+    UI.bn.welcomeTitle = subjectInfo.titleBn;
+    UI.en.welcomeTitle = subjectInfo.titleEn;
+    UI.bn.welcomeSub = subjectInfo.subBn;
+    UI.en.welcomeSub = subjectInfo.subEn;
+    [1,2,3,4,5].forEach(i=>{
+      UI.bn['chip'+i] = subjectInfo.chipsBn[i-1] || '';
+      UI.en['chip'+i] = subjectInfo.chipsEn[i-1] || '';
+    });
+  }
   let qIndex = 0;
   let score = 0;
   let answered = false;
 
   // Live data, filled in by loadFromServer(). Starts on the fallback copy
   // so the page is usable immediately, before the network call returns.
-  let QUESTIONS = FALLBACK_QUESTIONS.slice();
+  let QUESTIONS = isSubjectQuiz ? subjectInfo.questions.map(q=>({icon:'alert',q:{bn:q.q_bn,en:q.q_en},options:q.options,explain:{bn:q.explain_bn,en:q.explain_en}})) : FALLBACK_QUESTIONS.slice();
   let runQuestions = QUESTIONS;
   let online = false;              // did we reach Supabase?
   let myAttemptId = null;          // id of the attempt we just submitted
@@ -1589,7 +1621,7 @@
 
   let SETTINGS = {
     quiz_open: true,
-    quiz_length: 10,
+    quiz_length: isSubjectQuiz ? 4 : 10,
     show_leaderboard: true,
     timer_seconds: 0        // 0 = no countdown
   };
@@ -1887,6 +1919,18 @@
       const key = el.getAttribute('data-t-ph');
       if(UI[lang][key] !== undefined) el.setAttribute('placeholder', UI[lang][key]);
     });
+    $('subjectHomeTitle').textContent = lang === 'bn' ? 'আপনার বিষয় বেছে নিন' : 'Choose your subject';
+    $('subjectHomeSub').textContent = lang === 'bn' ? 'নিজের বিষয়ে ছোট কুইজ দিন, অথবা সাইবার সিকিউরিটির ফাইনাল পরীক্ষা খুলুন।' : 'Explore a short quiz in your field, or open the Cyber Security final exam.';
+    document.querySelectorAll('.subject-card[data-subject]').forEach(card=>{
+      const info = window.HNFSubjects[card.dataset.subject];
+      card.querySelector('strong').textContent = lang === 'bn' ? info.bn : info.en;
+      card.querySelector('small').textContent = card.dataset.subject === 'cyber'
+        ? (lang === 'bn' ? 'সচেতনতা কুইজ ও ফাইনাল পরীক্ষা' : 'Awareness quiz and final exam')
+        : (lang === 'bn' ? info.subBn : info.subEn);
+    });
+    $('subjectBack').textContent = $('quizBack').textContent = lang === 'bn' ? '← বিষয়সমূহ' : '← Subjects';
+    $('resultSubjects').textContent = lang === 'bn' ? 'অন্য বিষয় দেখুন' : 'Browse subjects';
+    if(isSubjectQuiz) document.querySelector('#screen-register .topic-chip:last-child').classList.add('hidden');
     if(!document.getElementById('screen-quiz').classList.contains('hidden')){
       translateQuestion();
     }
@@ -1918,7 +1962,7 @@
 
   // ---------- Screens ----------
   function showScreen(id){
-    ['screen-choose','screen-register','screen-quiz','screen-result',
+    ['screen-subjects','screen-choose','screen-register','screen-quiz','screen-result',
      'screen-exam-reg','screen-exam','screen-exam-done'].forEach(s=>{
       $(s).classList.toggle('hidden', s!==id);
     });
@@ -2034,7 +2078,7 @@
   async function loadStats(){
     if(!sb) return;
     try{
-      const { data, error } = await sb.rpc('quiz_stats');
+      const { data, error } = await sb.rpc(isSubjectQuiz ? 'subject_quiz_stats' : 'quiz_stats', isSubjectQuiz ? {p_subject:quizSubject} : {});
       if(error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       if(!row) return;
@@ -2230,6 +2274,7 @@
   // ---------- Result ----------
   function getLevel(s, total){
     const pct = total > 0 ? (s / total) * 100 : 0;
+    if(isSubjectQuiz) return {name:pct>=80 ? (lang==='bn'?'দারুণ দক্ষতা':'Excellent work') : pct>=50 ? (lang==='bn'?'ভালো অগ্রগতি':'Good progress') : (lang==='bn'?'অনুশীলন চালিয়ে যান':'Keep practicing')};
     const levels = UI[lang].levels;
     let match = levels[0];
     levels.forEach(l=>{ if(pct >= l.min) match = l; });
@@ -2337,7 +2382,8 @@
     if(!sb){ renderLeaderboard(); return; }
 
     try{
-      const { data, error } = await sb.rpc('submit_attempt', {
+      const { data, error } = await sb.rpc(isSubjectQuiz ? 'subject_submit_attempt' : 'submit_attempt', {
+        ...(isSubjectQuiz ? {p_subject:quizSubject} : {}),
         p_name:  user ? user.name  : 'Guest',
         p_phone: user ? user.phone : '',
         p_email: user ? user.email : '',
@@ -2362,7 +2408,7 @@
   async function loadLeaderboard(){
     if(!sb) return;
     try{
-      const { data, error } = await sb.rpc('leaderboard', { p_limit: 10 });
+      const { data, error } = await sb.rpc(isSubjectQuiz ? 'subject_leaderboard' : 'leaderboard', { p_limit: 10, ...(isSubjectQuiz ? {p_subject:quizSubject} : {}) });
       if(error) throw error;
       serverBoard = data || [];
     }catch(e){
@@ -2403,7 +2449,7 @@
 
   function getLocalBoard(){
     try{
-      const rows = JSON.parse(localStorage.getItem('cq_board') || '[]');
+      const rows = JSON.parse(localStorage.getItem(isSubjectQuiz ? 'cq_board_'+quizSubject : 'cq_board') || '[]');
       return Array.isArray(rows) ? rows.filter(r=>r && typeof r.name === 'string' && Number.isFinite(r.score) && r.total > 0) : [];
     }catch(e){ return []; }
   }
@@ -2418,7 +2464,7 @@
       mine: true
     });
     board = board.sort((a,b)=>b.score-a.score).slice(0,10);
-    try{ localStorage.setItem('cq_board', JSON.stringify(board)); }catch(e){}
+    try{ localStorage.setItem(isSubjectQuiz ? 'cq_board_'+quizSubject : 'cq_board', JSON.stringify(board)); }catch(e){}
   }
 
   function renderLeaderboard(){
@@ -2498,13 +2544,15 @@
   $('shareBtn').addEventListener('click', async ()=>{
     const total = runQuestions.length;
     const level = getLevel(score, total);
-    const text = UI[lang].shareText(user?user.name:'', score, total, level.name);
+    const text = isSubjectQuiz
+      ? (lang==='bn' ? `${subjectInfo.bn} কুইজে আমার স্কোর ${score}/${total}। আপনিও চেষ্টা করুন!` : `I scored ${score}/${total} in the ${subjectInfo.en} quiz. Try it too!`)
+      : UI[lang].shareText(user?user.name:'', score, total, level.name);
 
     // Share the link too, otherwise WhatsApp/Messenger have nothing to
     // build a preview card from. Read it from the canonical tag so this
     // keeps working if the site moves to another domain.
     const canonical = document.querySelector('link[rel="canonical"]');
-    const url = (canonical && canonical.href) || (location.origin + location.pathname);
+    const url = isSubjectQuiz ? location.origin + location.pathname + '?subject=' + quizSubject : (canonical && canonical.href) || (location.origin + location.pathname);
 
     if(navigator.share){
       try{ await navigator.share({ title: 'HacknFix', text, url }); }catch(e){}
@@ -2542,9 +2590,9 @@
     }
     splashStep(45, 'loadQuestions');
     try{
-      const [qRes, sRes] = await Promise.all([
-        sb.from('questions').select('*').eq('is_active', true).order('sort_order', {ascending:true}),
-        sb.from('settings').select('*').eq('id', 1).single()
+    const [qRes, sRes] = await Promise.all([
+        (isSubjectQuiz ? sb.from('subject_questions').select('*').eq('subject',quizSubject) : sb.from('questions').select('*')).eq('is_active', true).order('sort_order', {ascending:true}),
+        isSubjectQuiz ? sb.from('subject_settings').select('*').eq('subject',quizSubject).single() : sb.from('settings').select('*').eq('id', 1).single()
       ]);
       if(qRes.error) throw qRes.error;
       if(!sRes.error) applySettings(sRes.data);
@@ -2552,7 +2600,7 @@
       const rows = qRes.data || [];
       // Only swap in the live set if the admin actually has questions,
       // otherwise a blank table would leave visitors with nothing to answer.
-      if(rows.length) QUESTIONS = rows.map(window.HacknFix.rowToQuestion);
+      if(rows.length || isSubjectQuiz) QUESTIONS = rows.map(window.HacknFix.rowToQuestion);
       online = true;
     }catch(e){
       console.warn('Could not load from Supabase:', e.message || e);
@@ -2565,11 +2613,12 @@
   }
 
   function applyClosedState(){
-    const closed = !SETTINGS.quiz_open;
+    const empty = isSubjectQuiz && online && !QUESTIONS.length;
+    const closed = !SETTINGS.quiz_open || empty;
     $('startRow').classList.toggle('hidden', closed);
     const note = $('closedNote');
     note.classList.toggle('hidden', !closed);
-    note.textContent = UI[lang].closedMsg || UI[lang].closedDefault;
+    note.textContent = empty ? (lang === 'bn' ? 'এই বিষয়ে এখনো সক্রিয় প্রশ্ন নেই। অনুগ্রহ করে পরে আবার আসুন।' : 'No active questions are available for this subject yet. Please check back later.') : (UI[lang].closedMsg || UI[lang].closedDefault);
   }
 
   function updateNotes(){
@@ -2657,7 +2706,8 @@
     if(!sb) return;
     const c = detectClient();
     try{
-      await sb.rpc('track_visit', {
+      await sb.rpc(isSubjectQuiz ? 'subject_track_visit' : 'track_visit', {
+        ...(isSubjectQuiz ? {p_subject:quizSubject} : {}),
         p_session:  sessionId(),
         p_device:   c.device,
         p_browser:  c.browser,
@@ -2677,7 +2727,7 @@
   async function markVisit(event){
     if(!sb) return;
     try{
-      await sb.rpc('mark_visit', { p_session: sessionId(), p_event: event });
+      await sb.rpc(isSubjectQuiz ? 'subject_mark_visit' : 'mark_visit', { p_session: sessionId(), p_event: event, ...(isSubjectQuiz ? {p_subject:quizSubject} : {}) });
     }catch(e){
       console.warn('Visit not marked:', e.message || e);
     }
@@ -2688,7 +2738,7 @@
   // ============================================================
 
   let fbGiven = false;
-  try{ fbGiven = localStorage.getItem('hnf_fb') === '1'; }catch(e){}
+  try{ fbGiven = localStorage.getItem(isSubjectQuiz ? 'hnf_fb_'+quizSubject : 'hnf_fb') === '1'; }catch(e){}
 
   const STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
     '<path d="M12 2.4l2.95 5.98 6.6.96-4.78 4.65 1.13 6.57L12 17.46 6.1 20.56l1.13-6.57L2.45 9.34l6.6-.96z"/></svg>';
@@ -2818,7 +2868,8 @@
       sendBtn.textContent = t.fbSending;
 
       try{
-        const { error } = await sb.rpc('submit_feedback', {
+        const { error } = await sb.rpc(isSubjectQuiz ? 'subject_submit_feedback' : 'submit_feedback', {
+          ...(isSubjectQuiz ? {p_subject:quizSubject} : {}),
           p_name:    back.querySelector('#fbName').value.trim(),
           p_contact: back.querySelector('#fbContact').value.trim(),
           p_rating:  chosen,
@@ -2829,7 +2880,7 @@
         if(error) throw error;
 
         fbGiven = true;
-        try{ localStorage.setItem('hnf_fb', '1'); }catch(e){}
+        try{ localStorage.setItem(isSubjectQuiz ? 'hnf_fb_'+quizSubject : 'hnf_fb', '1'); }catch(e){}
         back.querySelector('.fb-modal').innerHTML =
           '<div class="fb-done" style="margin:0;font-size:1rem;padding:26px 18px;">' +
             escapeHtml(t.fbThanks) +
@@ -3905,6 +3956,10 @@
   });
 
   // ---------- wiring ----------
+  document.querySelectorAll('.subject-card[data-subject]').forEach(card=>card.addEventListener('click',()=>{
+    location.href = location.pathname + '?subject=' + encodeURIComponent(card.dataset.subject);
+  }));
+  ['subjectBack','quizBack','resultSubjects'].forEach(id=>$(id).addEventListener('click',()=>{ location.href = location.pathname; }));
   $('pickQuiz').addEventListener('click', ()=>showScreen('screen-register'));
   $('pickExam').addEventListener('click', ()=>{
     if(!EXAM.settings) return examToast(UI[lang].examNotInstalled, true);
@@ -3938,11 +3993,12 @@
   splashStep(15, 'loadStart');
   loadFromServer();
   loadExamSettings();
-  const route = new URLSearchParams(location.search);
   const practice = route.get('practice');
   if(['all','mcq','written'].includes(practice)) startPractice(practice);
   else{
-    trackVisit();
+    if(isSubjectQuiz || route.get('subject') === 'cyber' || route.get('mode')) trackVisit();
+    if(route.get('subject') === 'cyber') showScreen('screen-choose');
+    if(isSubjectQuiz) showScreen('screen-register');
     if(route.get('mode') === 'quiz') showScreen('screen-register');
     if(route.get('mode') === 'exam') showScreen('screen-exam-reg');
   }

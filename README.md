@@ -22,8 +22,14 @@ See [SETUP.md](SETUP.md) to get it running.
 Run locally with `npm start` (Python required), then visit
 <http://localhost:8000>. The admin panel is at `/admin.html`.
 
-The admin opens on two separate workspaces: **Awareness Quiz** and
-**Final Exam**. Each has its own questions, results and settings.
+The student site opens with four subject choices: **Cyber Security**, **Video
+Editing**, **Graphic Design** and **Basic Computer**. Cyber Security contains
+the existing Awareness Quiz and Final Exam. The other subjects have their own
+bilingual quizzes with starter questions. In the admin, Cyber Security opens
+one folder containing its Awareness Quiz and Final Exam workspaces. Each quiz
+and the final exam retain separate questions, results, feedback and
+analytics can be reviewed individually. Run the latest `supabase-schema.sql`
+in Supabase to enable the new subject workspaces on the live site.
 
 Both Results pages can download an Excel workbook for **all** student
 results, fetched across every database page. Each result row has an Excel
@@ -75,3 +81,6 @@ map and answer count; live MCQs still cannot be revisited.
 Run `npm install` and `npm test` for the local browser and database checks.
 After editing `sample-questions.js`, run `npm run samples:build` to update
 both SQL seed files.
+After editing the starter questions in `subjects.js`, run
+`npm run subjects:build` to update the subject seed in
+`supabase-schema.sql`.

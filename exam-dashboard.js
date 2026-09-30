@@ -18,8 +18,11 @@
   window.HNFExamDashboard = {
     create({ sb, toast, openTab, openPaper, downloadPaper, deleteResult, openResults }) {
       let active = false, live = true, poll = null, clock = null, request = null, generation = 0;
-      let settings = null, monitored = [], changingOpen = false, settingsVersion = 0;
+      let settings = null, monitored = [], trendRows = [], changingOpen = false, settingsVersion = 0;
       const set = (id, value) => { $(id).textContent = value; };
+      const savedAnswers = a => (a.exam_answers || []).filter(x => x.answered_at);
+      const lastSave = a => savedAnswers(a).reduce((latest, x) => x.answered_at > latest ? x.answered_at : latest, '');
+      const progress = a => (a.exam_answers || []).length ? savedAnswers(a).length / a.exam_answers.length : 0;
       function stopTimers() { clearInterval(poll); clearInterval(clock); poll = clock = null; }
       function schedule() {
         stopTimers();
@@ -46,11 +49,22 @@
       function renderMonitor() {
         const term = $('edSearch').value.trim().toLowerCase();
         const flagged = $('edOnlyFlagged').checked;
+        const activity = $('edActivity').value, now = Date.now();
         const rows = monitored.filter(a => {
-          const s = student(a);
+          const s = student(a), last = lastSave(a), deadline = new Date(a.deadline).getTime();
+          const matchesActivity = activity === 'all' ||
+            (activity === 'no-saves' && !last) ||
+            (activity === 'quiet' && now - new Date(last || a.started_at).getTime() >= 600000) ||
+            (activity === 'urgent' && deadline - now <= 300000);
           return (!flagged || a.violation_count > 0) &&
+            matchesActivity &&
             (!term || [s.name, s.student_id, s.batch].some(v => String(v || '').toLowerCase().includes(term)));
         });
+        const sort = $('edSort').value;
+        rows.sort((a,b) => sort === 'last-save' ? (lastSave(b) || b.started_at || '').localeCompare(lastSave(a) || a.started_at || '') :
+          sort === 'progress' ? progress(b) - progress(a) || new Date(a.deadline) - new Date(b.deadline) :
+          sort === 'flags' ? (b.violation_count || 0) - (a.violation_count || 0) || new Date(a.deadline) - new Date(b.deadline) :
+          new Date(a.deadline) - new Date(b.deadline));
         const host = $('edMonitorRows'); host.replaceChildren();
         rows.forEach(a => {
           const tr = el('tr');
@@ -58,14 +72,15 @@
           const s = student(a), name = el('td');
           name.dataset.label = 'Student';
           name.append(el('strong', s.name || 'Unknown student'), el('small', [s.student_id, s.batch].filter(Boolean).join(' · '), 'exam-row-detail'));
-          const answers = a.exam_answers || [], saved = answers.filter(x => x.answered_at);
+          const answers = a.exam_answers || [], saved = savedAnswers(a);
           const progress = el('td');
           progress.dataset.label = 'Saved questions';
           progress.append(el('span', saved.length + ' / ' + answers.length));
           const bar = el('progress'); bar.max = Math.max(1, answers.length); bar.value = saved.length;
           bar.setAttribute('aria-label', 'Questions with saved drafts'); progress.append(bar);
-          const last = saved.map(x => x.answered_at).sort().at(-1);
+          const last = lastSave(a);
           const lastCell = el('td', when(last)); lastCell.dataset.label = 'Last save';
+          if (!last && a.started_at) lastCell.append(el('small', 'Started ' + when(a.started_at), 'exam-row-detail'));
           const remaining = el('td'); remaining.dataset.deadline = a.deadline; remaining.dataset.label = 'Time left';
           const flags = el('td', a.violation_count || 0); flags.dataset.label = 'Flags';
           const actions = el('td'); actions.dataset.label = 'Actions'; actions.append(paperButton(a));
@@ -74,6 +89,44 @@
         });
         set('edMonitorNote', rows.length + ' shown from ' + monitored.length + ' loaded attempts.' + (monitored.length === 100 ? ' Limit reached; use Exam results for additional papers.' : '') + (!rows.length ? ' No matching attempts.' : ''));
         paintClocks();
+      }
+      function renderUpdates() {
+        const host = $('edUpdates'); host.replaceChildren();
+        const rows = monitored.map(a => ({a, at:lastSave(a) || a.started_at, saved:!!lastSave(a)}))
+          .filter(x => x.at).sort((a,b) => b.at.localeCompare(a.at)).slice(0,8);
+        if (!rows.length) host.append(el('p', 'No student activity in this monitor view.', 'sub'));
+        rows.forEach(({a,at,saved}) => {
+          const row = el('div', null, 'exam-feed-item'), details = el('div'), s = student(a);
+          details.append(el('strong', s.name || s.student_id || 'Student'),
+            el('small', (saved ? 'Draft saved' : 'Attempt started') + ' · ' + when(at)),
+            el('small', [s.student_id,s.batch].filter(Boolean).join(' · ')));
+          row.append(details,paperButton(a,'View paper')); host.append(row);
+        });
+        set('edUpdatesNote', 'Latest 8 from ' + monitored.length + ' loaded attempts in the selected monitor view.');
+      }
+      function renderBatches() {
+        const batches = new Map();
+        trendRows.forEach(a => {
+          const name = student(a).batch || 'Unassigned';
+          if (!batches.has(name)) batches.set(name,{name,submitted:0,marked:0,points:0,flagged:0});
+          const item = batches.get(name); item.submitted++;
+          if (a.violation_count > 0) item.flagged++;
+          if (a.status === 'graded' && score(a).percent != null) { item.marked++; item.points += score(a).percent; }
+        });
+        const rows = [...batches.values()], sort = $('edBatchSort').value;
+        rows.sort((a,b) => sort === 'average' ? (b.marked ? b.points / b.marked : -1) - (a.marked ? a.points / a.marked : -1) || b.submitted - a.submitted :
+          sort === 'name' ? a.name.localeCompare(b.name) : b.submitted - a.submitted || a.name.localeCompare(b.name));
+        const host = $('edBatches'); host.replaceChildren();
+        if (!rows.length) {
+          const cell = el('td','No submissions in this period.'); cell.colSpan = 5;
+          const tr = el('tr'); tr.append(cell); host.append(tr);
+        }
+        rows.forEach(b => {
+          const tr = el('tr');
+          [b.name,b.submitted,b.marked,b.marked ? Math.round(b.points / b.marked) + '%' : '—',b.flagged].forEach(value => tr.append(el('td',String(value))));
+          host.append(tr);
+        });
+        set('edBatchNote', rows.length + ' batches · ' + trendRows.length + ' submitted papers' + (trendRows.length === 1000 ? ' (latest 1,000 only)' : '') + '.');
       }
       function renderStats(data, expired) {
         const total = data.in_progress + data.submitted + data.graded;
@@ -199,7 +252,7 @@
           recent: sb.from('exam_attempts').select(paperFields).neq('status','in_progress').order('submitted_at',{ascending:false}).limit(10),
           violations: sb.from('exam_violations').select('attempt,kind,detail,at,exam_attempts(exam_students(name,student_id))').order('at',{ascending:false}).limit(30),
           bank: sb.from('exam_questions').select('qtype,is_active').limit(1000),
-          trend: sb.from('exam_attempts').select('status,submitted_at,mcq_score,written_score,practical_score,mcq_total,written_total,practical_total').gte('submitted_at',since.toISOString()).order('submitted_at',{ascending:false}).limit(1000)
+          trend: sb.from('exam_attempts').select('status,submitted_at,violation_count,mcq_score,written_score,practical_score,mcq_total,written_total,practical_total,exam_students(batch)').gte('submitted_at',since.toISOString()).order('submitted_at',{ascending:false}).limit(1000)
         };
         $('edRefresh').disabled = true;
         $('tab-exam-dashboard').setAttribute('aria-busy','true');
@@ -215,13 +268,14 @@
             else { settings = null; $('edToggleOpen').disabled = true; set('edOpenState','Status unavailable'); }
           }
           if (ok('totals') && results.totals.data) renderStats(results.totals.data, ok('expired') ? results.expired.count : null);
-          if (ok('monitor')) { monitored = results.monitor.data || []; renderMonitor(); }
-          else { monitored = []; $('edMonitorRows').replaceChildren(); set('edMonitorNote','Attempts unavailable. Refresh to retry.'); }
+          if (ok('monitor')) { monitored = results.monitor.data || []; renderMonitor(); renderUpdates(); }
+          else { monitored = []; $('edMonitorRows').replaceChildren(); $('edUpdates').replaceChildren(); set('edMonitorNote','Attempts unavailable. Refresh to retry.'); set('edUpdatesNote','Activity unavailable. Refresh to retry.'); }
           if (ok('queue')) renderFeed('edQueue',results.queue.data || [],true);
           if (ok('recent')) renderFeed('edRecent',results.recent.data || [],false);
           if (ok('violations')) renderViolations(results.violations.data || []);
           if (ok('bank')) renderReadiness(results.bank.data || []);
-          if (ok('trend')) renderTrends(results.trend.data || [],days);
+          if (ok('trend')) { trendRows = results.trend.data || []; renderTrends(trendRows,days); renderBatches(); }
+          else { trendRows = []; $('edBatches').replaceChildren(); set('edBatchNote','Batch data unavailable. Refresh to retry.'); }
           $('edError').classList.toggle('hidden',!failed.length);
           set('edError',failed.length ? 'Could not refresh: ' + failed.join(', ') + '. Previously displayed values may be stale. Check the connection and retry.' : '');
           set('edUpdated',(failed.length ? 'Partial update · ' : 'Updated · ') + new Date().toLocaleTimeString());
@@ -250,6 +304,8 @@
       $('edRefresh').addEventListener('click',refresh);
       $('edSearch').addEventListener('input',renderMonitor);
       $('edOnlyFlagged').addEventListener('change',renderMonitor);
+      ['edActivity','edSort'].forEach(id => $(id).addEventListener('change',renderMonitor));
+      $('edBatchSort').addEventListener('change',renderBatches);
       ['edMonitorMode','edDays'].forEach(id => $(id).addEventListener('change',async () => { if (request) await request; if (active) refresh(); }));
       ['edAllMarking','edMarkQueue'].forEach(id => $(id).addEventListener('click',() => openResults('submitted')));
       $('edFlagQueue').addEventListener('click',() => openResults('flagged'));

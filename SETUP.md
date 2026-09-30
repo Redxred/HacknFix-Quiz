@@ -31,8 +31,9 @@ supabase-schema.sql  paste this into Supabase once, to create the database
 2. Open `supabase-schema.sql`, copy the **entire** file, paste it in, press
    **Run**.
 
-You should see "Success". Check **Table Editor** — you now have
-`questions`, `attempts`, `settings`, `visits` and `feedback`.
+You should see "Success". Check **Table Editor** — alongside the Cyber Security
+quiz and exam tables, the new subject quizzes use `subject_questions`,
+`subject_attempts`, `subject_settings`, `subject_visits` and `subject_feedback`.
 
 This file is safe to run more than once. The seed at the bottom only fires
 when the questions table is empty, so re-running it will never duplicate
@@ -42,6 +43,12 @@ your questions.
 > It adds the `visits` and `feedback` tables and leaves your existing
 > questions, results and settings exactly as they are. Until you do, the
 > Dashboard and Feedback tabs will tell you they are waiting for it.
+
+> **Adding Video Editing, Graphic Design and Basic Computer to an existing
+> project?** Run the latest full SQL file again. It creates their isolated
+> tables and functions and adds starter questions without deleting existing
+> Cyber Security questions or results. The new quizzes save shared results
+> only after this migration is applied.
 
 ## Step 3 — Connect your pages to it
 

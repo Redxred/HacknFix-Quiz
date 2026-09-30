@@ -73,5 +73,23 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     assert.equal((await db.query('select count(*)::int as n from exam_students where id=$1',[review.student.id])).rows[0].n,1);
     assert.equal((await db.query('select count(*)::int as n from exam_attempts where id=$1',[otherAttempt.attempt])).rows[0].n,1);
     assert.ok((await db.query('select count(*)::int as n from exam_answers where attempt=$1',[otherAttempt.attempt])).rows[0].n>0);
+    assert.equal((await db.query("select count(*)::int as n from subject_questions where subject='video'")).rows[0].n,4);
+    await db.exec('set role anon');
+    await assert.rejects(db.query('select * from subject_attempts'),/permission denied/);
+    const video = (await db.query("select subject_submit_attempt('video','Editor','', '',3,4,'en',40) as id")).rows[0].id;
+    await db.query("select subject_submit_attempt('graphic','Designer','', '',2,4,'en',50)");
+    await db.query("select subject_track_visit('video','session-video-1','mobile','Chrome','Android','direct','en',null,'Asia/Dhaka')");
+    await db.query("select subject_mark_visit('video','session-video-1','start')");
+    await db.query("select subject_mark_visit('video','session-video-1','finish')");
+    await db.query("select subject_submit_feedback('video','Editor','',5,'Helpful','en','session-video-1')");
+    assert.equal((await db.query("select total_attempts::int as n from subject_quiz_stats('video')")).rows[0].n,1);
+    assert.equal((await db.query("select count(*)::int as n from subject_leaderboard('video',10)")).rows[0].n,1);
+    assert.equal((await db.query("select count(*)::int as n from subject_leaderboard('computer',10)")).rows[0].n,0);
+    await db.exec('set role authenticated');
+    assert.equal((await db.query('select subject from subject_attempts where id=$1',[video])).rows[0].subject,'video');
+    assert.equal((await db.query("select attempts::int as n from subject_analytics_totals('graphic')")).rows[0].n,1);
+    const videoTotals = (await db.query("select visitors::int,finished::int,feedbacks::int from subject_analytics_totals('video')")).rows[0];
+    assert.deepEqual(videoTotals,{visitors:1,finished:1,feedbacks:1});
+    await db.exec('reset role');
   } finally { await db.close(); }
 });

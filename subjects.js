@@ -1,0 +1,37 @@
+(function(){
+  const option = (bn,en,correct=false)=>({bn,en,correct});
+  window.HNFSubjects = {
+    cyber: {en:'Cyber Security',bn:'সাইবার সিকিউরিটি',icon:'◈',tone:'cyber',
+      subEn:'Stay safer online and test your practical security skills.',subBn:'অনলাইনে নিরাপদ থাকুন এবং দক্ষতা যাচাই করুন।'},
+    video: {en:'Video Editing',bn:'ভিডিও এডিটিং',icon:'▶',tone:'video',
+      subEn:'Test your workflow, pacing, audio and export choices.',subBn:'এডিটিং, অডিও ও এক্সপোর্ট সম্পর্কে দক্ষতা যাচাই করুন।',
+      titleEn:'How sharp is your video editing workflow?',titleBn:'ভিডিও এডিটিংয়ে আপনি কতটা দক্ষ?',
+      chipsEn:['Timeline','Audio','Transitions','Export'],chipsBn:['টাইমলাইন','অডিও','ট্রানজিশন','এক্সপোর্ট'],
+      questions:[
+        {q_en:'What is the best first step before editing a client video?',q_bn:'ক্লায়েন্টের ভিডিও এডিট করার আগে প্রথমে কী করা উচিত?',options:[option('সব ক্লিপ টাইমলাইনে এলোমেলোভাবে রাখুন','Drop all clips on the timeline randomly'),option('ফুটেজ দেখে ফোল্ডার ও নাম গুছিয়ে নিন','Review and organize footage and folders',true),option('প্রথমেই সব ক্লিপে ট্রানজিশন দিন','Add transitions to every clip first')],explain_en:'Organized footage makes editing faster and prevents missing assets.',explain_bn:'ফুটেজ গুছিয়ে রাখলে এডিটিং দ্রুত হয় এবং ফাইল হারায় না।'},
+        {q_en:'Which edit usually creates the smoothest interview cut?',q_bn:'ইন্টারভিউ ভিডিওতে কোন কাট সাধারণত বেশি স্বাভাবিক লাগে?',options:[option('প্রতিটি শব্দের মাঝে জুম ট্রানজিশন','A zoom transition after every word'),option('বি-রোল দিয়ে জাম্প কাট ঢেকে দিন','Cover a jump cut with relevant B-roll',true),option('শব্দ ছাড়া পুরো ক্লিপ চালান','Play the whole clip without sound')],explain_en:'Relevant B-roll supports the story and hides jump cuts.',explain_bn:'প্রাসঙ্গিক বি-রোল গল্পকে শক্তিশালী করে এবং জাম্প কাট ঢাকে।'},
+        {q_en:'Dialogue is hard to hear under music. What should you adjust?',q_bn:'মিউজিকের নিচে কথা শোনা যাচ্ছে না। কী ঠিক করবেন?',options:[option('শুধু ভিডিওর উজ্জ্বলতা বাড়ান','Increase video brightness'),option('মিউজিকের লেভেল কমিয়ে কথার অডিও পরিষ্কার করুন','Lower music and balance dialogue audio',true),option('আরও মিউজিক যোগ করুন','Add more music')],explain_en:'The dialogue should remain clear; balance music against speech.',explain_bn:'কথা স্পষ্ট রাখতে মিউজিক ও স্পিচের লেভেল ব্যালেন্স করুন।'},
+        {q_en:'What should you check before delivering the final export?',q_bn:'চূড়ান্ত ভিডিও দেওয়ার আগে কী যাচাই করবেন?',options:[option('শুধু ফাইলের নাম','Only the filename'),option('রেজোলিউশন, ফ্রেম রেট, অডিও ও পুরো ভিডিও','Resolution, frame rate, audio and the full playback',true),option('শুধু থাম্বনেইল','Only the thumbnail')],explain_en:'A full playback and export settings check catches delivery errors.',explain_bn:'পুরো ভিডিও ও এক্সপোর্ট সেটিং যাচাই করলে ভুল ধরা পড়ে।'}]
+    },
+    graphic: {en:'Graphic Design',bn:'গ্রাফিক ডিজাইন',icon:'✦',tone:'graphic',
+      subEn:'Explore layout, typography, color and design delivery.',subBn:'লেআউট, টাইপোগ্রাফি, রং ও ডিজাইন ডেলিভারি যাচাই করুন।',
+      titleEn:'How strong are your design decisions?',titleBn:'ডিজাইন সিদ্ধান্তে আপনি কতটা দক্ষ?',
+      chipsEn:['Layout','Typography','Color','Export'],chipsBn:['লেআউট','টাইপোগ্রাফি','রং','এক্সপোর্ট'],
+      questions:[
+        {q_en:'What creates a clear visual hierarchy in a poster?',q_bn:'পোস্টারে স্পষ্ট ভিজুয়াল হায়ারার্কি কীভাবে তৈরি হয়?',options:[option('সব লেখা একই আকারে রাখুন','Make all text the same size'),option('গুরুত্ব অনুযায়ী আকার, ওজন ও ফাঁকা জায়গা ব্যবহার করুন','Use size, weight and spacing by importance',true),option('সব জায়গায় উজ্জ্বল রং দিন','Use bright color everywhere')],explain_en:'Hierarchy guides the viewer to the most important information first.',explain_bn:'হায়ারার্কি দর্শককে আগে গুরুত্বপূর্ণ তথ্য দেখতে সাহায্য করে।'},
+        {q_en:'Why is contrast important for text on a background?',q_bn:'পটভূমির ওপর লেখার কনট্রাস্ট কেন জরুরি?',options:[option('শুধু ফাইল ছোট করার জন্য','To make the file smaller'),option('লেখা সহজে পড়ার জন্য','To make text easy to read',true),option('সব রং একই দেখানোর জন্য','To make all colors look the same')],explain_en:'Good contrast improves readability and accessibility.',explain_bn:'ভালো কনট্রাস্ট লেখা পড়া সহজ করে।'},
+        {q_en:'Which file is most useful for a client who may edit a logo later?',q_bn:'পরে লোগো এডিট করতে চাইলে ক্লায়েন্টকে কোন ফাইল দেওয়া ভালো?',options:[option('শুধু কম রেজোলিউশনের JPG','Only a low-resolution JPG'),option('সম্পাদনাযোগ্য ভেক্টর সোর্স ফাইল','An editable vector source file',true),option('স্ক্রিনশট','A screenshot')],explain_en:'An editable vector file can be resized and updated without quality loss.',explain_bn:'ভেক্টর ফাইল মান না হারিয়ে বড় করা ও বদলানো যায়।'},
+        {q_en:'What is the safest way to prepare a design for print?',q_bn:'প্রিন্টের জন্য ডিজাইন প্রস্তুত করার নিরাপদ উপায় কী?',options:[option('যেকোনো RGB স্ক্রিনশট পাঠান','Send any RGB screenshot'),option('ব্লিড, রেজোলিউশন ও প্রিন্টারের রং নির্দেশনা যাচাই করুন','Check bleed, resolution and printer color requirements',true),option('সব লেখা র‍্যাস্টার করুন','Rasterize all text without checking')],explain_en:'Print specifications prevent cut-off edges and poor output.',explain_bn:'প্রিন্টের নির্দেশনা যাচাই করলে কাটাছেঁড়া ও মানের সমস্যা কমে।'}]
+    },
+    computer: {en:'Basic Computer',bn:'বেসিক কম্পিউটার',icon:'⌘',tone:'computer',
+      subEn:'Build confidence with files, shortcuts, documents and safe habits.',subBn:'ফাইল, শর্টকাট, ডকুমেন্ট ও নিরাপদ ব্যবহার শিখুন।',
+      titleEn:'How confident are you with a computer?',titleBn:'কম্পিউটার ব্যবহারে আপনি কতটা আত্মবিশ্বাসী?',
+      chipsEn:['Files','Shortcuts','Documents','Safety'],chipsBn:['ফাইল','শর্টকাট','ডকুমেন্ট','নিরাপত্তা'],
+      questions:[
+        {q_en:'Which shortcut usually copies selected text?',q_bn:'নির্বাচিত লেখা কপি করার শর্টকাট কোনটি?',options:[option('Ctrl + C','Ctrl + C',true),option('Ctrl + V','Ctrl + V'),option('Ctrl + Z','Ctrl + Z')],explain_en:'Ctrl + C copies; Ctrl + V pastes.',explain_bn:'Ctrl + C কপি করে; Ctrl + V পেস্ট করে।'},
+        {q_en:'Where should you save an important document so you can find it again?',q_bn:'গুরুত্বপূর্ণ ডকুমেন্ট পরে খুঁজে পেতে কোথায় রাখবেন?',options:[option('নাম ছাড়া যেকোনো ফোল্ডারে','In a random unnamed folder'),option('ভালো নামে নির্দিষ্ট ফোল্ডারে, ব্যাকআপসহ','In a named folder with a backup',true),option('শুধু রিসাইকেল বিনে','Only in the recycle bin')],explain_en:'Clear names, folders and backups make files easier to find and recover.',explain_bn:'নাম, ফোল্ডার ও ব্যাকআপ ফাইল খুঁজে পেতে ও ফেরত আনতে সাহায্য করে।'},
+        {q_en:'What does a spreadsheet formula normally start with?',q_bn:'স্প্রেডশিটে ফর্মুলা সাধারণত কোন চিহ্ন দিয়ে শুরু হয়?',options:[option('=','= ',true),option('#','#'),option('@','@')],explain_en:'Spreadsheet formulas commonly begin with an equals sign.',explain_bn:'স্প্রেডশিটে ফর্মুলা সাধারণত সমান চিহ্ন দিয়ে শুরু হয়।'},
+        {q_en:'You receive an unexpected attachment from an unknown sender. What should you do?',q_bn:'অচেনা প্রেরকের অপ্রত্যাশিত ফাইল এলে কী করবেন?',options:[option('সঙ্গে সঙ্গে খুলুন','Open it immediately'),option('প্রেরক যাচাই করে সন্দেহজনক ফাইল না খুলুন','Verify the sender and avoid opening suspicious files',true),option('সবাইকে পাঠান','Forward it to everyone')],explain_en:'Unexpected attachments may contain malware; verify before opening.',explain_bn:'অপ্রত্যাশিত ফাইলে ক্ষতিকর সফটওয়্যার থাকতে পারে; আগে যাচাই করুন।'}]
+    }
+  };
+})();

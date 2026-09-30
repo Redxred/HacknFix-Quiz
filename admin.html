@@ -623,7 +623,7 @@
   :root[data-theme="dark"] .pill.written{background:#3A2E12;color:#FCD34D;}
   :root[data-theme="dark"] .pill.practical{background:#132D1E;color:#86EFAC;}
 </style>
-<link rel="stylesheet" href="portal.css?v=results-layout-2">
+<link rel="stylesheet" href="portal.css?v=exam-insights-1">
 </head>
 <body>
 
@@ -635,7 +635,7 @@
       <span>HacknFix</span><span class="tag">Admin</span>
     </div>
     <h1>Sign in</h1>
-    <p class="sub">Your quiz and final exam, each with its own workspace. Sign in to manage questions, results and settings.</p>
+    <p class="sub">Manage Cyber Security, Video Editing, Graphic Design and Basic Computer from separate workspaces.</p>
 
     <div class="msg err hidden" id="loginMsg"></div>
 
@@ -669,8 +669,22 @@
     <section id="adminHome">
       <div class="portal-hero">
         <p class="portal-kicker">HacknFix / Control center</p>
-        <h1 class="portal-title">Two experiences. Your control.</h1>
-        <p class="portal-description">Choose a workspace to manage its question bank, participants and settings.</p>
+        <h1 class="portal-title">Every subject. One control center.</h1>
+        <p class="portal-description">Choose a subject to manage its questions, participants and results.</p>
+      </div>
+      <div class="portal-grid">
+        <button class="portal-tile" id="manageCyber" type="button"><span class="portal-symbol" aria-hidden="true">◈</span><h2>Cyber Security</h2><p>Open the Awareness Quiz or the Final Exam.</p><span class="portal-pills"><span>Awareness Quiz</span><span>Final Exam</span></span><span class="tile-link">Open Cyber Security ↗</span></button>
+        <button class="portal-tile tone-video" id="manageVideo" type="button"><span class="portal-symbol" aria-hidden="true">▶</span><h2>Video Editing</h2><p>Manage editing questions, learner results, feedback and analytics.</p><span class="portal-pills"><span>Question bank</span><span>Results</span><span>Insights</span></span><span class="tile-link">Manage video editing ↗</span></button>
+        <button class="portal-tile tone-graphic" id="manageGraphic" type="button"><span class="portal-symbol" aria-hidden="true">✦</span><h2>Graphic Design</h2><p>Track design knowledge across layout, color and typography.</p><span class="portal-pills"><span>Question bank</span><span>Results</span><span>Insights</span></span><span class="tile-link">Manage graphic design ↗</span></button>
+        <button class="portal-tile tone-computer" id="manageComputer" type="button"><span class="portal-symbol" aria-hidden="true">⌘</span><h2>Basic Computer</h2><p>Review core computer skills and each learner’s progress.</p><span class="portal-pills"><span>Question bank</span><span>Results</span><span>Insights</span></span><span class="tile-link">Manage basic computer ↗</span></button>
+      </div>
+    </section>
+    <section id="adminCyber" class="hidden">
+      <div class="portal-hero">
+        <button class="btn btn-ghost btn-sm subject-back" id="cyberBack" type="button">← All subjects</button>
+        <p class="portal-kicker">HacknFix / Cyber Security</p>
+        <h1 class="portal-title">Cyber Security</h1>
+        <p class="portal-description">Choose the Awareness Quiz or Final Exam workspace.</p>
       </div>
       <div class="portal-grid">
         <button class="portal-tile" id="manageQuiz" type="button">
@@ -822,6 +836,7 @@
           and each attempt gets a random selection of them — the count is set under Site settings.
         </p>
         <button class="btn btn-primary" id="addQBtn" type="button">+ Add question</button>
+        <button class="btn btn-ghost hidden" id="addSubjectSamples" type="button">Add starter questions</button>
         <div id="qList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
       </div>
     </section>
@@ -1001,13 +1016,17 @@
       <p class="exam-scope" id="edCompletion">All-time totals. Flags record browser events and need human review.</p>
       <div class="card">
         <div class="exam-panel-head"><div><h2>Attempt monitor</h2><p class="sub">Up to 100 attempts, earliest deadline first. Saved questions may include blank drafts. This is recorded activity, not an online-presence indicator.</p></div></div>
-        <div class="bank-tools"><input type="search" id="edSearch" aria-label="Search monitored students" placeholder="Find a name, student ID or batch…"><select id="edMonitorMode" aria-label="Monitor status"><option value="active">Within exam time</option><option value="expired">Expired, not submitted</option></select><label class="exam-check"><input type="checkbox" id="edOnlyFlagged">Flagged only</label></div>
+        <div class="bank-tools exam-monitor-tools"><input type="search" id="edSearch" aria-label="Search monitored students" placeholder="Find a name, student ID or batch…"><select id="edMonitorMode" aria-label="Monitor status"><option value="active">Within exam time</option><option value="expired">Expired, not submitted</option></select><select id="edActivity" aria-label="Student activity"><option value="all">All activity</option><option value="no-saves">No saved answers</option><option value="quiet">No save in 10 minutes</option><option value="urgent">5 minutes or less</option></select><select id="edSort" aria-label="Sort students"><option value="deadline">Deadline soonest</option><option value="last-save">Latest save</option><option value="progress">Most progress</option><option value="flags">Most flags</option></select><label class="exam-check"><input type="checkbox" id="edOnlyFlagged">Flagged only</label></div>
         <div class="table-wrap"><table><thead><tr><th>Student / batch</th><th>Saved questions</th><th>Last answer save</th><th>Time left</th><th>Flags</th><th></th></tr></thead><tbody id="edMonitorRows"></tbody></table></div>
         <p class="exam-scope" id="edMonitorNote">Loading attempts…</p>
       </div>
       <div class="exam-dashboard-grid">
         <div class="card"><div class="exam-panel-head"><h2>Submission activity</h2><select id="edDays" aria-label="Activity period"><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option></select></div><p class="sub" id="edTrendScope">Up to 1,000 submissions in the selected period, in your local timezone.</p><div id="edTrend" class="exam-trend" aria-label="Submissions by day"></div><div class="exam-chart-key"><span>Submissions per day</span><span id="edTrendTotal"></span></div></div>
         <div class="card"><h2>Score distribution</h2><p class="sub">Marked papers in the activity period above. Unmarked papers are excluded.</p><div id="edScores" class="exam-score-bars"></div><div class="exam-scope" id="edScoreNote"></div></div>
+      </div>
+      <div class="exam-dashboard-grid">
+        <div class="card"><h2>Student updates</h2><p class="sub">Latest answer saves and starts in the selected monitor view. Shows recorded activity, not online presence.</p><div id="edUpdates" class="exam-feed exam-feed-scroll"></div><p class="exam-scope" id="edUpdatesNote">Loading activity…</p></div>
+        <div class="card"><div class="exam-panel-head"><h2>Batch breakdown</h2><select id="edBatchSort" aria-label="Sort batches"><option value="submissions">Most submissions</option><option value="average">Highest average</option><option value="name">Batch name</option></select></div><p class="sub">Submitted papers in the selected activity period. Averages use marked papers only.</p><div class="table-wrap exam-batch-scroll"><table class="exam-batch-table"><thead><tr><th>Batch</th><th>Submitted</th><th>Marked</th><th>Average</th><th>Flagged</th></tr></thead><tbody id="edBatches"></tbody></table></div><p class="exam-scope" id="edBatchNote">Loading batches…</p></div>
       </div>
       <div class="exam-dashboard-grid">
         <div class="card"><div class="exam-panel-head"><h2>Marking queue</h2><button class="btn btn-ghost btn-sm" id="edAllMarking" type="button">View all ↗</button></div><p class="sub">The 10 oldest submissions waiting for a grade.</p><div id="edQueue" class="exam-feed"></div></div>
@@ -1279,7 +1298,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="sample-questions.js"></script>
-<script src="exam-dashboard.js?v=result-delete-1"></script>
+<script src="subjects.js?v=subjects-1"></script>
+<script src="exam-dashboard.js?v=exam-insights-1"></script>
 <script src="excel-export.js?v=full-paper-2"></script>
 <script>
 (function(){
@@ -1294,7 +1314,7 @@
   async function allResultRows(table, columns, dateColumn){
     const fetched = [], pageSize = 1000, until = new Date().toISOString();
     for(let offset=0;;){
-      const {data,error} = await sb.from(table).select(columns)
+      const {data,error} = await subjectFilter(sb.from(table).select(columns))
         .lte(dateColumn,until).order(dateColumn,{ascending:false})
         .order('id',{ascending:false}).range(offset,offset+pageSize-1);
       if(error) throw error;
@@ -1334,10 +1354,10 @@
       a.submitted_at||'',a.graded_at||'',a.id||''];
   }
   async function downloadQuizAll(){
-    const rows = await allResultRows('attempts','id,name,phone,email,score,total,duration_seconds,lang,created_at','created_at');
+    const rows = await allResultRows(subjectTable('attempts'),'id,name,phone,email,score,total,duration_seconds,lang,created_at','created_at');
     if(!rows.length) return toast('No quiz results to download.',true);
     window.HacknFixExcel.download([{name:'Quiz results',headers:quizExcelHeaders,rows:rows.map(quizExcelRow)}],
-      'hacknfix-quiz-all-' + excelDate() + '.xlsx');
+      'hacknfix-' + quizSubject() + '-quiz-all-' + excelDate() + '.xlsx');
     toast('Downloaded ' + rows.length + ' quiz results.');
   }
   async function downloadExamAll(){
@@ -1536,28 +1556,44 @@
 
   // Load only the selected workspace page; the home screen starts no polls.
   let workspace = null;
+  const quizSubject = () => ['video','graphic','computer'].includes(workspace) ? workspace : 'cyber';
+  const subjectTable = name => quizSubject() === 'cyber' ? name : 'subject_' + name;
+  const subjectFilter = query => quizSubject() === 'cyber' ? query : query.eq('subject',quizSubject());
   const workspacePages = {
     quiz:['dashboard','questions','results','feedback','settings'],
-    exam:['exam-dashboard','exam-questions','exam-results','exam-settings']
+    exam:['exam-dashboard','exam-questions','exam-results','exam-settings'],
+    video:['dashboard','questions','results','feedback','settings'],
+    graphic:['dashboard','questions','results','feedback','settings'],
+    computer:['dashboard','questions','results','feedback','settings']
   };
   function showAdminHome(){
     workspace = null;
     stopDashLive();
     examDashboard.leave();
     $('adminHome').classList.remove('hidden');
+    $('adminCyber').classList.add('hidden');
     $('workspaceHead').classList.add('hidden');
     $('workspaceTabs').classList.add('hidden');
     Object.values(workspacePages).flat().forEach(t=>$('tab-'+t).classList.add('hidden'));
   }
+  function showCyberFolder(){
+    showAdminHome();
+    $('adminHome').classList.add('hidden');
+    $('adminCyber').classList.remove('hidden');
+  }
   function openWorkspace(mode){
     workspace = mode;
     $('adminHome').classList.add('hidden');
+    $('adminCyber').classList.add('hidden');
     $('workspaceHead').classList.remove('hidden');
     $('workspaceTabs').classList.remove('hidden');
-    $('workspaceTitle').textContent = mode === 'quiz' ? 'Awareness Quiz' : 'Final Exam';
-    $('workspaceKicker').textContent = mode === 'quiz' ? 'Quiz workspace' : 'Exam workspace';
-    $('workspaceSub').textContent = mode === 'quiz' ? 'Questions, scores, feedback and quiz settings.' : 'Question bank, student papers and exam settings.';
-    $('workspacePreview').href = mode === 'quiz' ? 'index.html?mode=quiz' : 'index.html?mode=exam';
+    $('workspaceTitle').textContent = mode === 'exam' ? 'Final Exam' : mode === 'quiz' ? 'Cyber Security / Awareness' : window.HNFSubjects[mode].en;
+    $('workspaceKicker').textContent = mode === 'exam' ? 'Cyber Security / Exam' : 'Quiz workspace';
+    $('workspaceSub').textContent = mode === 'exam' ? 'Question bank, student papers and exam settings.' : 'Questions, scores, feedback and settings for this subject.';
+    $('workspacePreview').href = mode === 'exam' ? 'index.html?mode=exam' : mode === 'quiz' ? 'index.html?mode=quiz' : 'index.html?subject=' + mode;
+    $('workspaceHome').textContent = mode === 'quiz' || mode === 'exam' ? '← Cyber Security' : '← All subjects';
+    $('addSubjectSamples').classList.toggle('hidden',!['video','graphic','computer'].includes(mode));
+    document.querySelector('[data-tab="settings"]').textContent = mode === 'quiz' ? 'Quiz settings' : 'Subject settings';
     document.querySelectorAll('.tab').forEach(btn=>{
       btn.classList.toggle('hidden', !workspacePages[mode].includes(btn.dataset.tab));
     });
@@ -1576,7 +1612,7 @@
       if(target === 'exam-dashboard') await examDashboard.enter();
       if(target === 'dashboard'){
         await Promise.all([loadDashboard(), loadAttempts()]);
-        if(workspace === 'quiz' && !$('tab-dashboard').classList.contains('hidden')) startDashLive();
+        if(workspace !== 'exam' && !$('tab-dashboard').classList.contains('hidden')) startDashLive();
       }
       if(target === 'questions') await loadQuestions();
       if(target === 'results') await loadAttempts();
@@ -1589,16 +1625,34 @@
       if(target === 'exam-results') await loadExamAttempts();
     }catch(e){ toast('Could not load this page. Please try again.',true); }
   }
+  $('manageCyber').addEventListener('click',showCyberFolder);
+  $('cyberBack').addEventListener('click',showAdminHome);
   $('manageQuiz').addEventListener('click',()=>openWorkspace('quiz'));
   $('manageExam').addEventListener('click',()=>openWorkspace('exam'));
-  $('workspaceHome').addEventListener('click',showAdminHome);
+  [['manageVideo','video'],['manageGraphic','graphic'],['manageComputer','computer']].forEach(([id,subject])=>$(id).addEventListener('click',()=>openWorkspace(subject)));
+  $('addSubjectSamples').addEventListener('click',async()=>{
+    const subject = quizSubject(), samples = window.HNFSubjects[subject]?.questions || [];
+    if(!samples.length) return;
+    const existing = new Set(questions.map(q=>q.q_en));
+    const rows = samples.filter(q=>!existing.has(q.q_en)).map((q,i)=>({...q,subject,icon:'alert',sort_order:questions.length+i+1,is_active:true}));
+    if(!rows.length) return toast('Starter questions are already in this bank.');
+    const button = $('addSubjectSamples'); button.disabled = true;
+    const {error} = await sb.from('subject_questions').insert(rows);
+    button.disabled = false;
+    if(error) return toast('Could not add starter questions: ' + error.message,true);
+    toast('Added ' + rows.length + ' starter questions.'); loadQuestions();
+  });
+  $('workspaceHome').addEventListener('click',()=>{
+    if(workspace === 'quiz' || workspace === 'exam') showCyberFolder();
+    else showAdminHome();
+  });
   document.querySelectorAll('.tab').forEach(btn=>{
     btn.addEventListener('click',()=>openTab(btn.dataset.tab));
   });
 
   async function loadQuestions(){
-    const { data, error } = await sb.from('questions')
-      .select('*').order('sort_order', {ascending:true});
+    const { data, error } = await subjectFilter(sb.from(subjectTable('questions'))
+      .select('*')).order('sort_order', {ascending:true});
     if(error){ toast('Could not load questions: ' + error.message, true); return; }
     questions = data || [];
     renderQuestions();
@@ -1606,8 +1660,8 @@
   }
 
   async function loadAttempts(){
-    const { data, error } = await sb.from('attempts')
-      .select('*').order('created_at', {ascending:false}).limit(1000);
+    const { data, error } = await subjectFilter(sb.from(subjectTable('attempts'))
+      .select('*')).order('created_at', {ascending:false}).limit(1000);
     if(error){ toast('Could not load results: ' + error.message, true); return; }
     attempts = data || [];
     renderAttempts();
@@ -1615,7 +1669,7 @@
   }
 
   async function loadSettings(){
-    const { data, error } = await sb.from('settings').select('*').eq('id',1).single();
+    const { data, error } = await (quizSubject() === 'cyber' ? sb.from('settings').select('*').eq('id',1).single() : sb.from('subject_settings').select('*').eq('subject',quizSubject()).single());
     if(error){ toast('Could not load settings: ' + error.message, true); return; }
     settings = data;
     fillSettingsForm();
@@ -1710,7 +1764,7 @@
   }
 
   async function toggleActive(q){
-    const { error } = await sb.from('questions')
+    const { error } = await sb.from(subjectTable('questions'))
       .update({ is_active: !q.is_active, updated_at: new Date().toISOString() })
       .eq('id', q.id);
     if(error) return toast(error.message, true);
@@ -1720,7 +1774,7 @@
 
   async function removeQuestion(q){
     if(!confirm('Delete this question permanently?\n\n' + q.q_en)) return;
-    const { error } = await sb.from('questions').delete().eq('id', q.id);
+    const { error } = await sb.from(subjectTable('questions')).delete().eq('id', q.id);
     if(error) return toast(error.message, true);
     toast('Question deleted');
     loadQuestions();
@@ -1732,13 +1786,13 @@
     if(target < 0 || target >= questions.length) return;
     const a = questions[index], b = questions[target];
     const updates = [
-      sb.from('questions').update({ sort_order: b.sort_order }).eq('id', a.id),
-      sb.from('questions').update({ sort_order: a.sort_order }).eq('id', b.id)
+      sb.from(subjectTable('questions')).update({ sort_order: b.sort_order }).eq('id', a.id),
+      sb.from(subjectTable('questions')).update({ sort_order: a.sort_order }).eq('id', b.id)
     ];
     // If both rows share an order value, swapping is a no-op — renumber instead.
     if(a.sort_order === b.sort_order){
-      updates[0] = sb.from('questions').update({ sort_order: target + 1 }).eq('id', a.id);
-      updates[1] = sb.from('questions').update({ sort_order: index + 1 }).eq('id', b.id);
+      updates[0] = sb.from(subjectTable('questions')).update({ sort_order: target + 1 }).eq('id', a.id);
+      updates[1] = sb.from(subjectTable('questions')).update({ sort_order: index + 1 }).eq('id', b.id);
     }
     const res = await Promise.all(updates);
     const bad = res.find(r=>r.error);
@@ -1890,6 +1944,7 @@
 
     $('edSave').addEventListener('click', async ()=>{
       const payload = {
+        ...(quizSubject() === 'cyber' ? {} : {subject:quizSubject()}),
         sort_order: parseInt($('edOrder').value, 10) || 0,
         icon: $('edIcon').value,
         q_bn: $('edQbn').value.trim(),
@@ -1912,8 +1967,8 @@
 
       $('edSave').disabled = true;
       const { error } = isNew
-        ? await sb.from('questions').insert(payload)
-        : await sb.from('questions').update(payload).eq('id', q.id);
+        ? await sb.from(subjectTable('questions')).insert(payload)
+        : await sb.from(subjectTable('questions')).update(payload).eq('id', q.id);
       $('edSave').disabled = false;
 
       if(error) return toast(error.message, true);
@@ -1990,7 +2045,7 @@
       }));
       act.append(mkBtn('Delete', 'btn-danger', async ()=>{
         if(!confirm('Delete this attempt by ' + (a.name || 'Guest') + '?')) return;
-        const { error } = await sb.from('attempts').delete().eq('id', a.id);
+        const { error } = await sb.from(subjectTable('attempts')).delete().eq('id', a.id);
         if(error) return toast(error.message, true);
         toast('Attempt deleted');
         loadAttempts();
@@ -2101,7 +2156,7 @@
     };
 
     $('saveSettingsBtn').disabled = true;
-    const { error } = await sb.from('settings').update(payload).eq('id', 1);
+    const { error } = await (quizSubject() === 'cyber' ? sb.from('settings').update(payload).eq('id',1) : sb.from('subject_settings').update(payload).eq('subject',quizSubject()));
     $('saveSettingsBtn').disabled = false;
 
     if(error) return toast(error.message, true);
@@ -2166,10 +2221,11 @@
     // skeleton - the numbers never jump out from under you.
     if(!silent) host.classList.add('refreshing');
 
+    const subject = quizSubject(), extra = subject === 'cyber' ? {} : {p_subject:subject};
     const [tRes, dRes, vRes] = await Promise.all([
-      sb.rpc('analytics_totals', { p_tz: TZ }),
-      sb.rpc('analytics_daily',  { p_days: dashDays, p_tz: TZ }),
-      sb.from('visits').select('*').order('first_seen', { ascending:false }).limit(3000)
+      sb.rpc(subject === 'cyber' ? 'analytics_totals' : 'subject_analytics_totals', { p_tz: TZ, ...extra }),
+      sb.rpc(subject === 'cyber' ? 'analytics_daily' : 'subject_analytics_daily',  { p_days: dashDays, p_tz: TZ, ...extra }),
+      subjectFilter(sb.from(subjectTable('visits')).select('*')).order('first_seen', { ascending:false }).limit(3000)
     ]);
 
     host.classList.remove('refreshing');
@@ -2195,8 +2251,8 @@
 
   async function loadFeedback(){
     if(!sb) return;
-    const { data, error } = await sb.from('feedback')
-      .select('*').order('created_at', { ascending:false }).limit(1000);
+    const { data, error } = await subjectFilter(sb.from(subjectTable('feedback'))
+      .select('*')).order('created_at', { ascending:false }).limit(1000);
     if(error){
       if(isMissingSchema(error)) return showAnalyticsSetup(true);
       return toast('Could not load feedback: ' + error.message, true);
@@ -2808,7 +2864,7 @@
       actions.className = 'fb-actions';
       actions.append(
         mkBtn(f.is_read ? 'Mark unread' : 'Mark read', 'btn-ghost', async ()=>{
-          const { error } = await sb.from('feedback')
+          const { error } = await sb.from(subjectTable('feedback'))
             .update({ is_read: !f.is_read }).eq('id', f.id);
           if(error) return toast(error.message, true);
           f.is_read = !f.is_read;
@@ -2816,7 +2872,7 @@
         }),
         mkBtn('Delete', 'btn-danger', async ()=>{
           if(!confirm('Delete this feedback from ' + (f.name || 'Guest') + '?')) return;
-          const { error } = await sb.from('feedback').delete().eq('id', f.id);
+          const { error } = await sb.from(subjectTable('feedback')).delete().eq('id', f.id);
           if(error) return toast(error.message, true);
           toast('Feedback deleted');
           loadFeedback();

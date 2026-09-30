@@ -10,7 +10,7 @@ before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','portal.css','sample-questions.js','exam-dashboard.js','excel-export.js'].includes(name)) { res.writeHead(404).end(); return; }
+    if (!['index.html','admin.html','config.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js'].includes(name)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
@@ -63,16 +63,26 @@ async function pageFor(options = {}) {
       written_score:7,written_total:10,practical_score:0,practical_total:0,
       exam_students:{name:`Exam student ${i}`,student_id:`STU-${i}`,batch:'A',email:`exam${i}@example.com`,phone:'01700000000'}
     })) : [];
+    const subjectSettings = ['video','graphic','computer'].map(subject=>({subject,quiz_open:true,quiz_length:1,
+      show_leaderboard:true,timer_seconds:0,welcome_title_en:subject+' quiz',welcome_title_bn:subject+' quiz'}));
+    const subjectQuestions = (options.emptySubjectBank ? [] : ['video','graphic','computer'].map(subject=>({id:subject+'-q1',subject,sort_order:1,is_active:true,
+      icon:'alert',q_en:subject+' question',q_bn:subject+' প্রশ্ন',explain_en:'Good choice',explain_bn:'সঠিক উত্তর',
+      options:[{en:'Correct',bn:'সঠিক',correct:true},{en:'Wrong',bn:'ভুল',correct:false}]})));
+    const subjectAttempts = [];
+    window.subjectMock = {settings:subjectSettings,questions:subjectQuestions,attempts:subjectAttempts};
     const client = {
       from(table) {
         window.calls.push({name:'from',table});
-        let inserted = null, update = null, deleting = false, head = false, operations = [], sort = null, limit = null, range = null;
+        let inserted = null, update = null, deleting = false, head = false, single = false, operations = [], sort = null, limit = null, range = null;
         const data = table === 'questions' ? [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
           options:[{bn:'সঠিক',en:'Correct',correct:true},{bn:'ভুল',en:'Wrong',correct:false}],
           explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}]
           : table === 'settings' ? {quiz_open:true,quiz_length:1,timer_seconds:30}
           : table === 'exam_settings' ? settings
           : table === 'exam_questions' ? (window.mockBank ||= [])
+          : table === 'subject_settings' ? subjectSettings
+          : table === 'subject_questions' ? subjectQuestions
+          : table === 'subject_attempts' ? subjectAttempts
           : table === 'exam_attempts' ? (options.exportData ? examExportRows : monitorData)
           : table === 'attempts' ? quizExportRows
           : table === 'exam_violations' && options.dashboard ? [{attempt:'active-2',kind:'tab-switch',detail:'Window hidden',at:stamp(-1),exam_attempts:{exam_students:{name:'Rafi'}}}] : [];
@@ -105,12 +115,13 @@ async function pageFor(options = {}) {
                   rows = rows.slice(range[0],Math.min(range[1]+1,range[0]+(options.apiCap||1000)));
                 }
               }
-              resolve({data:head?null:rows,count:Array.isArray(rows)?rows.length:1,error:null});
+              resolve({data:head?null:single&&Array.isArray(rows)?rows[0]||null:rows,count:Array.isArray(rows)?rows.length:1,error:null});
             }
           : key === 'insert' ? rows=>{inserted=rows;return chain;}
           : key === 'delete' ? ()=>{deleting=true;return chain;}
           : key === 'update' ? patch=>{update=patch;return chain;}
           : key === 'select' ? (cols,opts)=>{head=!!opts?.head;return chain;}
+          : key === 'single' ? ()=>{single=true;return chain;}
           : ['eq','neq','gt','gte','lte'].includes(key) ? (k,v)=>{operations.push([key,k,v]);return chain;}
           : key === 'order' ? (k,opts)=>{sort=[k,opts];return chain;}
           : key === 'range' ? (from,to)=>{range=[from,to];return chain;}
@@ -125,6 +136,11 @@ async function pageFor(options = {}) {
           return {error:{message:'Network unavailable'}};
         }
         if(name === 'exam_stats' && options.failDashboard) return {data:null,error:{message:'Stats unavailable'}};
+        if(name === 'subject_submit_attempt'){
+          subjectAttempts.push({id:'subject-attempt-'+subjectAttempts.length,subject:body.p_subject,
+            name:body.p_name,score:body.p_score,total:body.p_total,created_at:new Date().toISOString()});
+          return {data:subjectAttempts.at(-1).id,error:null};
+        }
         if(name === 'exam_stats' && options.exportData) return {data:{students:1105,in_progress:0,submitted:0,graded:examExportRows.length,flagged:examExportRows.filter(a=>a.violation_count).length,auto:0,avg_percent:75},error:null};
         if(name === 'exam_review' && options.exportData){
           if(options.failReviewId===body.p_attempt && !window.reviewFailureCleared) return {data:null,error:{message:'Paper request failed'}};
@@ -140,7 +156,7 @@ async function pageFor(options = {}) {
           : name === 'exam_start' ? {attempt:'attempt',token:'token',questions,config:settings,
           deadline:new Date(Date.now()+600000).toISOString(),seconds_left:600,violations:0}
           : name === 'exam_submit' ? {mcq_score:1,mcq_total:1,awaiting:10}
-          : name === 'leaderboard' ? [] : name === 'quiz_stats' ? [{total_attempts:0}]
+          : name === 'leaderboard' || name === 'subject_leaderboard' ? [] : name === 'quiz_stats' || name === 'subject_quiz_stats' ? [{total_attempts:0}]
           : name === 'exam_ping' ? {status:'in_progress',seconds_left:600,violations:0}
           : name === 'submit_attempt' ? 'quiz-attempt' : {};
         window.calls.push({name,body,phase:'end'});
@@ -155,6 +171,11 @@ async function pageFor(options = {}) {
   await page.goto(base + (options.admin ? '/admin.html' : '/') + (options.query || ''));
   if(!options.admin) await page.waitForFunction(() => !document.getElementById('splash'));
   return {page,errors};
+}
+
+async function chooseCyber(page, target){
+  if(await page.locator('#manageCyber').isVisible()) await page.click('#manageCyber');
+  await page.click(target);
 }
 
 async function inspectExcel(download, filename) {
@@ -191,7 +212,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
 test('quiz language switch preserves answer, timer and score; corrupt storage is recoverable', async () => {
   const {page,errors} = await pageFor();
   try {
-    await page.click('#pickQuiz'); await page.click('#skipBtn');
+    await page.click('#subjectCyber'); await page.click('#pickQuiz'); await page.click('#skipBtn');
     await page.waitForTimeout(1100);
     const before = await page.locator('#timerText').innerText();
     await page.click('#langBtn'); await page.click('#langBtn');
@@ -211,7 +232,7 @@ test('quiz language switch preserves answer, timer and score; corrupt storage is
 test('exam preserves timer and typed answers across translation, saves before submission and supports retry', async () => {
   const {page,errors} = await pageFor({failSubmit:true});
   try {
-    await page.click('#pickExam');
+    await page.click('#subjectCyber'); await page.click('#pickExam');
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-1',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree'); await page.click('#examStartBtn');
@@ -253,7 +274,7 @@ test('exam preserves timer and typed answers across translation, saves before su
 test('offline quiz and admin login validation remain usable', async () => {
   const offline = await pageFor({offline:true});
   try {
-    await offline.page.click('#pickQuiz'); await offline.page.click('#skipBtn');
+    await offline.page.click('#subjectCyber'); await offline.page.click('#pickQuiz'); await offline.page.click('#skipBtn');
     assert.equal(await offline.page.locator('#qOptions button').count(),3);
     assert.deepEqual(offline.errors,[]);
   } finally { await offline.page.close(); }
@@ -271,7 +292,7 @@ test('offline quiz and admin login validation remain usable', async () => {
 test('automatic exam submission flushes text before the debounce expires', async () => {
   const {page,errors} = await pageFor({autoExit:true});
   try {
-    await page.click('#pickExam');
+    await page.click('#subjectCyber'); await page.click('#pickExam');
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-AUTO',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree'); await page.click('#examStartBtn');
@@ -297,9 +318,13 @@ test('admin workspaces load separately and sample import can be repeated safely'
   const {page,errors} = await pageFor({admin:true,authenticated:true});
   try{
     await page.waitForSelector('#adminHome');
+    assert.equal(await page.locator('#adminHome .portal-tile:visible').count(),4);
     assert.equal(await page.locator('.tab:visible').count(),0);
     assert.equal(await page.evaluate(()=>window.calls.length),0);
-    await page.click('#manageExam');
+    await page.click('#manageCyber');
+    assert.equal(await page.locator('#adminCyber .portal-tile:visible').count(),2);
+    await page.click('#cyberBack');
+    await chooseCyber(page,'#manageExam');
     await page.click('[data-tab="exam-questions"]');
     await page.waitForSelector('#examQCard');
     assert.equal(await page.locator('.tab:visible').count(),4);
@@ -315,15 +340,54 @@ test('admin workspaces load separately and sample import can be repeated safely'
     await page.fill('#examBankSearch','offboarding');
     assert.equal(await page.locator('#exQList .q-item').count(),1);
     await page.click('#workspaceHome');
-    await page.click('#manageQuiz');
+    await chooseCyber(page,'#manageQuiz');
     assert.equal(await page.locator('.tab:visible').count(),5);
     await page.click('[data-tab="questions"]');
     await page.waitForSelector('#qList .q-item');
-    assert.equal(await page.locator('#workspaceTitle').innerText(),'Awareness Quiz');
+    assert.equal(await page.locator('#workspaceTitle').innerText(),'Cyber Security / Awareness');
     assert.equal(await page.locator('#tab-exam-questions').isVisible(),false);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth > innerWidth),false);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
+});
+
+test('subject chooser opens distinct quizzes and admin workspaces keep subject filters',async()=>{
+  const {page,errors}=await pageFor();
+  try{
+    assert.equal(await page.locator('.subject-card:visible').count(),4);
+    await page.click('#subjectVideo');
+    await page.waitForURL(/subject=video/);
+    assert.equal(await page.locator('#screen-register').isVisible(),true);
+    assert.match(await page.locator('#screen-register .hero-title').innerText(),/video quiz/);
+    await page.click('#skipBtn');
+    assert.match(await page.locator('#qText').innerText(),/video question/);
+    await page.locator('#qOptions button').first().click();
+    await page.click('#nextBtn');
+    await page.waitForFunction(()=>window.calls.some(c=>c.name==='subject_submit_attempt'));
+    const submitted = await page.evaluate(()=>window.calls.find(c=>c.name==='subject_submit_attempt').body.p_subject);
+    assert.equal(submitted,'video');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+  const empty = await pageFor({query:'?subject=computer',emptySubjectBank:true});
+  try{
+    assert.equal(await empty.page.locator('#startRow').isVisible(),false);
+    assert.match(await empty.page.locator('#closedNote').innerText(),/No active questions/);
+    assert.deepEqual(empty.errors,[]);
+  }finally{await empty.page.close();}
+  const admin = await pageFor({admin:true,authenticated:true});
+  try{
+    await admin.page.click('#manageGraphic');
+    await admin.page.waitForFunction(()=>window.calls.some(c=>c.name==='subject_analytics_totals'));
+    assert.equal(await admin.page.locator('#workspaceTitle').innerText(),'Graphic Design');
+    await admin.page.click('[data-tab="questions"]');
+    await admin.page.waitForFunction(()=>document.getElementById('stTotalQ').textContent==='1');
+    assert.match(await admin.page.locator('#qList').innerText(),/graphic question/);
+    await admin.page.click('[data-tab="results"]');
+    assert.equal(await admin.page.locator('#stAttempts').innerText(),'0');
+    assert.equal(await admin.page.evaluate(()=>window.calls.some(c=>c.table==='subject_attempts')),true);
+    assert.equal(await admin.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    assert.deepEqual(admin.errors,[]);
+  }finally{await admin.page.close();}
 });
 
 test('written practice works offline, preserves answers across the map and shows marking notes', async () => {
@@ -369,7 +433,7 @@ test('sample MCQ bank has 20 questions and practice never submits an exam RPC', 
 test('written question navigation does not wait for a slow network save',async ()=>{
   const {page,errors}=await pageFor({slowSave:true});
   try{
-    await page.click('#pickExam');
+    await page.click('#subjectCyber'); await page.click('#pickExam');
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-SLOW',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree');await page.click('#examStartBtn');
@@ -390,7 +454,7 @@ test('written question navigation does not wait for a slow network save',async (
 test('exam dashboard monitors attempts, queues and violations and changes exam status',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,dashboard:true});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     await page.waitForFunction(()=>document.getElementById('edStudents').textContent==='5');
     assert.equal(await page.locator('#edActive').innerText(),'2');
     assert.equal(await page.locator('#edExpired').innerText(),'1');
@@ -401,6 +465,18 @@ test('exam dashboard monitors attempts, queues and violations and changes exam s
     assert.match(await page.locator('#edQueue').innerText(),/Pending student/);
     assert.match(await page.locator('#edViolations').innerText(),/Rafi/);
     assert.match(await page.locator('#edTrendTotal').innerText(),/2 submissions/);
+    assert.match(await page.locator('#edUpdates').innerText(),/Draft saved/);
+    assert.match(await page.locator('#edBatches').innerText(),/Batch A/);
+    assert.match(await page.locator('#edBatches').innerText(),/80%/);
+    await page.selectOption('#edActivity','urgent');
+    assert.equal(await page.locator('#edMonitorRows tr').count(),1);
+    assert.match(await page.locator('#edMonitorRows').innerText(),/Rafi/);
+    await page.selectOption('#edActivity','no-saves');
+    assert.equal(await page.locator('#edMonitorRows tr').count(),0);
+    await page.selectOption('#edActivity','all');
+    await page.selectOption('#edSort','flags');
+    assert.match(await page.locator('#edMonitorRows tr:first-child').innerText(),/Rafi/);
+    await page.selectOption('#edBatchSort','average');
     await page.fill('#edSearch','Ayesha');
     assert.equal(await page.locator('#edMonitorRows tr').count(),1);
     await page.fill('#edSearch','');await page.check('#edOnlyFlagged');
@@ -435,7 +511,7 @@ test('dashboard polling pauses and stops when leaving the exam workspace',async 
   const {page,errors}=await pageFor({admin:true,authenticated:true,dashboard:true});
   try{
     await page.clock.install();
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     await page.waitForFunction(()=>document.getElementById('edStudents').textContent==='5');
     const count = ()=>page.evaluate(()=>window.calls.filter(c=>c.name==='exam_stats'&&c.phase==='start').length);
     const initial=await count();
@@ -453,7 +529,7 @@ test('dashboard polling pauses and stops when leaving the exam workspace',async 
 test('dashboard reports failed reads and never claims an unsuccessful status change worked',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,dashboard:true,failDashboard:true,failToggle:true});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     await page.waitForSelector('#edError:not(.hidden)');
     assert.match(await page.locator('#edError').innerText(),/totals/);
     assert.equal(await page.locator('#edStudents').innerText(),'—');
@@ -468,7 +544,7 @@ test('dashboard reports failed reads and never claims an unsuccessful status cha
 test('individual result deletion supports cancellation, removes only that paper and refreshes selections and totals',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     await page.click('[data-tab="exam-results"]');
     await page.locator('#exAttemptRows input[value="exam-0"]').check();
     await page.click('[data-tab="exam-dashboard"]');
@@ -509,7 +585,7 @@ test('failed or denied individual deletion keeps the student result and restores
   for(const failure of [{failDelete:true},{noDeleteRows:true}]){
     const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,...failure});
     try{
-      await page.click('#manageExam');
+      await chooseCyber(page,'#manageExam');
       const remove=page.locator('#edRecent').getByRole('button',{name:'Delete result for Exam student 0',exact:true});
       page.once('dialog',dialog=>dialog.accept());
       await remove.click();
@@ -525,7 +601,7 @@ test('failed or denied individual deletion keeps the student result and restores
 test('Recent results exports the correct full student paper beside Review',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     await page.waitForSelector('#edRecent .exam-feed-item');
     for(const i of [0,1]){
       const row=page.locator('#edRecent .exam-feed-item').nth(i);
@@ -564,7 +640,7 @@ test('full paper first sheet preserves a long multiline answer without hiding it
   const longAnswer=('বাংলা উত্তর: check input and explain the fix.\n'.repeat(380))+'FINAL ANSWER LINE';
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,longAnswer});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
     const [download]=await Promise.all([page.waitForEvent('download'),button.click()]);
     const book=await inspectExcel(download,'full-paper-long-answer.xlsx');
@@ -584,7 +660,7 @@ test('full paper first sheet preserves a long multiline answer without hiding it
 test('full paper export rejects an empty answer response instead of downloading only a summary',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,emptyReviewAnswers:true});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     let downloads=0;page.on('download',()=>downloads++);
     const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
     await button.click();
@@ -598,7 +674,7 @@ test('full paper export rejects an empty answer response instead of downloading 
 test('Recent results Excel reports failures and lets the admin retry',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failReviewId:'exam-0'});
   try{
-    await page.click('#manageExam');
+    await chooseCyber(page,'#manageExam');
     const button=page.locator('#edRecent .exam-feed-item').first().getByRole('button',{name:'Download full paper Excel for Exam student 0',exact:true});
     let downloads=0;page.on('download',()=>downloads++);
     await button.click();
@@ -616,7 +692,7 @@ test('Recent results Excel reports failures and lets the admin retry',async ()=>
 test('all quiz and exam results export as valid Excel files beyond the loaded page',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
   try{
-    await page.click('#manageQuiz');
+    await chooseCyber(page,'#manageQuiz');
     await page.click('[data-tab="results"]');
     await page.waitForSelector('#attemptRows tr');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -631,7 +707,7 @@ test('all quiz and exam results export as valid Excel files beyond the loaded pa
     await page.fill('#searchBox','');
     const [quizOne]=await Promise.all([page.waitForEvent('download'),page.locator('#attemptRows tr:first-child .result-actions button').first().click()]);
     assert.deepEqual((await inspectExcel(quizOne,'quiz-one.xlsx')).counts,[2]);
-    await page.click('#workspaceHome');await page.click('#manageExam');
+    await page.click('#workspaceHome');await chooseCyber(page,'#manageExam');
     await page.click('[data-tab="exam-results"]');
     await page.waitForSelector('#exAttemptRows tr');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -662,7 +738,7 @@ test('all quiz and exam results export as valid Excel files beyond the loaded pa
 test('full paper selection survives filtering and exports only selected students',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
   try{
-    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await chooseCyber(page,'#manageExam');await page.click('[data-tab="exam-results"]');
     await page.waitForSelector('#exAttemptRows tr');
     assert.equal(await page.locator('#exDownloadSelected').isDisabled(),true);
     await page.locator('#exAttemptRows input[value="exam-0"]').check();
@@ -700,7 +776,7 @@ test('full paper selection survives filtering and exports only selected students
 test('select all full papers includes older database pages and allows exclusions',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
   try{
-    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await chooseCyber(page,'#manageExam');await page.click('[data-tab="exam-results"]');
     await page.waitForSelector('#exAttemptRows tr');
     assert.equal(await page.locator('#exAttemptRows tr').count(),500);
     await page.fill('#exSearch','no visible match');
@@ -727,7 +803,7 @@ test('select all full papers includes older database pages and allows exclusions
 test('failed full paper fetch preserves selection and can retry without a partial download',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failReviewId:'exam-1'});
   try{
-    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await chooseCyber(page,'#manageExam');await page.click('[data-tab="exam-results"]');
     await page.locator('#exAttemptRows input[value="exam-0"]').check();
     await page.locator('#exAttemptRows input[value="exam-1"]').check();
     let downloads=0;page.on('download',()=>downloads++);
@@ -746,7 +822,7 @@ test('failed full paper fetch preserves selection and can retry without a partia
 test('failed select all preserves the existing selection',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failPage:true});
   try{
-    await page.click('#manageExam');await page.click('[data-tab="exam-results"]');
+    await chooseCyber(page,'#manageExam');await page.click('[data-tab="exam-results"]');
     await page.locator('#exAttemptRows input[value="exam-0"]').check();
     await page.click('#exSelectAll');
     await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Page failed'));
@@ -760,7 +836,7 @@ test('failed select all preserves the existing selection',async ()=>{
 test('Excel download reports a page failure without producing a partial file',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,failPage:true});
   try{
-    await page.click('#manageQuiz');await page.click('[data-tab="results"]');
+    await chooseCyber(page,'#manageQuiz');await page.click('[data-tab="results"]');
     let downloads=0;page.on('download',()=>downloads++);
     await page.click('#quizExcelAll');
     await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('Page failed'));
