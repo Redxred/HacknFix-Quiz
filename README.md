@@ -79,6 +79,47 @@ and has no continuously rendering 3D scene. The exam provides a question
 map and answer count; live MCQs still cannot be revisited.
 
 Run `npm install` and `npm test` for the local browser and database checks.
+
+### Add questions with Excel
+
+Download [all five ready-made Excel templates](templates/hacknfix-excel-templates-v2.zip),
+or get the template for one subject from its admin question bank.
+
+In any subject’s admin **Questions** page, choose **Download Excel template**.
+Fill the workbook’s **Questions** sheet, save as `.xlsx`, then choose
+**Import Excel** in the same question bank. Review the preview and click
+**Import questions**. The workbook includes separate instructions and examples.
+The updated templates put **Correct answer** in column C, wrap long headings,
+freeze the first two columns, and provide 25 formatted blank entry rows.
+Dropdowns and cell guidance cover all 500 allowed rows. A **Field guide**
+explains every required and optional column. Text formatting preserves leading
+zeros and answers beginning with `=` when typed as text.
+**Sort order** is optional in every bank; **Icon** is optional for quizzes.
+Older v1 templates are still accepted. Download a fresh template to get the
+new layout and Excel controls.
+After editing `question-import.js`, `excel-export.js` or `subjects.js`, run
+`npm run templates:build` to refresh the five committed templates and ZIP.
+
+Templates cover Cyber Security Awareness, Video Editing, Graphic Design,
+Basic Computer, and the Cyber Security Final Exam. Quiz templates accept
+English, Bangla, or both; a missing language uses the other text without
+translation. MCQs take 2–6 options and one correct answer (A–F). The final
+exam template also accepts written and practical questions with model answers,
+marks and hints. Set **Active** to **No** to import hidden drafts.
+
+Imports accept up to 500 rows / 5 MB. Every error identifies its Excel row;
+fix all errors before importing. Blank rows and identical duplicates are
+skipped. A question with conflicting answers or settings must be edited in
+the existing bank. All new rows are saved in one database request, and a
+retry checks the bank again. This feature uses the existing database schema;
+no new migration is required. The spreadsheet reader is bundled locally.
+
+`tests/question-import-flow.test.cjs` exercises template download, Excel
+resave, upload, preview, authenticated writes into a local Postgres database,
+reload, duplicate detection and student quiz rendering for every subject.
+It also covers final exam question types, invalid files and failed-save retry.
+These tests do not write to the live Supabase project.
+
 After editing `sample-questions.js`, run `npm run samples:build` to update
 both SQL seed files.
 After editing the starter questions in `subjects.js`, run

@@ -1,0 +1,19 @@
+.question-excel-tools{margin:18px 0;padding:16px;background:var(--bg-soft);border:1px solid var(--border);border-radius:12px;}
+.question-excel-tools p{margin:0 0 10px;color:var(--muted);font-size:.9rem;}
+.question-excel-tools .bank-tools{margin:0;}
+.question-import-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:24px;width: min(800px,calc(100% - 24px));max-height:90vh;overflow:auto;box-shadow:var(--shadow);}
+.question-import-dialog::backdrop{background:rgba(0,0,0,.55);}
+.question-import-dialog h2{margin:0 0 8px;font-size:1.3rem;}
+.question-import-dialog p{line-height:1.5;}
+.qi-destination{font-weight:700;color:var(--primary-strong);}
+.qi-file-label{display:block;margin:20px 0 8px;font-weight:600;}
+.question-import-dialog input[type=file]{max-width:100%;width:100%;padding:12px;border:1px dashed var(--border);border-radius:8px;background:var(--bg-soft);color:var(--text);}
+.qi-errors{background:var(--danger-bg);color:var(--danger);padding:14px;border-radius:10px;max-height:220px;overflow:auto;overflow-wrap:anywhere;}
+.qi-errors ul{padding-left:22px;}
+.qi-preview{max-height:340px;overflow:auto;margin-top:14px;}
+.qi-row{border:1px solid var(--border);border-radius:8px;padding:12px;margin:8px 0;overflow-wrap:anywhere;}
+.qi-row summary{cursor:pointer;font-weight:600;}
+.qi-row p{white-space:pre-wrap;font-size:.9rem;}
+.qi-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;}
+.qi-actions .btn{flex:1;}
+@media(max-width:480px){.question-import-dialog{padding:16px;}.question-excel-tools .btn{width:100%;}}

@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#0F6B4C">
 <!-- no share tags here: the admin panel should never get a preview card -->
 <meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="question-import.css?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -837,6 +838,10 @@
         </p>
         <button class="btn btn-primary" id="addQBtn" type="button">+ Add question</button>
         <button class="btn btn-ghost hidden" id="addSubjectSamples" type="button">Add starter questions</button>
+        <div class="question-excel-tools">
+          <p><strong>Add questions with Excel</strong> — download this subject’s template, fill in your questions and answers, then import the completed file.</p>
+          <div class="bank-tools"><button class="btn btn-ghost" id="quizQuestionTemplate" type="button">Download Excel template</button><button class="btn btn-primary" id="quizQuestionImport" type="button">Import Excel</button></div>
+        </div>
         <div id="qList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
       </div>
     </section>
@@ -1079,6 +1084,10 @@
         </div>
         <p class="sub">Samples: 20 MCQs, 8 written/CQ and 4 practical tasks. Samples are public practice material; edit or replace them before a graded exam. Importing again skips existing samples.</p>
         <div class="bank-count" id="examBankCount" aria-live="polite"></div>
+        <div class="question-excel-tools">
+          <p><strong>Add questions with Excel</strong> — one template for MCQ answers, written model answers and practical marking notes.</p>
+          <div class="bank-tools"><button class="btn btn-ghost" id="examQuestionTemplate" type="button">Download Excel template</button><button class="btn btn-primary" id="examQuestionImport" type="button">Import Excel</button></div>
+        </div>
         <div id="exQList" style="margin-top:16px;"><div class="empty">Loading…</div></div>
       </div>
     </section>
@@ -1300,7 +1309,9 @@
 <script src="sample-questions.js"></script>
 <script src="subjects.js?v=subjects-1"></script>
 <script src="exam-dashboard.js?v=exam-insights-1"></script>
-<script src="excel-export.js?v=full-paper-2"></script>
+<script src="excel-export.js?v=question-template-2"></script>
+<script src="question-import.js?v=2"></script>
+<script src="question-import-ui.js?v=2"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -1559,6 +1570,10 @@
   const quizSubject = () => ['video','graphic','computer'].includes(workspace) ? workspace : 'cyber';
   const subjectTable = name => quizSubject() === 'cyber' ? name : 'subject_' + name;
   const subjectFilter = query => quizSubject() === 'cyber' ? query : query.eq('subject',quizSubject());
+  $('quizQuestionTemplate').addEventListener('click',()=>window.HacknFixQuestionImportUI.download(quizSubject()));
+  $('examQuestionTemplate').addEventListener('click',()=>window.HacknFixQuestionImportUI.download('exam'));
+  $('quizQuestionImport').addEventListener('click',()=>window.HacknFixQuestionImportUI.open({bank:quizSubject(),client:sb,onSaved:loadQuestions}));
+  $('examQuestionImport').addEventListener('click',()=>window.HacknFixQuestionImportUI.open({bank:'exam',client:sb,onSaved:loadExamQuestions}));
   const workspacePages = {
     quiz:['dashboard','questions','results','feedback','settings'],
     exam:['exam-dashboard','exam-questions','exam-results','exam-settings'],

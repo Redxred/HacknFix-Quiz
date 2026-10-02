@@ -4,6 +4,7 @@
   "scripts": {
     "start": "python -m http.server 8000 --bind 127.0.0.1",
     "test": "node --test tests/*.test.cjs",
+    "templates:build": "node scripts/build-question-templates.cjs",
     "samples:build": "node scripts/build-samples.cjs",
     "subjects:build": "node scripts/build-subject-seed.cjs"
   },
