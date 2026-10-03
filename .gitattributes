@@ -1,0 +1,2 @@
+# Three.js embeds GLSL strings whose formatting is part of the vendored build.
+vendor/portal-three.min.js -whitespace

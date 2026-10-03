@@ -2,16 +2,16 @@
 begin;
 create table if not exists public.certificate_settings (
   id integer primary key default 1 check(id=1),
-  organization text not null default 'HacknFix' check(length(organization) between 1 and 100),
+  organization text not null default 'GM IT Academy' check(length(organization) between 1 and 100),
   title text not null default 'CERTIFICATE OF ASSESSMENT' check(length(title) between 1 and 100),
   description text not null default 'has completed the assessment in' check(length(description)<=250),
   signature_name text not null default '' check(length(signature_name)<=100),
   signature_role text not null default 'Authorized signatory' check(length(signature_role)<=100),
   footer text not null default 'Recognizing learning, effort and achievement.' check(length(footer)<=200),
-  primary_color text not null default '#176B52' check(primary_color ~ '^#[0-9A-Fa-f]{6}$'),
-  accent_color text not null default '#C8A359' check(accent_color ~ '^#[0-9A-Fa-f]{6}$'),
-  text_color text not null default '#1E293B' check(text_color ~ '^#[0-9A-Fa-f]{6}$'),
-  background_color text not null default '#FFFDF6' check(background_color ~ '^#[0-9A-Fa-f]{6}$'),
+  primary_color text not null default '#1B2653' check(primary_color ~ '^#[0-9A-Fa-f]{6}$'),
+  accent_color text not null default '#90A3D4' check(accent_color ~ '^#[0-9A-Fa-f]{6}$'),
+  text_color text not null default '#1B2653' check(text_color ~ '^#[0-9A-Fa-f]{6}$'),
+  background_color text not null default '#FAFBFF' check(background_color ~ '^#[0-9A-Fa-f]{6}$'),
   logo_data text not null default '' check(length(logo_data)<=1500000),
   signature_data text not null default '' check(length(signature_data)<=500000),
   show_result boolean not null default true,
@@ -19,6 +19,10 @@ create table if not exists public.certificate_settings (
   updated_at timestamptz not null default now()
 );
 insert into public.certificate_settings(id) values(1) on conflict(id) do nothing;
+update public.certificate_settings set organization='GM IT Academy',primary_color='#1B2653',
+  accent_color='#90A3D4',text_color='#1B2653',background_color='#FAFBFF'
+  where id=1 and organization='HacknFix' and primary_color='#176B52'
+    and accent_color='#C8A359' and logo_data='';
 create table if not exists public.certificate_records (
   id uuid primary key default gen_random_uuid(),
   subject text not null check(subject in ('cyber','video','graphic','computer')),

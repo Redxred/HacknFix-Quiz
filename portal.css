@@ -1,4 +1,4 @@
-/* Shared visual layer. No WebGL, animation loop, or additional network dependency. */
+/* Shared CSS layout and the static fallback for the optional Three.js scene. */
 body { background-image:radial-gradient(ellipse at 10% 0%,color-mix(in srgb,var(--primary) 8%,transparent),transparent 55%); }
 body[data-lang] > main,body[data-lang] > .topbar { max-width:800px; }
 body[data-lang] .mode-card { min-height:265px; }

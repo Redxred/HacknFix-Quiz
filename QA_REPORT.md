@@ -2,7 +2,7 @@
 
 ## Result and scope
 
-`npm test` passed **84 tests, 0 failures**, in 105.4 seconds. The suite includes
+`npm test` passed **86 tests, 0 failures**, in 116.2 seconds. The suite includes
 a 50-student certificate upload and batch PDF test. The separate
 50-connection PostgreSQL load test also passed.
 
@@ -17,6 +17,12 @@ and 50-PDF ZIP completed without missing records. Quiz results and fully
 graded exam results were used to prefill and issue certificates; repeated
 issuance opened the same saved record. The certificate SQL migration ran
 twice locally without losing records, and anonymous access was denied.
+
+The GM IT Academy theme was checked on mobile and desktop. Browser tests
+verified the official logo loads, the Three.js scene renders on the exam entry
+screen, reduced-motion and WebGL-unavailable users get a static banner, dark mode stays readable,
+and the scene is removed during a timed exam. The default certificate was
+rendered and checked for its white logo, navy block and individual marks.
 
 The sample expansion adds 20 bilingual Cyber Security awareness questions
 and expands each other subject to 25 bilingual questions. The public final

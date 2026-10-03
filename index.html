@@ -33,7 +33,7 @@
 
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-512.png">
-<meta name="theme-color" content="#0F6B4C">
+<meta name="theme-color" content="#1B2653">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -942,6 +942,7 @@
   }
 </style>
 <link rel="stylesheet" href="portal.css">
+<link rel="stylesheet" href="gmit-theme.css?v=1">
 </head>
 <body data-lang="bn">
 <div id="splash" class="splash">
@@ -955,8 +956,8 @@
 </div>
 <div class="topbar">
   <div class="brand">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path d="M9.5 12l1.8 1.8L14.8 10"/></svg>
-    <span data-t="brand">HacknFix</span>
+    <span class="gmit-mark"><img src="gmit-logo-white.png" width="110" height="44" alt="GM IT Academy"></span>
+    <span class="brand-product" data-t="brand">HacknFix</span>
   </div>
   <div class="controls">
     <button class="icon-btn" id="fbOpenBtn" type="button" aria-label="Feedback" title="Feedback">
@@ -972,6 +973,7 @@
 <main>
 
   <section id="screen-subjects" class="card subject-home">
+    <div class="gmit-hero"><img src="gmit-logo-white.png" width="185" height="74" alt="GM IT Academy"><div class="three-stage" data-three-stage aria-hidden="true"></div></div>
     <p class="portal-kicker" data-t="portalKicker">শিখুন · অনুশীলন করুন · এগিয়ে যান</p>
     <h1 class="hero-title" id="subjectHomeTitle">Choose your subject</h1>
     <p class="hero-sub" id="subjectHomeSub">Explore a short quiz in your field, or open the Cyber Security final exam.</p>
@@ -986,6 +988,7 @@
   <!-- SCREEN 0: PICK A MODE -->
   <section id="screen-choose" class="card hidden">
     <button class="btn btn-ghost btn-sm subject-back" id="subjectBack" type="button">← Subjects</button>
+    <div class="gmit-hero gmit-hero-compact"><img src="gmit-logo-white.png" width="160" height="64" alt="GM IT Academy"><div class="three-stage" data-three-stage aria-hidden="true"></div></div>
     <p class="portal-kicker" data-t="portalKicker">শিখুন · অনুশীলন করুন · এগিয়ে যান</p>
     <div class="welcome-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/></svg>
@@ -1023,6 +1026,7 @@
 
   <!-- SCREEN 4: EXAM REGISTRATION -->
   <section id="screen-exam-reg" class="card hidden">
+    <div class="gmit-hero gmit-hero-exam"><img src="gmit-logo-white.png" width="185" height="74" alt="GM IT Academy"><div class="three-stage" data-three-stage aria-hidden="true"></div></div>
     <div class="exam-head">
       <span class="mode-ic">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v6h6M8 13h8M8 17h5"/></svg>
@@ -1971,6 +1975,8 @@
      'screen-exam-reg','screen-exam','screen-exam-done'].forEach(s=>{
       $(s).classList.toggle('hidden', s!==id);
     });
+    document.body.dataset.screen=id;
+    window.dispatchEvent(new CustomEvent('hnf:screenchange',{detail:{screen:id}}));
     // Replay the card entrance instead of having it run only on first paint.
     const card = $(id);
     card.style.animation = 'none';
@@ -1987,7 +1993,7 @@
     if(id !== 'screen-quiz') stopTimer();
     if(id !== 'screen-exam') stopMcqTimer();
 
-    window.scrollTo({top:0,behavior:'smooth'});
+    window.scrollTo(0,0);
   }
 
   // ---------- Registration: live feedback while typing ----------
@@ -2950,6 +2956,7 @@
       const splash = $('splash');
       if(!splash) return;
       splash.classList.add('fade-out');
+      window.dispatchEvent(new Event('hnf:splashhidden'));
       setTimeout(()=>splash.remove(), 400);
     }, wait);
   }
@@ -4071,5 +4078,6 @@
   setTimeout(hideSplash, SPLASH_MAX);   // safety net
 })();
 </script>
+<script src="portal-three-loader.js?v=1" defer></script>
 </body>
 </html>

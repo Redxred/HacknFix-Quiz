@@ -1,0 +1,104 @@
+/* GM IT Academy brand. The white mark is the academy's published logo. */
+:root{
+  --bg:#f4f6fc;--bg-soft:#eaf0fa;--card:#fff;--text:#172145;
+  --muted:#56617c;--border:#dce3f1;--primary:#1b2653;
+  --primary-strong:#111b42;--on-primary:#fff;--accent:#526cb0;
+  --chip-bg:#e8eefb;
+  --shadow:0 1px 2px #1b26530c,0 10px 28px #1b265316;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1430;--bg-soft:#152149;--card:#1b2851;--text:#f8faff;
+    --muted:#b0bee0;--border:#34436f;--primary:#bdcbff;
+    --primary-strong:#e1e8ff;--on-primary:#172145;--accent:#9bb2ef;
+    --chip-bg:#263663;--shadow:0 1px 2px #0005,0 12px 30px #0005;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1430;--bg-soft:#152149;--card:#1b2851;--text:#f8faff;
+  --muted:#b0bee0;--border:#34436f;--primary:#bdcbff;
+  --primary-strong:#e1e8ff;--on-primary:#172145;--accent:#9bb2ef;
+  --chip-bg:#263663;--shadow:0 1px 2px #0005,0 12px 30px #0005;
+}
+body{background-image:radial-gradient(ellipse at 8% 0%,#748bd321,transparent 57%);}
+body.exam-live{background-image:none;}
+.gmit-mark{
+  display:grid;place-items:center;flex:none;width:116px;height:48px;padding:3px 5px;
+  border-radius:10px;background:#1b2653;box-shadow:0 5px 12px #1b265329;
+}
+.gmit-mark img{display:block;width:100%;height:100%;object-fit:contain;}
+.topbar .brand{gap:9px;min-width:0;}
+.topbar .brand .brand-product{white-space:nowrap;}
+.login-card .brand{gap:10px;flex-wrap:wrap;}
+.gmit-hero{
+  position:relative;isolation:isolate;display:flex;align-items:center;
+  min-height:188px;padding:23px 31px;margin:0 0 24px;overflow:hidden;
+  border-radius:20px;background:radial-gradient(circle at 78% 46%,#405991 0%,#263767 31%,#1b2653 72%);
+  box-shadow:0 12px 30px #1b26532e;
+}
+.gmit-hero::before{
+  content:"";position:absolute;inset:0;z-index:-1;opacity:.24;
+  background-image:linear-gradient(#fff2 1px,transparent 1px),linear-gradient(90deg,#fff2 1px,transparent 1px);
+  background-size:24px 24px;mask-image:linear-gradient(90deg,transparent 25%,#000 100%);
+}
+.gmit-hero::after{
+  content:"";position:absolute;inset:18px;border:1px solid #ffffff30;
+  border-radius:13px;pointer-events:none;
+}
+.gmit-hero img{position:relative;z-index:2;width:185px;height:auto;filter:drop-shadow(0 3px 8px #0004);}
+.gmit-hero .three-stage{position:absolute;z-index:1;right:0;top:0;width:56%;height:100%;pointer-events:none;}
+.three-stage canvas{display:block;width:100%;height:100%;opacity:.92;}
+.gmit-hero-compact{min-height:142px;margin-top:13px;}
+.gmit-hero-compact img{width:160px;}
+.gmit-hero-exam{min-height:174px;}
+.mode-card.is-exam,.portal-tile.exam{
+  background:linear-gradient(145deg,#283965,#1b2653 78%);border-color:#4d6298;
+  color:#fff;box-shadow:0 5px 0 #111b42,0 18px 34px #1b26532a;
+}
+.mode-card.is-exam:hover:not(:disabled),.portal-tile.exam:hover{
+  border-color:#afc0ff;box-shadow:0 6px 0 #111b42,0 21px 39px #1b26533d;
+}
+.mode-card.is-exam p,.portal-tile.exam p{color:#dce4ff;}
+.mode-card.is-exam .mode-ic,.exam .portal-symbol{
+  color:#1b2653;background:#eef2ff;box-shadow:4px 5px 0 #101a3f;
+}
+.mode-card.is-exam .mode-tag,.portal-tile.exam .portal-pills span{
+  background:#ffffff1b;color:#edf2ff;
+}
+.portal-tile.exam .tile-link{color:#fff;border-color:#ffffff40;}
+.portal-tile.exam::before,.mode-card.is-exam::before{
+  background:radial-gradient(ellipse at 90% 5%,#9aaff43d,transparent 68%);
+}
+.exam-head{padding:12px 0 14px;border-bottom:2px solid #dce3f1;margin-bottom:12px;}
+.exam-head .mode-ic{background:#e8eefb;color:#1b2653;}
+.exam-bar{border-radius:14px;padding:12px;background:#1b2653;border:1px solid #435788;color:#fff;}
+.exam-bar .sec-pill{background:#ffffff1f;color:#e8edff;}
+.exam-bar .sec-pill.on{background:#fff;color:#1b2653;}
+.exam-bar .exam-clock{background:#ffffff1f;color:#fff;}
+.exam-bar .exam-clock.warn{background:#fef3c7;color:#92400e;}
+.exam-bar .exam-clock.danger{background:#fbeaea;color:#b91c1c;}
+#exOptions .option.selected{border-color:#526cb0;background:#e8eefb;box-shadow:inset 0 0 0 1px #526cb0;}
+:root[data-theme="dark"] #exOptions .option.selected{background:#263663;color:#f8faff;}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) #exOptions .option.selected{background:#263663;color:#f8faff;}
+}
+.exam .portal-symbol{transform:rotate(7deg);}
+body.admin-exam-theme .workspace-head{
+  background:linear-gradient(130deg,#1b2653,#344b82);border-color:#4d6298;color:#fff;
+  box-shadow:0 12px 30px #1b265329;
+}
+body.admin-exam-theme .workspace-head .portal-kicker,
+body.admin-exam-theme .workspace-head p{color:#e0e8ff;}
+body.admin-exam-theme .workspace-head .btn-ghost{color:#fff;border-color:#ffffff82;background:#ffffff14;}
+body.admin-exam-theme #workspaceTabs .tab.active{background:#1b2653;color:#fff;border-color:#1b2653;}
+@media(max-width:560px){
+  .gmit-mark{width:90px;height:38px;padding:2px 4px;}
+  body[data-lang] .topbar .brand-product{font-size:.85rem;}
+  .gmit-hero{min-height:157px;padding:18px;margin-bottom:20px;}
+  .gmit-hero img{width:140px;}
+  .gmit-hero-compact{min-height:126px;}
+  .gmit-hero-compact img{width:132px;}
+  .gmit-hero .three-stage{width:67%;opacity:.64;}
+}
+@media(max-width:380px){body[data-lang] .topbar .brand-product{display:none;}}
+@media(prefers-reduced-motion:reduce){.gmit-hero .three-stage{display:none;}}

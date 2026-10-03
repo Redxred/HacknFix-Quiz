@@ -76,9 +76,9 @@ before(async()=>{
       let result;try{result=await query(JSON.parse(raw));}catch(e){result={data:null,error:{message:e.message}};}
       res.setHeader('Content-Type','application/json');res.end(JSON.stringify(result));return;
     }
-    if(!/^(?:[a-z-]+\.(?:html|js|css)|vendor\/xlsx\.mini\.min\.js)$/.test(name)){res.writeHead(404).end();return;}
+    if(!/^(?:[a-z-]+\.(?:html|js|css|png)|vendor\/(?:xlsx\.mini\.min|portal-three\.min)\.js)$/.test(name)){res.writeHead(404).end();return;}
     const file=path.join(root,name);if(!fs.existsSync(file)){res.writeHead(404).end();return;}
-    res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':'text/html; charset=utf-8');res.end(fs.readFileSync(file));
+    res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':name.endsWith('.css')?'text/css':name.endsWith('.png')?'image/png':'text/html; charset=utf-8');res.end(fs.readFileSync(file));
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));base='http://127.0.0.1:'+server.address().port;
   browser=await chromium.launch({channel:process.env.BROWSER_CHANNEL||'msedge',headless:true});
@@ -397,6 +397,27 @@ async function fillCertificate(page,bank,id,name){
   await page.fill('#cert-batch','QA');await page.fill('#cert-email','student@example.com');await page.fill('#cert-assessment','Final assessment');
   for(const [field,value] of Object.entries({mcq_score:20,mcq_total:20,written_score:30,written_total:30,practical_score:50,practical_total:50}))await page.fill('#cert-'+field,String(value));
 }
+test('default GM IT Academy certificate design renders the official logo and navy palette',async()=>{
+  const {page,errors}=await pageFor('cyber');
+  try{
+    await page.evaluate(async()=>{
+      const c=window.HNFCertificates;
+      const row={student_id:'GMIT-DEMO-001',student_name:'Demo Student',subject:'cyber',assessment:'Final assessment',
+        mcq_score:18,mcq_total:20,written_score:26,written_total:30,practical_score:45,practical_total:50,issued_on:c.today()};
+      const canvas=await window.HNFCertificatePDF.render(row,c.defaults,1.5);
+      canvas.id='gmitCertificateDemo';document.body.append(canvas);
+    });
+    assert.equal(await page.evaluate(()=>window.HNFCertificates.defaults.organization),'GM IT Academy');
+    const ink=await page.evaluate(()=>{
+      const data=document.getElementById('gmitCertificateDemo').getContext('2d').getImageData(615,71,270,81).data;
+      let navy=0,white=0;for(let i=0;i<data.length;i+=4){if(data[i]<70&&data[i+2]<150)navy++;if(data[i]>225&&data[i+1]>225&&data[i+2]>225)white++;}
+      return {navy,white};
+    });
+    assert.ok(ink.navy>1000&&ink.white>100,JSON.stringify(ink));
+    await page.locator('#gmitCertificateDemo').screenshot({path:path.join(root,'test-results/gmit-certificate-default.png')});
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
 for(const bank of ['cyber','video','graphic','computer'])test('certificates '+bank+': branding, individual PDF, Excel upload/retry, ZIP, edit and delete',async()=>{
   const {page,errors}=await pageFor(bank);
   try{

@@ -58,6 +58,16 @@ and the final exam retain separate questions, results, feedback and
 analytics can be reviewed individually. Run the latest `supabase-schema.sql`
 in Supabase to enable the new subject workspaces on the live site.
 
+The portal now uses the GM IT Academy logo and its navy/white palette in the
+student header, exam entry screens, admin header and exam workspace. The
+certificate starts with the same logo and colors; admins can replace the logo
+and design in **Certificate design & settings**. A locally bundled Three.js
+orbit appears in the subject chooser and exam entry banners. It loads only
+when a banner is visible, pauses when off screen, respects reduced-motion
+settings and is removed during a timed exam. The static branded banner remains
+usable if WebGL is unavailable. After editing `portal-three.js`, run
+`npm run three:build` to refresh the committed browser bundle.
+
 Both Results pages can download an Excel workbook for **all** student
 results, fetched across every database page. Each result row has an Excel
 button for an individual download. In Final Exam Results, **Excel**
@@ -114,8 +124,8 @@ and buttons add questions to the live bank; updating GitHub files alone
 does not change existing database rows. No schema migration is needed for
 the sample expansion. The offline demo banks also include the new samples.
 
-The interface uses CSS depth and hover effects, supports reduced motion,
-and has no continuously rendering 3D scene. The exam provides a question
+The interface uses CSS depth and hover effects and supports reduced motion.
+The exam provides a question
 map and answer count; live MCQs still cannot be revisited.
 
 Run `npm install` and `npm test` for the local browser and database checks.

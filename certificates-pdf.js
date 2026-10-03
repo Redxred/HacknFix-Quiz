@@ -43,13 +43,25 @@
     const width=img.width*scale,height=img.height*scale;
     ctx.drawImage(img,x+(w-width)/2,y+(h-height)/2,width,height);
   }
+  function lightLogo(img){
+    const probe=document.createElement('canvas');probe.width=24;probe.height=24;
+    const ctx=probe.getContext('2d',{willReadFrequently:true});
+    contain(ctx,img,0,0,24,24);
+    const pixels=ctx.getImageData(0,0,24,24).data;
+    let tone=0,weight=0;
+    for(let i=0;i<pixels.length;i+=4){
+      const alpha=pixels[i+3]/255;if(alpha<.2)continue;
+      tone+=(pixels[i]*.21+pixels[i+1]*.72+pixels[i+2]*.07)*alpha;weight+=alpha;
+    }
+    return weight>0&&tone/weight>165;
+  }
   async function render(row,settings,scale=2){
     const checked=core.validate(row,row.subject),design=core.settings(settings);
     if(checked.errors.length)throw new Error(checked.errors.join(' '));
     if(design.errors.length)throw new Error(design.errors.join(' '));
     const s=design.value,r={...row,...checked.row};
     await Promise.race([document.fonts?.ready||Promise.resolve(),new Promise(resolve=>setTimeout(resolve,2500))]);
-    const [logo,signature]=await Promise.all([imageFor(s.logo_data),imageFor(s.signature_data)]);
+    const [logo,signature]=await Promise.all([imageFor(s.logo_data||'gmit-logo-white.png'),imageFor(s.signature_data)]);
     const canvas=document.createElement('canvas');canvas.width=1000*scale;canvas.height=707*scale;
     const c=canvas.getContext('2d');c.scale(scale,scale);
     c.fillStyle=s.background_color;c.fillRect(0,0,1000,707);
@@ -60,7 +72,12 @@
       c.beginPath();c.moveTo(x,y);c.lineTo(x+88*dx,y);c.lineTo(x,y+88*dy);c.closePath();c.fill();
     });
     c.fillStyle=s.accent_color;c.fillRect(475,39,50,3);
-    contain(c,logo,410,48,180,54);
+    if(logo){
+      c.fillStyle=lightLogo(logo)?s.primary_color:s.background_color;
+      c.fillRect(410,47,180,55);
+      c.strokeStyle=s.accent_color;c.lineWidth=.6;c.strokeRect(410,47,180,55);
+    }
+    contain(c,logo,417,49,166,51);
     c.fillStyle=s.text_color;text(c,s.organization,500,logo?125:109,820,25,600);
     c.fillStyle=s.primary_color;text(c,s.title,500,174,850,35,700);
     c.fillStyle=s.text_color;text(c,'This certifies that',500,211,840,17);

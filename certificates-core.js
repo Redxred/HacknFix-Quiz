@@ -1,9 +1,9 @@
 (function(root){
   'use strict';
   const subjects={cyber:'Cyber Security',video:'Video Editing',graphic:'Graphic Design',computer:'Basic Computer'};
-  const defaults={organization:'HacknFix',title:'CERTIFICATE OF ASSESSMENT',description:'has completed the assessment in',
+  const defaults={organization:'GM IT Academy',title:'CERTIFICATE OF ASSESSMENT',description:'has completed the assessment in',
     signature_name:'',signature_role:'Authorized signatory',footer:'Recognizing learning, effort and achievement.',
-    primary_color:'#176B52',accent_color:'#C8A359',text_color:'#1E293B',background_color:'#FFFDF6',
+    primary_color:'#1B2653',accent_color:'#90A3D4',text_color:'#1B2653',background_color:'#FAFBFF',
     logo_data:'',signature_data:'',show_result:true,pass_percent:40};
   const headers=['Student ID','Student name','Subject','MCQ marks','MCQ total','CQ / written marks','CQ / written total',
     'Practical marks','Practical total','Batch','Email','Assessment','Issue date'];

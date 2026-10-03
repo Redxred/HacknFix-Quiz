@@ -10,8 +10,8 @@ before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','request.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
-    res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
+    if (!['index.html','admin.html','config.js','request.js','portal.css','gmit-theme.css','gmit-logo-white.png','portal-three-loader.js','vendor/portal-three.min.js','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
+    res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -21,13 +21,14 @@ before(async () => {
 after(async () => { await browser?.close(); await new Promise(resolve => server?.close(resolve)); });
 
 async function pageFor(options = {}) {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 },reducedMotion:options.reducedMotion?'reduce':'no-preference' });
   page.setDefaultTimeout(7000);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route('https://**/*', route => route.fulfill({ body: '', contentType: 'text/javascript' }));
   if(!options.realClient)await page.route('**/vendor/supabase.min.js*',route=>route.fulfill({body:'',contentType:'text/javascript'}));
   await page.addInitScript(({options}) => {
+    if(options.noWebGL){const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /^webgl/.test(type)?null:original.call(this,type,...args);};}
     localStorage.setItem('cq_lang', 'en');
     if(options.realClient)return;
     localStorage.setItem('cq_board', '{broken');
@@ -222,6 +223,59 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  print(json.dumps({'names':names,'counts':counts,'samples':samples,'formulas':formulas,'riskyAsText':risky,'bodyWrapped':bodyWrapped,'readableHeights':readableHeights},ensure_ascii=True))`;
   return JSON.parse(execFileSync('python',['-c',inspect,file],{encoding:'utf8'}));
 }
+
+test('GM IT logo, navy exam theme and Three.js entry scene stay out of timed exams',{timeout:30000},async()=>{
+  const {page,errors}=await pageFor({query:'?mode=exam'});
+  try{
+    const logo=page.locator('#screen-exam-reg .gmit-hero img');
+    assert.equal(await logo.evaluate(img=>img.complete&&img.naturalWidth===347),true);
+    assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()),'#1b2653');
+    await page.waitForFunction(()=>!!document.querySelector('#screen-exam-reg .three-stage canvas')||document.querySelector('#screen-exam-reg .three-stage').dataset.threeState==='fallback',null,{timeout:15000});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    fs.mkdirSync(path.join(__dirname,'../test-results'),{recursive:true});
+    await page.locator('#screen-exam-reg').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-mobile.png')});
+    await page.setViewportSize({width:1280,height:900});
+    await page.locator('#screen-exam-reg').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-desktop.png')});
+    await page.click('#examBackBtn');await page.waitForSelector('#screen-choose:not(.hidden)');
+    await page.click('#pickExam');await page.waitForSelector('#screen-exam-reg:not(.hidden)');
+    await page.waitForFunction(()=>document.querySelectorAll('.three-stage canvas').length===1);
+    await page.locator('#screen-exam-reg').evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
+    await page.fill('#exName','GMIT Student');await page.fill('#exId','GMIT-01');await page.fill('#exBatch','A');
+    await page.fill('#exEmail','student@example.com');await page.fill('#exPhone','01700000000');
+    await page.locator('.rules-agree').click();assert.equal(await page.locator('#exAgree').isChecked(),true);
+    await page.click('#examStartBtn');await page.waitForSelector('#screen-exam:not(.hidden)');
+    assert.equal(await page.locator('.three-stage canvas').count(),0);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+  const still=await pageFor({query:'?mode=exam',reducedMotion:true});
+  try{
+    assert.equal(await still.page.locator('.three-stage canvas').count(),0);
+    assert.equal(await still.page.locator('#screen-exam-reg .gmit-hero img').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+    await still.page.click('#themeBtn');
+    assert.equal(await still.page.evaluate(()=>document.documentElement.dataset.theme),'dark');
+    await still.page.locator('#screen-exam-reg').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-dark.png')});
+    assert.deepEqual(still.errors,[]);
+  }finally{await still.page.close();}
+  const fallback=await pageFor({query:'?mode=exam',noWebGL:true});
+  try{
+    await fallback.page.waitForSelector('#screen-exam-reg .three-stage[data-three-state="fallback"]');
+    assert.equal(await fallback.page.locator('.three-stage canvas').count(),0);
+    assert.equal(await fallback.page.locator('#screen-exam-reg .gmit-hero img').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+    assert.deepEqual(fallback.errors,[]);
+  }finally{await fallback.page.close();}
+  const admin=await pageFor({admin:true,authenticated:true});
+  try{
+    await admin.page.click('#manageCyber');await admin.page.click('#manageExam');
+    assert.equal(await admin.page.evaluate(()=>document.body.classList.contains('admin-exam-theme')),true);
+    assert.equal(await admin.page.evaluate(()=>window.scrollY),0);
+    assert.equal(await admin.page.locator('#appScreen .gmit-mark img').evaluate(img=>img.complete&&img.naturalWidth===347),true);
+    assert.equal(await admin.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await admin.page.screenshot({path:path.join(__dirname,'../test-results/gmit-admin-exam-mobile.png'),fullPage:true});
+    await admin.page.setViewportSize({width:1280,height:900});
+    await admin.page.screenshot({path:path.join(__dirname,'../test-results/gmit-admin-exam-desktop.png'),fullPage:true});
+    assert.deepEqual(admin.errors,[]);
+  }finally{await admin.page.close();}
+});
 
 test('quiz language switch preserves answer, timer and score; corrupt storage is recoverable', async () => {
   const {page,errors} = await pageFor();

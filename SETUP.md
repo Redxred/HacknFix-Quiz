@@ -117,6 +117,12 @@ browsers block parts of the setup; serve them over `http://` as above.
 
 ### Certificates for every subject
 
+New certificate designs start with the GM IT Academy logo and navy/white
+colors. You can upload a different logo or return to the academy logo at any
+time. If your existing design used the original untouched HacknFix defaults,
+running the updated certificate migration changes those defaults to the GM IT
+palette while preserving customized designs and saved student marks.
+
 1. In the subject workspace, open **Certificates**. If the page says setup
    is required, run the certificate migration above and click **Refresh**.
 2. Open **Certificate design & settings**. Set your institute name, heading,

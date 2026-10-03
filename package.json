@@ -7,12 +7,15 @@
     "test:load": "node scripts/qa-load.cjs",
     "templates:build": "node scripts/build-question-templates.cjs",
     "samples:build": "node scripts/build-samples.cjs",
-    "subjects:build": "node scripts/build-subject-seed.cjs"
+    "subjects:build": "node scripts/build-subject-seed.cjs",
+    "three:build": "node scripts/build-portal-three.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.3",
+    "esbuild": "^0.28.2",
     "pdf-lib": "^1.17.1",
     "pg": "^8.23.1",
-    "playwright": "^1.58.2"
+    "playwright": "^1.58.2",
+    "three": "^0.186.1"
   }
 }
