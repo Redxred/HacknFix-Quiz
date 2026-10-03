@@ -69,7 +69,7 @@ test('planning skips exact duplicates, rejects conflicting answers, appends afte
   existing.options=existing.options.map(o=>({...o,correct:!o.correct}));
   assert.equal(api.plan(entries,[existing]).errors.length,2);
 });
-test('v2 templates cover every column with a guide and all 500 rows with input rules',()=>{
+test('GMIT templates cover every column with a guide and all 500 rows with input rules',()=>{
   for(const bank of Object.keys(api.banks)) {
     const sheets=api.template(bank),questions=sheets[0],guide=sheets.find(s=>s.name==='Field guide');
     assert.equal(questions.headers[2],'Correct answer');
@@ -85,8 +85,10 @@ test('v2 templates cover every column with a guide and all 500 rows with input r
     const parsed=api.parseWorkbook(wb,bank,XLSX);assert.deepEqual(parsed.errors,[]);assert.equal(parsed.rows.length,bank==='exam'?3:1);
   }
 });
-test('old v1 files remain usable; optional sort order and icon map into saved questions',()=>{
+test('old v1 and v2 files remain usable; optional sort order and icon map into saved questions',()=>{
   const wb=book('cyber',[quiz()]);wb.Sheets.Template.A2.v='hacknfix-questions-v1';
+  assert.deepEqual(api.parseWorkbook(wb,'cyber',XLSX).errors,[]);
+  wb.Sheets.Template.A2.v='hacknfix-questions-v2';
   assert.deepEqual(api.parseWorkbook(wb,'cyber',XLSX).errors,[]);
   wb.Sheets.Questions=XLSX.utils.aoa_to_sheet([[...api.headersFor('cyber'),'Sort order','Icon'],[...quiz(),42,'lock']]);
   let result=api.parseWorkbook(wb,'cyber',XLSX);assert.deepEqual(result.errors,[]);

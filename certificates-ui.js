@@ -210,7 +210,7 @@
         finally{writing=false;file.disabled=false;actions.querySelectorAll('button').forEach(b=>{if(b!==save)b.disabled=false;});}
       }
     }
-    $('certTemplate').addEventListener('click',()=>window.HacknFixExcel.download(api.template(subject),'hacknfix-'+subject+'-certificate-marks-template.xlsx'));
+    $('certTemplate').addEventListener('click',()=>window.HacknFixExcel.download(api.template(subject),'gmit-'+subject+'-certificate-marks-template.xlsx'));
     $('certAdd').addEventListener('click',()=>edit());$('certUpload').addEventListener('click',upload);$('certRefresh').addEventListener('click',()=>enter(subject));$('certSearch').addEventListener('input',render);
     $('certSelectAll').addEventListener('change',()=>{const checked=$('certSelectAll').checked;for(const r of filtered()){if(checked)selected.add(r.id);else selected.delete(r.id);}render();});
     $('certCancelBatch').addEventListener('click',()=>{cancelled=true;});
@@ -227,7 +227,7 @@
           XLSX.CFB.utils.cfb_add(archive,pdf.filename(rows[i]),data);await new Promise(resolve=>setTimeout(resolve,0));
         }
         if(cancelled||batchVersion!==version)throw new Error('Generation cancelled. No ZIP was downloaded.');
-        pdf.download(new Blob([XLSX.CFB.write(archive,{type:'array',fileType:'zip'})],{type:'application/zip'}),'hacknfix-'+batchSubject+'-certificates.zip');status('Downloaded '+rows.length+' individual certificate PDFs in one ZIP.');
+        pdf.download(new Blob([XLSX.CFB.write(archive,{type:'array',fileType:'zip'})],{type:'application/zip'}),'gmit-'+batchSubject+'-certificates.zip');status('Downloaded '+rows.length+' individual certificate PDFs in one ZIP.');
       }catch(e){if(batchVersion===version)status(e.message,true);}finally{busy=false;$('certCancelBatch').classList.add('hidden');render();}
     });
     async function fromResult(data){

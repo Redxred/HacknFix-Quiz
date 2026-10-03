@@ -3,33 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HacknFix — আপনি কতটা সাইবার সচেতন?</title>
+<title>GM IT Academy — আপনি কতটা সাইবার সচেতন?</title>
 <meta name="description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
 
-<!-- ============================================================
-     Link preview for WhatsApp, Messenger, Facebook, Telegram…
-     These MUST be absolute URLs - a relative path shows no image.
-     If you move to another domain, change the three URLs below
-     and re-share the link.
-     ============================================================ -->
-<link rel="canonical" href="https://hackn-fix-quiz.vercel.app/">
+<!-- Link previews use the current host so sharing follows the deployed site. -->
 <meta property="og:type"        content="website">
-<meta property="og:site_name"   content="HacknFix">
-<meta property="og:url"         content="https://hackn-fix-quiz.vercel.app/">
-<meta property="og:title"       content="আপনি কতটা সাইবার সচেতন? — HacknFix">
+<meta property="og:site_name"   content="GM IT Academy">
+<meta property="og:title"       content="আপনি কতটা সাইবার সচেতন? — GM IT Academy">
 <meta property="og:description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
-<meta property="og:image"       content="https://hackn-fix-quiz.vercel.app/og-image.png">
+<meta property="og:image"       content="og-image.png">
 <meta property="og:image:type"  content="image/png">
 <meta property="og:image:width"  content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt"   content="HacknFix — আপনি কতটা সাইবার সচেতন?">
+<meta property="og:image:alt"   content="GM IT Academy — আপনি কতটা সাইবার সচেতন?">
 <meta property="og:locale"      content="bn_BD">
 <meta property="og:locale:alternate" content="en_US">
 
 <meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="আপনি কতটা সাইবার সচেতন? — HacknFix">
+<meta name="twitter:title"       content="আপনি কতটা সাইবার সচেতন? — GM IT Academy">
 <meta name="twitter:description" content="ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপের প্রতারণা চিনতে আপনি কতটা প্রস্তুত? ১০টি সহজ প্রশ্নে যাচাই করুন।">
-<meta name="twitter:image"       content="https://hackn-fix-quiz.vercel.app/og-image.png">
+<meta name="twitter:image"       content="og-image.png">
 
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -199,20 +192,7 @@
     transition:border-color .15s ease, background .15s ease;
   }
   .option:hover{border-color:var(--primary);}
-  .option.correct{
-    border-color:var(--accent);background:var(--success-bg);
-  }
-  .option.incorrect{
-    border-color:var(--danger);background:var(--danger-bg);
-  }
   .option[disabled]{cursor:default;}
-
-  .explain{
-    margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);
-    background:var(--bg-soft);border:1px solid var(--border);
-    font-size:0.92rem;line-height:1.6;color:var(--text);
-  }
-  .explain strong{color:var(--primary-strong);}
 
   .next-row{margin-top:18px;}
 
@@ -283,21 +263,6 @@
     from{opacity:0;transform:translateX(-16px);}
     to{opacity:1;transform:none;}
   }
-  @keyframes expandDown{
-    from{opacity:0;transform:translateY(-8px);max-height:0;}
-    to{opacity:1;transform:none;max-height:420px;}
-  }
-  @keyframes shake{
-    0%,100%{transform:translateX(0);}
-    20%{transform:translateX(-7px);}
-    40%{transform:translateX(6px);}
-    60%{transform:translateX(-4px);}
-    80%{transform:translateX(2px);}
-  }
-  @keyframes correctPulse{
-    0%{box-shadow:0 0 0 0 rgba(47,158,110,.45);}
-    100%{box-shadow:0 0 0 14px rgba(47,158,110,0);}
-  }
   @keyframes livePulse{
     0%{transform:scale(1);opacity:1;}
     50%{transform:scale(1.55);opacity:.35;}
@@ -340,13 +305,8 @@
     animation-delay:calc(.08s * var(--i, 0) + .1s);
   }
   .option:not([disabled]):hover{transform:translateX(3px);}
-  .option.correct{animation:correctPulse .7s ease-out forwards;}
-  .option.incorrect{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both;}
-
-  /* dim the options you didn't pick once the answer is locked in */
-  .option[disabled]:not(.correct):not(.incorrect){opacity:.5;}
-
-  .explain{animation:expandDown .4s ease-out both;overflow:hidden;}
+  /* Keep the selected answer visible without revealing whether it is right. */
+  .option[disabled]:not(.selected){opacity:.5;}
   .next-row{animation:fadeUp .35s ease-out .1s both;}
 
   /* --- progress bar gets a travelling highlight --- */
@@ -576,44 +536,19 @@
     transition:opacity .35s ease, visibility .35s ease;
   }
   .splash.fade-out{opacity:0;visibility:hidden;pointer-events:none;}
-  .splash-icon{
-    position:relative;
-    width:60px;height:60px;border-radius:999px;background:var(--chip-bg);
-    display:flex;align-items:center;justify-content:center;color:var(--primary-strong);
+  .splash-logo{
+    width:min(264px,72vw);min-height:108px;padding:20px 24px;border-radius:22px;
+    display:grid;place-items:center;background:linear-gradient(135deg,#1b2653,#344b82);
+    box-shadow:0 14px 34px #1b26533d;
     animation:splashIconIn .6s cubic-bezier(.22,1.2,.36,1) both;
   }
-  .splash-icon svg{width:30px;height:30px;}
-
-  /* the shield draws itself, then the tick lands inside it */
-  .splash-icon .shield{
-    stroke-dasharray:80;stroke-dashoffset:80;
-    animation:drawLine 1s ease-out .2s forwards;
-  }
-  .splash-icon .tick{
-    stroke-dasharray:14;stroke-dashoffset:14;
-    animation:drawLine .45s ease-out 1.05s forwards;
-  }
-
-  /* two rings breathing outward behind the badge */
-  .splash-icon::before,
-  .splash-icon::after{
-    content:"";position:absolute;inset:0;border-radius:999px;
-    border:2px solid var(--primary);
-    animation:splashRing 2.3s ease-out infinite;
-  }
-  .splash-icon::after{animation-delay:1.15s;}
+  .splash-logo img{display:block;width:100%;max-width:216px;height:auto;}
 
   .splash-brand{
     font-family:'Baloo Da 2',sans-serif;font-weight:700;font-size:1.15rem;
     color:var(--primary-strong);
     animation:fadeUp .5s ease-out .5s both;
   }
-  .splash-tag{
-    font-size:0.76rem;color:var(--muted);letter-spacing:.04em;
-    margin-top:-6px;
-    animation:fadeUp .5s ease-out .68s both;
-  }
-
   /* a real progress bar - it tracks actual loading, not a fake timer */
   .splash-bar{
     width:132px;height:4px;border-radius:99px;background:var(--border);
@@ -632,11 +567,6 @@
   @keyframes splashIconIn{
     0%{opacity:0;transform:scale(.5) rotate(-12deg);}
     100%{opacity:1;transform:none;}
-  }
-  @keyframes drawLine{ to{ stroke-dashoffset:0; } }
-  @keyframes splashRing{
-    0%{transform:scale(1);opacity:.55;}
-    100%{transform:scale(1.85);opacity:0;}
   }
 
   /* ============================================================
@@ -793,6 +723,45 @@
     display:flex;align-items:center;gap:12px;flex-wrap:wrap;
     padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border);
   }
+  #screen-exam .exam-bar{position:sticky;top:8px;z-index:8;box-shadow:0 8px 20px #101a3b18;}
+  .exam-focus{
+    padding:20px;border:1px solid var(--border);border-radius:var(--radius-lg);
+    background:var(--bg-soft);margin-top:18px;
+  }
+  .exam-focus-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;}
+  .exam-focus .q-marks{margin:0;}
+  .exam-focus .option,.exam-focus .exam-ta{background:var(--card);}
+  .review-toggle{width:auto;padding:8px 12px;font-size:.8rem;white-space:nowrap;}
+  .review-toggle.is-marked{border-color:var(--review-border);background:var(--review-bg);color:var(--review-text);}
+  #exNextRow{position:sticky;bottom:0;z-index:5;padding:12px 0 0;background:var(--card);}
+  .exam-stage-intro{text-align:center;padding:28px 12px 12px;}
+  .exam-stage-kicker{font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--primary-strong);}
+  .exam-stage-intro h2,.exam-review h2{font-size:1.5rem;line-height:1.3;margin:8px 0 10px;}
+  .exam-stage-intro p,.exam-review-note{color:var(--muted);line-height:1.6;margin:0 0 18px;}
+  .exam-stage-count{display:inline-flex;border-radius:999px;background:var(--chip-bg);padding:7px 13px;font-weight:700;margin:0 0 22px;}
+  .exam-review-head{margin:0 0 18px;}
+  .exam-review-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 20px;}
+  .exam-review-stat{padding:13px 10px;border:1px solid var(--border);border-radius:12px;background:var(--bg-soft);text-align:center;}
+  .exam-review-stat strong{display:block;font-size:1.35rem;line-height:1.2;}
+  .exam-review-stat span{font-size:.76rem;color:var(--muted);}
+  .exam-review-section{border:1px solid var(--border);border-radius:14px;padding:16px;margin:12px 0;}
+  .exam-review-section h3{font-size:1rem;margin:0 0 4px;}
+  .exam-review-section p{font-size:.82rem;color:var(--muted);margin:0 0 11px;}
+  .exam-review-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(154px,1fr));gap:8px;}
+  .exam-review-item{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:64px;text-align:left;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:var(--bg-soft);color:var(--text);font-family:inherit;font-size:.83rem;font-weight:600;}
+  .exam-review-item small{font-size:.72rem;line-height:1.3;font-weight:500;overflow-wrap:anywhere;}
+  button.exam-review-item{cursor:pointer;}
+  .exam-review-item.is-unanswered{border-color:var(--review-border);background:var(--unanswered-bg);}
+  .exam-review-item.is-marked{border-color:var(--review-border);background:var(--review-bg);}
+  .exam-review-item.is-locked{opacity:.7;}
+  .exam-review-actions{display:flex;gap:10px;margin-top:20px;}
+  .exam-review-actions .btn{flex:1;}
+  @media(max-width:600px){
+    #screen-exam .exam-bar{top:0;}
+    .exam-focus{padding:15px;margin-top:14px;}
+    .exam-review-items{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .exam-review-actions{flex-direction:column;}
+  }
   .sec-pill{
     font-size:.74rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
     padding:5px 11px;border-radius:999px;background:var(--chip-bg);color:var(--muted);
@@ -832,21 +801,20 @@
   .mcq-timer.warn i{background:#D97706;}
   .mcq-timer.danger i{background:var(--danger);transition:width 1s linear;}
 
-  /* The quiz reveals the answer the moment you tap, so it only ever
-     styles .correct / .incorrect. An exam reveals nothing, so a picked
-     option needs its own neutral state. */
+  /* Both the quiz and exam use a neutral selected state. */
   .option.selected{
     border-color:var(--primary);
     background:var(--success-bg);
     box-shadow:inset 0 0 0 1px var(--primary);
     font-weight:600;
   }
+  #qOptions .option.selected{background:var(--chip-bg);}
   .option.selected::after{
     content:"";position:absolute;right:14px;top:50%;
     width:9px;height:9px;border-radius:50%;background:var(--primary);
     transform:translateY(-50%);
   }
-  #exOptions .option{position:relative;padding-right:36px;}
+  #exOptions .option,#qOptions .option{position:relative;padding-right:36px;}
 
   .exam-ta{
     width:100%;min-height:200px;resize:vertical;font:inherit;font-size:.95rem;
@@ -941,23 +909,20 @@
     }
   }
 </style>
-<link rel="stylesheet" href="portal.css">
-<link rel="stylesheet" href="gmit-theme.css?v=1">
+<link rel="stylesheet" href="portal.css?v=exam-review-1">
+<link rel="stylesheet" href="gmit-theme.css?v=exam-review-1">
 </head>
 <body data-lang="bn">
 <div id="splash" class="splash">
-  <div class="splash-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="shield" d="M12 3l7 3v5c0 4.8-3 8.6-7 10-4-1.4-7-5.2-7-10V6l7-3z"/><path class="tick" d="M9.5 12l1.8 1.8L14.8 10"/></svg>
-  </div>
-  <div class="splash-brand" data-t="brand">HacknFix</div>
-  <div class="splash-tag" id="splashTag">সাইবার সচেতনতা যাচাই</div>
+  <div class="splash-logo"><img src="gmit-logo-white.png" width="216" height="86" alt="GM IT Academy"></div>
+  <div class="splash-brand" data-t="brand">GM IT Academy</div>
   <div class="splash-bar"><i id="splashBar"></i></div>
   <div class="splash-status" id="splashStatus"></div>
 </div>
 <div class="topbar">
   <div class="brand">
     <span class="gmit-mark"><img src="gmit-logo-white.png" width="110" height="44" alt="GM IT Academy"></span>
-    <span class="brand-product" data-t="brand">HacknFix</span>
+    <span class="brand-product" data-t="brand">GM IT Academy</span>
   </div>
   <div class="controls">
     <button class="icon-btn" id="fbOpenBtn" type="button" aria-label="Feedback" title="Feedback">
@@ -1101,16 +1066,18 @@
       </span>
     </div>
 
+    <div id="examQuestionStage">
     <div class="progress-row">
       <div class="progress-track"><div class="progress-fill" id="exProgress" style="width:0%"></div></div>
       <div class="progress-label"><span id="exNum">1</span>/<span id="exTotal">1</span></div>
     </div>
 
     <div class="mcq-timer hidden" id="mcqTimer"><i id="mcqTimerFill"></i></div>
-    <div class="exam-tools"><span id="examAnswered" aria-live="polite"></span><button class="btn btn-ghost btn-sm" id="toggleQuestionMap" type="button" aria-expanded="false" aria-controls="questionMap" data-t="questionMapLabel">প্রশ্ন তালিকা</button></div>
+    <div class="exam-tools"><span id="examAnswered" aria-live="polite"></span><div class="exam-tool-actions"><button class="btn btn-ghost btn-sm hidden" id="openExamReview" type="button" data-t="reviewPaperBtn">খাতা পর্যালোচনা</button><button class="btn btn-ghost btn-sm" id="toggleQuestionMap" type="button" aria-expanded="false" aria-controls="questionMap" data-t="questionMapLabel">প্রশ্ন তালিকা</button></div></div>
     <nav id="questionMap" class="question-map hidden" aria-label="Exam questions"></nav>
 
-    <div class="q-marks" id="exMarks">1 mark</div>
+    <div class="exam-focus">
+    <div class="exam-focus-top"><div class="q-marks" id="exMarks">1 mark</div><button class="btn btn-ghost review-toggle hidden" id="exReviewLater" type="button" aria-pressed="false"></button></div>
     <div class="q-text" id="exPrompt"></div>
     <p class="q-hint hidden" id="exHint"></p>
 
@@ -1123,11 +1090,25 @@
         <span id="exWordCount"></span>
       </div>
     </div>
+    </div>
 
     <div class="next-row" id="exNextRow" style="display:flex;gap:10px;">
       <button class="btn btn-ghost hidden" id="exPrevBtn" type="button" data-t="prevBtn" style="flex:1;">আগের প্রশ্ন</button>
       <button class="btn btn-primary" id="exNextBtn" type="button" data-t="nextBtn" style="flex:2;">পরবর্তী প্রশ্ন</button>
     </div>
+    </div>
+    <section id="examTransition" class="exam-stage-intro hidden" aria-labelledby="examTransitionTitle">
+      <div class="exam-stage-kicker" id="examTransitionKicker"></div>
+      <h2 id="examTransitionTitle" tabindex="-1"></h2><p id="examTransitionText"></p>
+      <div class="exam-stage-count" id="examTransitionCount"></div>
+      <button class="btn btn-primary" id="examTransitionContinue" type="button"></button>
+    </section>
+    <section id="examReview" class="exam-review hidden" aria-labelledby="examReviewTitle">
+      <div class="exam-review-head"><div class="exam-stage-kicker" data-t="reviewKicker">জমা দেওয়ার আগে</div><h2 id="examReviewTitle" data-t="reviewTitle" tabindex="-1">আপনার খাতা পর্যালোচনা করুন</h2><p class="exam-review-note" data-t="reviewNote">খালি ও পরে দেখার জন্য চিহ্নিত প্রশ্নগুলো দেখুন।</p></div>
+      <div class="exam-review-summary" id="examReviewSummary"></div>
+      <div id="examReviewSections"></div>
+      <div class="exam-review-actions"><button class="btn btn-ghost" id="examReviewBack" type="button" data-t="backToQuestions">প্রশ্নে ফিরুন</button><button class="btn btn-primary" id="examReviewSubmit" type="button" data-t="examSubmitBtn">খাতা জমা দিন</button></div>
+    </section>
   </section>
 
   <!-- SCREEN 6: EXAM SUBMITTED -->
@@ -1221,7 +1202,6 @@
     <div class="q-text" id="qText">প্রশ্ন লোড হচ্ছে...</div>
     <div class="options" id="qOptions"></div>
     <div class="timeout-note hidden" id="timeoutNote"></div>
-    <div class="explain hidden" id="qExplain"></div>
     <div class="next-row hidden" id="nextRow">
       <button class="btn btn-primary" id="nextBtn" type="button" data-t="nextBtn">পরবর্তী প্রশ্ন</button>
     </div>
@@ -1280,7 +1260,7 @@
   // ---------- i18n ----------
   const UI = {
     bn:{
-      brand:"HacknFix",
+      brand:"GM IT Academy",
       welcomeTitle:"আপনি কতটা সাইবার সচেতন?",
       welcomeSub:"ফেসবুক, আইএমও, বিকাশ আর ব্যাংক অ্যাপ ব্যবহার করেন? দেখুন প্রতারণা থেকে নিজেকে বাঁচাতে আপনি কতটা প্রস্তুত — মাত্র ১০টি সহজ প্রশ্ন।",
       chip1:"ফেসবুক", chip2:"আইএমও", chip3:"বিকাশ", chip4:"ব্যাংক অ্যাপ", chip5:"পাবলিক ওয়াইফাই",
@@ -1291,7 +1271,7 @@
       startBtn:"কুইজ শুরু করুন",
       skipBtn:"তথ্য ছাড়াই কুইজ শুরু করুন",
       nextBtn:"পরবর্তী প্রশ্ন",
-      finishBtn:"ফলাফল দেখুন",
+      finishBtn:"জমা দিন ও ফলাফল দেখুন",
       retakeBtn:"আবার দিন",
       shareBtn:"শেয়ার করুন",
       boardTitle:"লিডারবোর্ড",
@@ -1302,9 +1282,8 @@
       offlineNote:"সার্ভারে সংযোগ করা যায়নি। এই স্কোর শুধু এই ডিভাইসে সংরক্ষিত আছে, সবার লিডারবোর্ডে যোগ হয়নি।",
       closedDefault:"কুইজটি এই মুহূর্তে বন্ধ আছে। পরে আবার চেষ্টা করুন।",
       setupNote:"ব্যাকএন্ড এখনো যুক্ত হয়নি — config.js ফাইলে আপনার Supabase URL ও anon key বসান। ততক্ষণ কুইজটি অফলাইন প্রশ্ন দিয়ে চলছে।",
-      splashTag:"সাইবার সচেতনতা যাচাই",
       timeUp:"সময় শেষ! ⏰",
-      timeUpSub:"এই প্রশ্নের সঠিক উত্তরটি দেখুন।",
+      timeUpSub:"পরের প্রশ্নে যান।",
       timeTaken:(s)=>`মোট সময় লেগেছে ${fmtTime(s, 'bn')}`,
       loadStart:"শুরু হচ্ছে...",
       loadQuestions:"প্রশ্ন আনা হচ্ছে...",
@@ -1322,11 +1301,10 @@
         '015':'টেলিটক', '016':'এয়ারটেল', '018':'রবি'
       },
       youTag:"(আপনি)",
-      correctWord:"সঠিক", wrongWord:"ভুল",
       scoreOutOf:(s,t)=>`${bnNum(t)}টির মধ্যে ${bnNum(s)}টি সঠিক`,
       needName:"অনুগ্রহ করে আপনার নাম লিখুন।",
       needPhone:"অনুগ্রহ করে সঠিক মোবাইল নম্বর দিন।",
-      shareText:(name,score,total,level)=>`আমি "HacknFix" কুইজ দিয়েছি এবং ${total}টির মধ্যে ${score}টি সঠিক উত্তর দিয়েছি — লেভেল: ${level}! আপনিও নিজের সাইবার সচেতনতা যাচাই করুন।`,
+      shareText:(name,score,total,level)=>`আমি "GM IT Academy" কুইজ দিয়েছি এবং ${total}টির মধ্যে ${score}টি সঠিক উত্তর দিয়েছি — লেভেল: ${level}! আপনিও নিজের সাইবার সচেতনতা যাচাই করুন।`,
       copied:"টেক্সট কপি হয়েছে!",
       // ---- feedback ----
       fbPromptTitle:"কুইজটি কেমন লাগলো?",
@@ -1358,7 +1336,7 @@
       ]
     },
     en:{
-      brand:"HacknFix",
+      brand:"GM IT Academy",
       welcomeTitle:"How cyber aware are you?",
       welcomeSub:"You use Facebook, IMO, bKash and bank apps every day. See how ready you are to spot a scam — just 10 quick questions.",
       chip1:"Facebook", chip2:"IMO", chip3:"bKash", chip4:"Bank apps", chip5:"Public wifi",
@@ -1369,7 +1347,7 @@
       startBtn:"Start the quiz",
       skipBtn:"Start without giving details",
       nextBtn:"Next question",
-      finishBtn:"See result",
+      finishBtn:"Submit and see result",
       retakeBtn:"Retake",
       shareBtn:"Share",
       boardTitle:"Leaderboard",
@@ -1380,9 +1358,8 @@
       offlineNote:"The server couldn't be reached. This score is saved only on this device and has not been added to the shared leaderboard.",
       closedDefault:"The quiz is closed right now. Please check back later.",
       setupNote:"Backend not connected yet — put your Supabase URL and anon key in config.js. Until then the quiz runs on the offline questions.",
-      splashTag:"Check your cyber awareness",
       timeUp:"Time's up! ⏰",
-      timeUpSub:"Here's the correct answer for this one.",
+      timeUpSub:"Move to the next question.",
       timeTaken:(s)=>`Finished in ${fmtTime(s, 'en')}`,
       loadStart:"Starting up...",
       loadQuestions:"Fetching questions...",
@@ -1400,11 +1377,10 @@
         '015':'Teletalk', '016':'Airtel', '018':'Robi'
       },
       youTag:"(You)",
-      correctWord:"Correct", wrongWord:"Not quite",
       scoreOutOf:(s,t)=>`${s} out of ${t} correct`,
       needName:"Please enter your name.",
       needPhone:"Please enter a valid phone number.",
-      shareText:(name,score,total,level)=>`I took the "HacknFix" quiz and got ${score}/${total} — level: ${level}! Check your own cyber awareness too.`,
+      shareText:(name,score,total,level)=>`I took the "GM IT Academy" quiz and got ${score}/${total} — level: ${level}! Check your own cyber awareness too.`,
       copied:"Copied to clipboard!",
       // ---- feedback ----
       fbPromptTitle:"How was the quiz?",
@@ -1638,7 +1614,6 @@
   let tickTimer = null;     // per-question countdown
   let timeLeft = 0;
   let quizStartedAt = 0;    // for the total-time figure on the result
-  let timedOut = false;
   let finalDuration = null; // seconds, frozen when the quiz finishes
 
   const sb = window.HacknFix && window.HacknFix.client;
@@ -1670,13 +1645,13 @@
     errPhone:"১১ সংখ্যার সঠিক নম্বর দিন",
     errFix:"লাল দাগ দেওয়া ঘরগুলো ঠিক করুন",
     errAgree:"নিয়মে সম্মতি দিন",
-    errBlank:"উত্তর লিখে তারপর এগোন",
 
     rulesTitle:"পরীক্ষার নিয়ম",
     rulesAgree:"আমি নিয়মগুলো পড়েছি এবং মেনে চলতে সম্মত আছি।",
     ruleMcqTime:"প্রতিটি এমসিকিউ প্রশ্নে {n} সেকেন্ড। সময় শেষ হলে নিজে থেকেই পরের প্রশ্নে চলে যাবে।",
     prevBtn:"আগের প্রশ্ন",
     ruleNoBack:"এমসিকিউ প্রশ্নে একবার পেরিয়ে গেলে আর ফিরে যাওয়া যাবে না। লিখিত ও ব্যবহারিক অংশে ফিরে গিয়ে উত্তর বদলানো যাবে।",
+    ruleReview:"লিখিত ও ব্যবহারিক প্রশ্ন খালি রেখে এগোতে পারেন। জমা দেওয়ার আগে খাতা পর্যালোচনা করে খালি বা চিহ্নিত প্রশ্নে ফিরে যেতে পারবেন।",
     ruleNoCopy:"কপি, কাট ও পেস্ট বন্ধ থাকবে।",
     ruleNoTab:"অন্য ট্যাব বা অ্যাপে গেলে তা রেকর্ড হবে।",
     ruleFullscreen:"পরীক্ষা ফুলস্ক্রিনে চলবে; বের হলে তা রেকর্ড হবে।",
@@ -1773,13 +1748,13 @@
     errPhone:"Enter a valid 11-digit number",
     errFix:"Fix the fields marked in red",
     errAgree:"Please agree to the rules",
-    errBlank:"Write an answer before moving on",
 
     rulesTitle:"Exam rules",
     rulesAgree:"I have read the rules and agree to follow them.",
     ruleMcqTime:"Each MCQ gives you {n} seconds. When it runs out the paper moves on by itself.",
     prevBtn:"Previous",
     ruleNoBack:"Once an MCQ has passed you cannot return to it. You can move back and forth freely within the written and practical sections.",
+    ruleReview:"You may leave written and practical questions blank, then revisit unanswered or marked questions from the review screen before submitting.",
     ruleNoCopy:"Copy, cut and paste are disabled.",
     ruleNoTab:"Switching to another tab or app is recorded.",
     ruleFullscreen:"The exam runs fullscreen; leaving it is recorded.",
@@ -1862,6 +1837,18 @@
     practiceComplete:'Practice complete',
     practiceReviewHint:'Review the sample answers below. Written and practical responses are for self-review, not graded.',
     questionMapLabel:'Question map', answeredLabel:'answered',
+    reviewKicker:'Before submission', reviewTitle:'Review your paper',
+    reviewNote:'Check unanswered and marked questions. Timed MCQs cannot be reopened after they pass.',
+    reviewPaperBtn:'Review paper', backToQuestions:'Back to questions',
+    questionItem:n=>`Question ${n}`,
+    answeredStatus:'Answered', unansweredStatus:'Unanswered', reviewStatus:'Review later', lockedStatus:'Locked',
+    markReviewBtn:'☆ Review later', clearReviewBtn:'★ Marked for review',
+    sectionIntroKicker:'Exam section', sectionIntroText:{
+      mcq:'Each MCQ has its own timer. Once you move on, you cannot return. Your overall exam clock is already running.',
+      written:'You can revise written answers before submission. Your overall exam clock keeps running.',
+      practical:'Describe your steps and commands clearly. You can revise practical answers before submission.'
+    },
+    sectionQuestionCount:n=>`${n} question${n===1?'':'s'}`, continueToSection:'Continue to section',
     yourAnswer:'Your answer', reviewAnswer:'Answer / marking points', noAnswer:'Not answered',
     secWritten:'Written / CQ', examUnavailable:'The exam is temporarily unavailable. Please contact your instructor, or try a practice paper.'
   });
@@ -1871,6 +1858,18 @@
     practiceComplete:'অনুশীলন শেষ',
     practiceReviewHint:'নিচের নমুনা উত্তর দেখে মিলিয়ে নিন। লিখিত ও ব্যবহারিক উত্তরে নম্বর দেওয়া হয়নি।',
     questionMapLabel:'প্রশ্ন তালিকা', answeredLabel:'টির উত্তর দেওয়া হয়েছে',
+    reviewKicker:'জমা দেওয়ার আগে', reviewTitle:'আপনার খাতা পর্যালোচনা করুন',
+    reviewNote:'খালি ও চিহ্নিত প্রশ্নগুলো দেখুন। সময় শেষ হওয়া এমসিকিউতে ফিরে যাওয়া যাবে না।',
+    reviewPaperBtn:'খাতা পর্যালোচনা', backToQuestions:'প্রশ্নে ফিরুন',
+    questionItem:n=>`প্রশ্ন ${bnNum(n)}`,
+    answeredStatus:'উত্তর দেওয়া', unansweredStatus:'উত্তর নেই', reviewStatus:'পরে দেখব', lockedStatus:'লক হয়েছে',
+    markReviewBtn:'☆ পরে দেখব', clearReviewBtn:'★ দেখার জন্য চিহ্নিত',
+    sectionIntroKicker:'পরীক্ষার অংশ', sectionIntroText:{
+      mcq:'প্রতিটি এমসিকিউতে আলাদা সময় আছে। এগিয়ে গেলে আর ফিরে আসতে পারবেন না। পরীক্ষার মূল ঘড়ি ইতিমধ্যে চলছে।',
+      written:'জমা দেওয়ার আগে লিখিত উত্তর বদলাতে পারবেন। পরীক্ষার মূল ঘড়ি চলতে থাকবে।',
+      practical:'ধাপ ও কমান্ডগুলো পরিষ্কারভাবে লিখুন। জমা দেওয়ার আগে ব্যবহারিক উত্তর বদলাতে পারবেন।'
+    },
+    sectionQuestionCount:n=>`${bnNum(n)}টি প্রশ্ন`, continueToSection:'এই অংশে যান',
     yourAnswer:'আপনার উত্তর', reviewAnswer:'উত্তর / মূল্যায়নের বিষয়', noAnswer:'উত্তর দেওয়া হয়নি',
     secWritten:'লিখিত / CQ', examUnavailable:'পরীক্ষাটি এখন চালু করা যাচ্ছে না। শিক্ষকের সঙ্গে যোগাযোগ করুন অথবা অনুশীলন করুন।'
   });
@@ -1950,7 +1949,6 @@
     updateNotes();
     // The live lines are built from strings, so they have to be rewritten
     // whenever the language flips.
-    if($('splashTag')) $('splashTag').textContent = UI[lang].splashTag;
     refreshName();
     refreshPhone();
     renderFbPrompt();
@@ -1960,7 +1958,11 @@
     if(typeof paintExamChrome === 'function'){
       paintExamChrome();
       paintStrikes();
-      if(!$('screen-exam').classList.contains('hidden')) renderExamQuestion(true);
+      if(!$('screen-exam').classList.contains('hidden')){
+        if(EXAM.view === 'transition') renderSectionTransition();
+        else if(EXAM.view === 'review') renderExamReview();
+        else renderExamQuestion(true);
+      }
     }
   }
   $('langBtn').addEventListener('click', ()=>{
@@ -2180,24 +2182,16 @@
     tickTimer = null;
   }
 
-  // Ran out of time: lock the question, show the right answer, move on.
+  // Ran out of time: lock the unanswered question and let the learner move on.
   function handleTimeout(){
     if(answered) return;
     answered = true;
-    timedOut = true;
-
-    const item = runQuestions[qIndex];
-    document.querySelectorAll('#qOptions .option').forEach((el, idx)=>{
-      el.disabled = true;
-      if(item.options[idx].correct) el.classList.add('correct');
-    });
+    document.querySelectorAll('#qOptions .option').forEach(el=>{ el.disabled = true; });
 
     const note = $('timeoutNote');
     note.classList.remove('hidden');
     note.textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
 
-    $('qExplain').innerHTML = `<strong>${UI[lang].wrongWord}.</strong> ${escapeHtml(item.explain[lang])}`;
-    $('qExplain').classList.remove('hidden');
     $('nextRow').classList.remove('hidden');
 
     const card = $('screen-quiz');
@@ -2214,11 +2208,7 @@
     document.querySelectorAll('#qOptions .option').forEach((el, i)=>{
       el.textContent = item.options[i][lang];
     });
-    if(answered){
-      const wrong = timedOut || !!document.querySelector('#qOptions .incorrect');
-      $('qExplain').innerHTML = `<strong>${wrong ? UI[lang].wrongWord : UI[lang].correctWord}.</strong> ${escapeHtml(item.explain[lang])}`;
-    }
-    if(timedOut) $('timeoutNote').textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
+    if(!$('timeoutNote').classList.contains('hidden')) $('timeoutNote').textContent = UI[lang].timeUp + ' ' + UI[lang].timeUpSub;
     $('nextBtn').textContent = qIndex === runQuestions.length-1 ? UI[lang].finishBtn : UI[lang].nextBtn;
   }
 
@@ -2247,13 +2237,10 @@
       optWrap.appendChild(btn);
     });
 
-    $('qExplain').classList.add('hidden');
-    $('qExplain').innerHTML = '';
     $('timeoutNote').classList.add('hidden');
     $('nextRow').classList.add('hidden');
     $('nextBtn').textContent = (qIndex === runQuestions.length-1) ? UI[lang].finishBtn : UI[lang].nextBtn;
 
-    timedOut = false;
     startTimer();
   }
 
@@ -2266,14 +2253,9 @@
     const opts = document.querySelectorAll('#qOptions .option');
     opts.forEach((el,idx)=>{
       el.disabled = true;
-      if(item.options[idx].correct) el.classList.add('correct');
-      else if(idx===i) el.classList.add('incorrect');
+      if(idx===i) el.classList.add('selected');
     });
     if(item.options[i].correct) score++;
-
-    const verdict = item.options[i].correct ? UI[lang].correctWord : UI[lang].wrongWord;
-    $('qExplain').innerHTML = `<strong>${verdict}.</strong> ${escapeHtml(item.explain[lang])}`;
-    $('qExplain').classList.remove('hidden');
     $('nextRow').classList.remove('hidden');
   }
 
@@ -2566,14 +2548,11 @@
       ? (lang==='bn' ? `${subjectInfo.bn} কুইজে আমার স্কোর ${score}/${total}। আপনিও চেষ্টা করুন!` : `I scored ${score}/${total} in the ${subjectInfo.en} quiz. Try it too!`)
       : UI[lang].shareText(user?user.name:'', score, total, level.name);
 
-    // Share the link too, otherwise WhatsApp/Messenger have nothing to
-    // build a preview card from. Read it from the canonical tag so this
-    // keeps working if the site moves to another domain.
-    const canonical = document.querySelector('link[rel="canonical"]');
-    const url = isSubjectQuiz ? location.origin + location.pathname + '?subject=' + quizSubject : (canonical && canonical.href) || (location.origin + location.pathname);
+    // Build the link from this deployment's address.
+    const url = location.origin + location.pathname + (isSubjectQuiz ? '?subject=' + quizSubject : '');
 
     if(navigator.share){
-      try{ await navigator.share({ title: 'HacknFix', text, url }); }catch(e){}
+      try{ await navigator.share({ title: 'GM IT Academy', text, url }); }catch(e){}
     } else {
       try{
         await navigator.clipboard.writeText(text + '\n' + url);
@@ -2936,7 +2915,7 @@
   // The bar tracks what is actually happening rather than counting down a
   // fixed timer, but it never disappears so fast that it just flickers.
   const splashStart = Date.now();
-  const SPLASH_MIN = 250;
+  const SPLASH_MIN = 1000;
   const SPLASH_MAX = 1800;    // do not hold the interface behind a slow API
   let splashDone = false;
 
@@ -2987,6 +2966,7 @@
 
   const EXAM = {
     attempt:null, token:null, questions:[], idx:0,
+    view:'question', pendingIndex:null, seenSections:new Set(),
     cfg:{ mcq_seconds:30, max_violations:3, require_fullscreen:true,
           block_copy:true, detect_tab_switch:true, end_on_exit:true },
     deadline:0,          // ms epoch, from the server
@@ -3006,10 +2986,12 @@
     if(!pool.length) return;
     stopMcqTimer(); stopExamClock();
     EXAM.questions = pool.map((q,i)=>({...JSON.parse(JSON.stringify(q)),
-      id:'practice-'+i, choice:null, text:''}));
+      id:'practice-'+i, choice:null, text:'', review:false}));
     EXAM.practice = true;
     EXAM.attempt = null; EXAM.token = null; EXAM.idx = 0;
     EXAM.done = false; EXAM.strikes = 0; EXAM.navigating = false;
+    EXAM.view = 'question'; EXAM.pendingIndex = null;
+    EXAM.seenSections = new Set([EXAM.questions[0].qtype]);
     EXAM.saveQueue = Promise.resolve();
     EXAM.cfg = {mcq_seconds:60,max_violations:3,require_fullscreen:false,
       block_copy:false,detect_tab_switch:false,end_on_exit:false};
@@ -3020,34 +3002,166 @@
     showScreen('screen-exam');
     startExamClock(); renderExamQuestion();
   }
+  function isExamAnswered(q){ return q.choice != null || !!(q.text || '').trim(); }
+  function reviewStorageKey(){ return EXAM.attempt ? 'hnf_exam_review_' + EXAM.attempt : null; }
+  function restoreReviewFlags(){
+    let ids = [];
+    try{ ids = JSON.parse(localStorage.getItem(reviewStorageKey()) || '[]'); }catch(e){}
+    const saved = new Set(Array.isArray(ids) ? ids : []);
+    EXAM.questions.forEach(q=>{ q.review = saved.has(q.id); });
+  }
+  function persistReviewFlags(){
+    const key = reviewStorageKey();
+    if(!key) return;
+    try{ localStorage.setItem(key, JSON.stringify(EXAM.questions.filter(q=>q.review).map(q=>q.id))); }catch(e){}
+  }
+  function examSectionName(type){
+    return UI[lang][{mcq:'secMcq',written:'secWritten',practical:'secPractical'}[type]] || type;
+  }
+  function examStatus(q){
+    const L = UI[lang];
+    const answer = isExamAnswered(q) ? L.answeredStatus : L.unansweredStatus;
+    return q.review ? L.reviewStatus + ' · ' + answer : answer;
+  }
+  function canVisitExamQuestion(i){
+    const q = EXAM.questions[i];
+    return !!q && (EXAM.practice || (q.qtype !== 'mcq' && currentQ()?.qtype !== 'mcq'));
+  }
+  function setExamView(view){
+    EXAM.view = view;
+    $('examQuestionStage').classList.toggle('hidden', view !== 'question');
+    $('examTransition').classList.toggle('hidden', view !== 'transition');
+    $('examReview').classList.toggle('hidden', view !== 'review');
+    window.scrollTo({top:0,behavior:'auto'});
+  }
   function updateExamOverview(){
-    const answeredCount = EXAM.questions.filter(q=>q.choice != null || (q.text || '').trim()).length;
+    const answeredCount = EXAM.questions.filter(isExamAnswered).length;
+    const reviewCount = EXAM.questions.filter(q=>q.review).length;
     const num = n=>lang === 'bn' ? bnNum(n) : n;
-    $('examAnswered').textContent = num(answeredCount) + ' / ' + num(EXAM.questions.length) + ' ' + UI[lang].answeredLabel;
-    $('questionMap').querySelectorAll('button').forEach((b,i)=>{
-      const q = EXAM.questions[i];
-      b.classList.toggle('answered',q.choice != null || !!(q.text || '').trim());
+    $('examAnswered').textContent = num(answeredCount) + ' / ' + num(EXAM.questions.length) + ' ' + UI[lang].answeredLabel +
+      (reviewCount ? ' · ' + num(reviewCount) + ' ' + UI[lang].reviewStatus : '');
+    $('questionMap').querySelectorAll('button[data-question-index]').forEach(b=>{
+      const i = Number(b.dataset.questionIndex), q = EXAM.questions[i];
+      b.classList.toggle('answered',isExamAnswered(q));
+      b.classList.toggle('unanswered',!isExamAnswered(q));
+      b.classList.toggle('marked',!!q.review);
+      b.setAttribute('aria-label',(i+1) + '. ' + examSectionName(q.qtype) + ' — ' + examStatus(q) +
+        (b.disabled ? ' — ' + UI[lang].lockedStatus : ''));
     });
   }
   function renderQuestionMap(){
     const host = $('questionMap');
     host.replaceChildren();
+    const legend = document.createElement('div');
+    legend.className = 'question-map-legend';
+    [['is-answered','answeredStatus'],['is-unanswered','unansweredStatus'],['is-review','reviewStatus']].forEach(([cls,key])=>{
+      const item = document.createElement('span'); item.className = cls;
+      const dot = document.createElement('i'); dot.setAttribute('aria-hidden','true');
+      item.append(dot,document.createTextNode(UI[lang][key])); legend.append(item);
+    });
+    host.append(legend);
+    const groups = new Map();
     EXAM.questions.forEach((q,i)=>{
+      if(!groups.has(q.qtype)){
+        const section = document.createElement('section'); section.className = 'question-map-section';
+        const title = document.createElement('h3'); title.textContent = examSectionName(q.qtype);
+        const grid = document.createElement('div'); grid.className = 'question-map-grid';
+        section.append(title,grid); host.append(section); groups.set(q.qtype,grid);
+      }
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = lang === 'bn' ? bnNum(i+1) : i+1;
+      b.dataset.questionIndex = i;
       b.classList.toggle('current',i===EXAM.idx);
-      b.setAttribute('aria-label',(i+1) + '. ' + q.qtype);
       if(i===EXAM.idx) b.setAttribute('aria-current','step');
-      // Live MCQs remain sequential; written answers can be revisited.
-      b.disabled = !EXAM.practice && (q.qtype==='mcq' || currentQ()?.qtype==='mcq');
-      b.addEventListener('click',async ()=>{
-        if(EXAM.navigating || EXAM.submitting || EXAM.done) return;
-        EXAM.navigating = true;
-        try{ flushText(); EXAM.idx=i; renderExamQuestion(); }
-        finally{ EXAM.navigating=false; }
-      });
-      host.append(b);
+      b.disabled = !canVisitExamQuestion(i);
+      b.classList.toggle('locked',b.disabled);
+      b.addEventListener('click',()=>navigateToExamQuestion(i));
+      groups.get(q.qtype).append(b);
     });
+    updateExamOverview();
+  }
+  function navigateToExamQuestion(i){
+    if(EXAM.navigating || EXAM.submitting || EXAM.done || !canVisitExamQuestion(i)) return;
+    EXAM.navigating = true;
+    try{
+      if(EXAM.view === 'question') flushText();
+      if(!EXAM.seenSections.has(EXAM.questions[i].qtype)){
+        showSectionTransition(i);
+      }else{
+        EXAM.idx = i;
+        renderExamQuestion();
+      }
+    }finally{ EXAM.navigating = false; }
+  }
+  function showSectionTransition(i){
+    EXAM.pendingIndex = i;
+    stopMcqTimer();
+    setExamView('transition');
+    renderSectionTransition();
+    $('examTransitionTitle').focus();
+  }
+  function renderSectionTransition(){
+    const q = EXAM.questions[EXAM.pendingIndex];
+    if(!q) return;
+    const L = UI[lang];
+    ['pillMcq','pillWritten','pillPractical'].forEach(id=>$(id).classList.remove('on'));
+    $({mcq:'pillMcq',written:'pillWritten',practical:'pillPractical'}[q.qtype]).classList.add('on');
+    $('examTransitionKicker').textContent = L.sectionIntroKicker;
+    $('examTransitionTitle').textContent = examSectionName(q.qtype);
+    $('examTransitionText').textContent = L.sectionIntroText[q.qtype];
+    $('examTransitionCount').textContent = L.sectionQuestionCount(EXAM.questions.filter(x=>x.qtype===q.qtype).length);
+    $('examTransitionContinue').textContent = L.continueToSection;
+  }
+  function showExamReview(){
+    if(EXAM.submitting || EXAM.done) return;
+    if(EXAM.view === 'question') flushText();
+    stopMcqTimer();
+    setExamView('review');
+    renderExamReview();
+    $('examReviewTitle').focus();
+  }
+  function renderExamReview(){
+    const L = UI[lang], number = n=>lang==='bn' ? bnNum(n) : n;
+    const answered = EXAM.questions.filter(isExamAnswered).length;
+    const marked = EXAM.questions.filter(q=>q.review).length;
+    const summary = $('examReviewSummary'); summary.replaceChildren();
+    [[answered,L.answeredStatus],[EXAM.questions.length-answered,L.unansweredStatus],[marked,L.reviewStatus]].forEach(([n,label])=>{
+      const card = document.createElement('div'); card.className = 'exam-review-stat';
+      const value = document.createElement('strong'); value.textContent = number(n);
+      const name = document.createElement('span'); name.textContent = label;
+      card.append(value,name); summary.append(card);
+    });
+    const host = $('examReviewSections'); host.replaceChildren();
+    const groups = new Map();
+    EXAM.questions.forEach((q,i)=>{
+      if(!groups.has(q.qtype)) groups.set(q.qtype,[]);
+      groups.get(q.qtype).push({q,i});
+    });
+    groups.forEach((items,type)=>{
+      const section = document.createElement('section'); section.className = 'exam-review-section';
+      const heading = document.createElement('h3'); heading.textContent = examSectionName(type);
+      const counts = document.createElement('p');
+      const done = items.filter(({q})=>isExamAnswered(q)).length;
+      const flags = items.filter(({q})=>q.review).length;
+      counts.textContent = number(done) + ' ' + L.answeredStatus + ' · ' + number(items.length-done) + ' ' + L.unansweredStatus +
+        (flags ? ' · ' + number(flags) + ' ' + L.reviewStatus : '');
+      const grid = document.createElement('div'); grid.className = 'exam-review-items';
+      items.forEach(({q,i})=>{
+        const canVisit = canVisitExamQuestion(i);
+        const item = document.createElement(canVisit ? 'button' : 'span');
+        item.className = 'exam-review-item';
+        if(canVisit){ item.type='button'; item.addEventListener('click',()=>navigateToExamQuestion(i)); }
+        item.classList.toggle('is-unanswered',!isExamAnswered(q));
+        item.classList.toggle('is-marked',!!q.review);
+        item.classList.toggle('is-locked',!canVisit);
+        const label = document.createElement('span'); label.textContent = L.questionItem(i+1);
+        const status = document.createElement('small');
+        status.textContent = canVisit ? examStatus(q) : examStatus(q) + ' · ' + L.lockedStatus;
+        item.append(label,status); grid.append(item);
+      });
+      section.append(heading,counts,grid); host.append(section);
+    });
+    $('examReviewBack').classList.toggle('hidden',!canVisitExamQuestion(EXAM.idx));
   }
   function renderPracticeReview(){
     const host = $('practiceReview');
@@ -3192,6 +3306,7 @@
     if(s.exam_rules) items.push(s.exam_rules);
     items.push(L.ruleMcqTime.replace('{n}', lang==='bn' ? bnNum(s.mcq_seconds||30) : (s.mcq_seconds||30)));
     items.push(L.ruleNoBack);
+    items.push(L.ruleReview);
     if(s.block_copy) items.push(L.ruleNoCopy);
 
     // Ending a paper for a rule the student was never shown would not be
@@ -3301,10 +3416,15 @@
         examToast(UI[lang].examResumed);
       }
 
+      restoreReviewFlags();
+      EXAM.view = 'question'; EXAM.pendingIndex = null;
+      EXAM.seenSections = new Set(data.resumed ? EXAM.questions.slice(0, EXAM.idx+1).map(q=>q.qtype) : []);
+
       showScreen('screen-exam');
       armAntiCheat();
       startExamClock();
-      renderExamQuestion();
+      if(data.resumed) renderExamQuestion();
+      else showSectionTransition(0);
     }catch(e){
       examToast(examError(e), true);
     }finally{
@@ -3322,6 +3442,7 @@
   function renderExamQuestion(translateOnly = false){
     const q = currentQ();
     if(!q) return;
+    if(!translateOnly) setExamView('question');
     const L = UI[lang];
     $('exAnswer').disabled=EXAM.submitting||EXAM.done;
     $('exNextBtn').disabled=EXAM.submitting||EXAM.done;
@@ -3355,7 +3476,14 @@
       countWords();
     }
 
-    $('exNextBtn').textContent = (EXAM.idx === total - 1) ? L.examSubmitBtn : L.nextBtn;
+    $('exNextBtn').textContent = (EXAM.idx === total - 1) ? L.reviewPaperBtn : L.nextBtn;
+    const canMark = EXAM.practice || !isMcq;
+    const reviewButton = $('exReviewLater');
+    reviewButton.classList.toggle('hidden',!canMark);
+    reviewButton.classList.toggle('is-marked',!!q.review);
+    reviewButton.setAttribute('aria-pressed',String(!!q.review));
+    reviewButton.textContent = q.review ? L.clearReviewBtn : L.markReviewBtn;
+    $('openExamReview').classList.toggle('hidden',!canMark || EXAM.idx === total - 1);
 
     // Going back is allowed inside the written and practical sections,
     // where you are meant to be able to revise an answer. It is never
@@ -3585,21 +3713,16 @@
       const q = currentQ();
       if(!q) return;
 
-      if(q.qtype !== 'mcq'){
-        // Make them put something down rather than skipping by accident -
-        // but never block an automatic move.
-        if(!auto && !($('exAnswer').value || '').trim()){
-          return examToast(UI[lang].errBlank, true);
-        }
-        flushText();
-      }
+      if(q.qtype !== 'mcq') flushText();
+      else stopMcqTimer();
 
       if(EXAM.idx >= EXAM.questions.length - 1){
         if(auto) return finishExam(true, 'timeout-last');
-        return confirmSubmit();
+        return showExamReview();
       }
-      EXAM.idx++;
-      renderExamQuestion();
+      const next = EXAM.idx + 1;
+      if(!EXAM.seenSections.has(EXAM.questions[next].qtype)) showSectionTransition(next);
+      else{ EXAM.idx = next; renderExamQuestion(); }
     }finally{ EXAM.navigating = false; }
   }
 
@@ -3665,6 +3788,7 @@
       });
       if(error) throw error;
       EXAM.done = true;
+      try{localStorage.removeItem(reviewStorageKey());}catch(e){}
       showExamResult(data, auto, reason);
     }catch(e){
       examToast(examError(e), true);
@@ -4026,6 +4150,25 @@
     const hidden = $('questionMap').classList.toggle('hidden');
     $('toggleQuestionMap').setAttribute('aria-expanded',String(!hidden));
   });
+  $('exReviewLater').addEventListener('click',()=>{
+    if(EXAM.submitting || EXAM.done || (!EXAM.practice && currentQ()?.qtype === 'mcq')) return;
+    const q = currentQ(); if(!q) return;
+    q.review = !q.review;
+    persistReviewFlags();
+    renderExamQuestion(true);
+  });
+  $('openExamReview').addEventListener('click',showExamReview);
+  $('examTransitionContinue').addEventListener('click',()=>{
+    if(EXAM.pendingIndex == null || EXAM.done || EXAM.submitting) return;
+    EXAM.idx = EXAM.pendingIndex;
+    EXAM.seenSections.add(currentQ().qtype);
+    EXAM.pendingIndex = null;
+    renderExamQuestion();
+  });
+  $('examReviewBack').addEventListener('click',()=>{
+    if(canVisitExamQuestion(EXAM.idx)) renderExamQuestion();
+  });
+  $('examReviewSubmit').addEventListener('click',confirmSubmit);
 
   // ---------- wiring ----------
   document.querySelectorAll('.subject-card[data-subject]').forEach(card=>card.addEventListener('click',()=>{

@@ -121,7 +121,7 @@ async function pageFor(bank,student=false) {
 }
 async function downloadTemplate(page,bank) {
   const [download]=await Promise.all([page.waitForEvent('download'),page.click(bank==='exam'?'#examQuestionTemplate':'#quizQuestionTemplate')]);
-  assert.match(download.suggestedFilename(),new RegExp('hacknfix-'+bank+'-questions-template.xlsx'));
+  assert.match(download.suggestedFilename(),new RegExp('gmit-'+bank+'-questions-template.xlsx'));
   return XLSX.read(fs.readFileSync(await download.path()),{type:'buffer'});
 }
 function fill(wb,rows) {
@@ -159,7 +159,8 @@ for(const bank of ['cyber','video','graphic','computer'])test(bank+': download, 
   try {
     await student.page.click('#skipBtn');assert.equal(await student.page.locator('#qText').innerText(),bank+' imported question');
     await student.page.locator('#qOptions button').filter({hasText:'Right'}).click();
-    assert.match(await student.page.locator('#screen-quiz').innerText(),/Imported explanation/);
+    assert.doesNotMatch(await student.page.locator('#screen-quiz').innerText(),/Imported explanation/);
+    assert.equal(await student.page.locator('#qOptions .selected').count(),1);
     assert.deepEqual(student.errors,[]);
   } finally {await student.page.close();}
 });
@@ -317,9 +318,9 @@ test('UAT final exam: browser registration, MCQ/written/practical, resume, submi
   let paperId;
   try{
     for(const [id,value] of Object.entries({exName:'UAT Exam Student',exId:'UAT-FULL',exBatch:'QA',exEmail:'qa@example.com',exPhone:'01700000000'}))await page.fill('#'+id,value);
-    await page.check('#exAgree');await page.click('#examStartBtn');await page.waitForSelector('#exOptions button');
-    await page.locator('#exOptions button').filter({hasText:'HTTPS'}).click();await page.click('#exNextBtn');
-    await page.fill('#exAnswer','UAT written answer\nবাংলা উত্তর');await page.click('#exNextBtn');
+    await page.check('#exAgree');await page.click('#examStartBtn');await page.click('#examTransitionContinue');await page.waitForSelector('#exOptions button');
+    await page.locator('#exOptions button').filter({hasText:'HTTPS'}).click();await page.click('#exNextBtn');await page.click('#examTransitionContinue');
+    await page.fill('#exAnswer','UAT written answer\nবাংলা উত্তর');await page.click('#exNextBtn');await page.click('#examTransitionContinue');
     await page.fill('#exAnswer','<form>UAT practical code</form>');
     await page.waitForFunction(()=>document.getElementById('exSaveState').classList.contains('saved'));
     paperId=(await db.query("select a.id from exam_attempts a join exam_students s on s.id=a.student where s.student_id='UAT-FULL'")).rows[0].id;
@@ -328,7 +329,7 @@ test('UAT final exam: browser registration, MCQ/written/practical, resume, submi
     for(const [id,value] of Object.entries({exName:'UAT Exam Student',exId:'UAT-FULL',exBatch:'QA',exEmail:'qa@example.com',exPhone:'01700000000'}))await page.fill('#'+id,value);
     await page.check('#exAgree');await page.click('#examStartBtn');await page.waitForSelector('#screen-exam:not(.hidden)');
     assert.equal(await page.inputValue('#exAnswer'),'<form>UAT practical code</form>');
-    await page.click('#exNextBtn');await page.locator('.warn-back .btn-primary').click();await page.waitForSelector('#screen-exam-done:not(.hidden)');
+    await page.click('#exNextBtn');await page.click('#examReviewSubmit');await page.locator('.warn-back .btn-primary').click();await page.waitForSelector('#screen-exam-done:not(.hidden)');
     assert.equal((await db.query('select status from exam_attempts where id=$1',[paperId])).rows[0].status,'submitted');
     assert.deepEqual(errors,[]);
   }finally{await page.close();}

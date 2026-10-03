@@ -1,10 +1,10 @@
-# HacknFix
+# GM IT Academy Exam Portal
 
-A bilingual (বাংলা / English) cyber-awareness quiz for everyday Bangladeshi
-internet users — Facebook, IMO, bKash, bank apps and public wifi scams.
+A bilingual (বাংলা / English) exam portal for Cyber Security, Video Editing,
+Graphic Design and Basic Computer students.
 
-Ten scenario questions, an explanation after every answer, and a shared
-leaderboard.
+Cyber Awareness includes scenario questions, a final results screen and a
+shared leaderboard.
 
 Visitors can rate the quiz and leave a comment in either language. The admin
 panel has a live dashboard — visitors, where they came from, what they browse
@@ -88,6 +88,13 @@ identifies each answer by student and attempt; selection survives filtering.
 **All results summary Excel** provides scores without the full papers. The CSV
 option exports only the rows currently loaded and visible.
 
+Each subject's admin **Results** page also has **Create GMIT PDF**. Choose all
+completed results or individual students, select the details to include, and
+download one paginated report with the GM IT Academy logo. The Final Exam
+Results page has the same builder. See the
+[sample report](examples/gmit-sample-results.pdf) and its
+[first-page preview](examples/gmit-sample-results.png); the sample uses fictional students.
+
 Final Exam opens on its own dashboard: all-time totals, current and expired
 attempts, saved-question progress, time remaining, marking queues, recent
 results and violation events, submission trends, score distribution, and
@@ -132,7 +139,7 @@ Run `npm install` and `npm test` for the local browser and database checks.
 
 ### Add questions with Excel
 
-Download [all five ready-made Excel templates](templates/hacknfix-excel-templates-v2.zip),
+Download [all five ready-made Excel templates](templates/gmit-excel-templates-v3.zip),
 or get the template for one subject from its admin question bank.
 
 In any subject’s admin **Questions** page, choose **Download Excel template**.

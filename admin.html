@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HacknFix Admin</title>
+<title>GM IT Academy Admin</title>
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <meta name="theme-color" content="#1B2653">
 <!-- no share tags here: the admin panel should never get a preview card -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="question-import.css?v=1">
 <link rel="stylesheet" href="certificates.css?v=1">
+<link rel="stylesheet" href="result-report.css?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -635,7 +636,7 @@
   <div class="login-card">
     <div class="brand">
       <span class="gmit-mark"><img src="gmit-logo-white.png" width="110" height="44" alt="GM IT Academy"></span>
-      <span>HacknFix</span><span class="tag">Admin</span>
+      <span>GM IT Academy</span><span class="tag">Admin</span>
     </div>
     <h1>Sign in</h1>
     <p class="sub">Manage Cyber Security, Video Editing, Graphic Design and Basic Computer from separate workspaces.</p>
@@ -659,7 +660,7 @@
   <div class="topbar">
     <div class="brand">
       <span class="gmit-mark"><img src="gmit-logo-white.png" width="110" height="44" alt="GM IT Academy"></span>
-      <span>HacknFix</span><span class="tag">Admin</span>
+      <span>GM IT Academy</span><span class="tag">Admin</span>
     </div>
     <div class="topbar-right">
       <span class="who" id="whoAmI"></span>
@@ -671,7 +672,7 @@
   <main>
     <section id="adminHome">
       <div class="portal-hero">
-        <p class="portal-kicker">HacknFix / Control center</p>
+        <p class="portal-kicker">GM IT Academy / Control center</p>
         <h1 class="portal-title">Every subject. One control center.</h1>
         <p class="portal-description">Choose a subject to manage its questions, participants and results.</p>
       </div>
@@ -685,7 +686,7 @@
     <section id="adminCyber" class="hidden">
       <div class="portal-hero">
         <button class="btn btn-ghost btn-sm subject-back" id="cyberBack" type="button">← All subjects</button>
-        <p class="portal-kicker">HacknFix / Cyber Security</p>
+        <p class="portal-kicker">GM IT Academy / Cyber Security</p>
         <h1 class="portal-title">Cyber Security</h1>
         <p class="portal-description">Choose the Awareness Quiz or Final Exam workspace.</p>
       </div>
@@ -869,6 +870,7 @@
           <input type="text" id="searchBox" placeholder="Search name, phone or email…" style="flex:1;min-width:200px;">
           <button class="btn btn-ghost" id="refreshBtn" type="button">Refresh</button>
           <button class="btn btn-primary" id="quizExcelAll" type="button">Download all Excel</button>
+          <button class="btn btn-ghost" id="quizResultsPdf" type="button">Create GMIT PDF</button>
           <button class="btn btn-ghost" id="csvBtn" type="button">Export visible CSV</button>
         </div>
         <div class="table-wrap">
@@ -956,8 +958,8 @@
           <div class="sub" style="margin:4px 0 0;">
             A countdown ring appears next to the progress bar. It turns amber in
             the last third and red for the final five seconds. When it hits zero
-            the question locks, the correct answer is revealed and no point is
-            scored. <strong>Set it to 0 to switch the timer off.</strong>
+            the question locks and no point is scored. Results appear after final
+            submission. <strong>Set it to 0 to switch the timer off.</strong>
           </div>
           <div class="timer-presets" id="timerPresets">
             <button class="btn btn-ghost btn-sm" type="button" data-sec="0">Off</button>
@@ -1130,6 +1132,7 @@
         </div>
         <div class="exam-summary-exports">
           <button class="btn btn-ghost btn-sm" id="examExcelAll" type="button" title="Download summary scores for every paper">All results summary Excel</button>
+          <button class="btn btn-primary btn-sm" id="examResultsPdf" type="button">Create GMIT PDF</button>
           <button class="btn btn-ghost btn-sm" id="exCsvBtn" type="button">Export visible CSV</button>
         </div>
         <div class="paper-export-tools">
@@ -1322,6 +1325,8 @@
 <script src="certificates-core.js?v=1"></script>
 <script src="certificates-pdf.js?v=1"></script>
 <script src="certificates-ui.js?v=1"></script>
+<script src="result-report-pdf.js?v=1"></script>
+<script src="result-report-ui.js?v=1"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
@@ -1381,7 +1386,7 @@
     const rows = await allResultRows(subjectTable('attempts'),'id,name,phone,email,score,total,duration_seconds,lang,created_at','created_at');
     if(!rows.length) return toast('No quiz results to download.',true);
     window.HacknFixExcel.download([{name:'Quiz results',headers:quizExcelHeaders,rows:rows.map(quizExcelRow)}],
-      'hacknfix-' + quizSubject() + '-quiz-all-' + excelDate() + '.xlsx');
+      'gmit-' + quizSubject() + '-quiz-all-' + excelDate() + '.xlsx');
     toast('Downloaded ' + rows.length + ' quiz results.');
   }
   async function downloadExamAll(){
@@ -1391,12 +1396,12 @@
     if(!rows.length) return toast('No exam results to download.',true);
     window.HacknFixExcel.download([{name:'Exam results',headers:examExcelHeaders,
       rows:rows.map(a=>examExcelRow(a,a.exam_students||{}))}],
-      'hacknfix-exam-all-' + excelDate() + '.xlsx');
+      'gmit-exam-all-' + excelDate() + '.xlsx');
     toast('Downloaded ' + rows.length + ' exam results.');
   }
   function downloadQuizOne(a){
     window.HacknFixExcel.download([{name:'Quiz result',headers:quizExcelHeaders,rows:[quizExcelRow(a)]}],
-      'hacknfix-quiz-' + excelSlug(a.name) + '-' + String(a.id||'').slice(0,8) + '.xlsx');
+      'gmit-quiz-' + excelSlug(a.name) + '-' + String(a.id||'').slice(0,8) + '.xlsx');
   }
   function readableExamPaper(reviews){
     const rows = [];
@@ -1491,7 +1496,7 @@
     const review = await fetchExamPaper(a.id);
     const {attempt,student} = review;
     window.HacknFixExcel.download(examPaperSheets([review],true),
-      'hacknfix-full-exam-paper-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
+      'gmit-full-exam-paper-' + excelSlug(student.student_id||student.name) + '-' + String(attempt.id).slice(0,8) + '.xlsx');
   }
 
   // 95 -> "1m 35s"
@@ -1595,6 +1600,13 @@
   const quizSubject = () => ['video','graphic','computer'].includes(workspace) ? workspace : 'cyber';
   const subjectTable = name => quizSubject() === 'cyber' ? name : 'subject_' + name;
   const subjectFilter = query => quizSubject() === 'cyber' ? query : query.eq('subject',quizSubject());
+  const resultReports=window.GMITResultUI.create({
+    loadQuiz:()=>allResultRows(subjectTable('attempts'),'id,name,phone,email,score,total,duration_seconds,lang,created_at','created_at'),
+    loadExam:()=>allResultRows('exam_attempts','id,status,started_at,submitted_at,mcq_score,mcq_total,written_score,written_total,practical_score,practical_total,exam_students(name,student_id,batch,email,phone)','started_at'),
+    getSubject:quizSubject,toast
+  });
+  $('quizResultsPdf').addEventListener('click',()=>resultReports.open('quiz'));
+  $('examResultsPdf').addEventListener('click',()=>resultReports.open('exam'));
   $('quizQuestionTemplate').addEventListener('click',()=>window.HacknFixQuestionImportUI.download(quizSubject()));
   $('examQuestionTemplate').addEventListener('click',()=>window.HacknFixQuestionImportUI.download('exam'));
   $('quizQuestionImport').addEventListener('click',()=>window.HacknFixQuestionImportUI.open({bank:quizSubject(),client:sb,onSaved:loadQuestions}));
@@ -2213,7 +2225,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hacknfix-results-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = 'gmit-results-' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     toast('Exported ' + rows.length + ' rows');
@@ -3021,7 +3033,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hacknfix-feedback-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = 'gmit-feedback-' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     toast('Exported ' + rows.length + ' rows');
@@ -3485,7 +3497,7 @@
         updateExamSelection('Loading papers: '+reviews.length+' / '+ids.length);
       }
       window.HacknFixExcel.download(examPaperSheets(reviews),
-        'hacknfix-full-papers-'+ids.length+'-'+excelDate()+'.xlsx');
+        'gmit-full-papers-'+ids.length+'-'+excelDate()+'.xlsx');
       toast('Downloaded '+ids.length+' full exam papers in one Excel workbook.');
     }catch(e){ toast('No file downloaded. '+(e.message||e)+'. Please retry.',true); }
     finally{ examSelectionBusy = false; updateExamSelection(); }
@@ -3876,7 +3888,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hacknfix-exam-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = 'gmit-exam-' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -122,7 +122,7 @@
     add(jpeg);add('\nendstream\nendobj\n');
     const content='q\n841.89 0 0 595.28 0 0 cm\n/Image Do\nQ\n';
     object(5,`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream`);
-    object(6,`<< /Title <${titleHex}> /Producer (HacknFix Certificates) >>`);
+    object(6,`<< /Title <${titleHex}> /Producer (GM IT Academy Certificates) >>`);
     const xref=size;add('xref\n0 7\n0000000000 65535 f \n');
     for(let i=1;i<=6;i++)add(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
     add(`trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF\n`);

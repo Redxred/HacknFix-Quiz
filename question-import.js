@@ -1,7 +1,7 @@
 /* Excel question templates and validation, shared by the admin, worker and tests. */
 (function(root) {
   'use strict';
-  const VERSION = 'hacknfix-questions-v2';
+  const VERSION = 'gmit-questions-v3';
   const MAX_ROWS = 500, MAX_BYTES = 5 * 1024 * 1024;
   const letters = ['A','B','C','D','E','F'];
   const banks = {cyber:'Cyber Security — Awareness Quiz',video:'Video Editing',graphic:'Graphic Design',computer:'Basic Computer',exam:'Cyber Security — Final Exam'};
@@ -38,7 +38,7 @@
       if(h==='Marks')return ['Optional','Whole number 1–100. Blank: MCQ = 1, written = 5, practical = 10.'];
       if(h==='Model answer / marking notes')return ['Required for written/practical','Enter the expected answer and marking criteria. Leave blank for MCQ. These notes are admin-only.'];
       if(h==='Hint')return ['Optional','A hint or instructions visible to the student during the exam.'];
-      if(h.startsWith('Explanation'))return ['Optional','Explanation shown after a quiz answer. A missing translation copies the other language.'];
+      if(h.startsWith('Explanation'))return ['Optional','Notes saved with the question for admins. A missing translation copies the other language.'];
       if(h==='Active')return ['Optional','Yes = available to students; No = hidden draft. Blank defaults to Yes.'];
       if(h==='Sort order')return ['Optional','Whole number 0–2147483647. Blank appends after the current bank. Controls bank ordering; student questions may be shuffled.'];
       return ['Optional','Quiz icon: '+icons.join(', ')+'. Blank defaults to alert.'];
@@ -63,7 +63,7 @@
         ['Written and practical','Fill Question and Model answer / marking notes. Leave options and Correct answer blank. Hint is optional and visible to students. Marking notes remain admin-only.']
       ] : [
         ['Languages','Fill English, Bangla, or both. If one language is blank, the other is used in both views. This copies text; it does not translate.'],
-        ['Explanations','Optional. Shown to students after answering. A missing translation uses the other language.'],
+        ['Explanations','Optional admin notes. These are not shown while a student takes the quiz. A missing translation uses the other language.'],
         ['প্রশ্ন ও উত্তর','Questions শিটে প্রতি সারিতে একটি প্রশ্ন লিখুন। সঠিক উত্তরের ঘরে A–F লিখুন। বাংলা বা ইংরেজি যেকোনো ভাষায় লেখা যাবে।']
       ])
     ];
@@ -88,7 +88,7 @@
   function parseWorkbook(book, bank, XLSX) {
     if(!banks[bank]) throw new Error('Unknown question bank.');
     const meta = book.Sheets.Template;
-    if(![VERSION,'hacknfix-questions-v1'].includes(meta?.A2?.v) || meta?.B2?.v !== bank)
+    if(![VERSION,'hacknfix-questions-v2','hacknfix-questions-v1'].includes(meta?.A2?.v) || meta?.B2?.v !== bank)
       throw new Error('This template belongs to another question bank or is missing its Template sheet. Download the template for '+banks[bank]+'.');
     const sheet = book.Sheets.Questions;
     if(!sheet) throw new Error('The Questions sheet is missing. Use the downloaded template.');

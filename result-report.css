@@ -1,0 +1,25 @@
+.report-back{z-index:75}
+.report-modal{max-width:760px}
+.report-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--border);padding-bottom:16px}
+.report-heading h2{font-size:1.5rem;margin:2px 0 0}
+.report-heading .sub{margin:3px 0 0}
+.report-eyebrow{font-size:.72rem;letter-spacing:.1em;font-weight:800;color:var(--primary)}
+.report-step{padding:17px 0;border-bottom:1px solid var(--border)}
+.report-step h3{font-size:1rem;margin:0 0 11px}
+.report-step .sub{margin:0 0 12px}
+.report-modes,.report-fields{display:flex;gap:10px 22px;flex-wrap:wrap}
+.report-modes label,.report-fields label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.9rem}
+.report-modes input,.report-fields input,.report-student input{width:17px;height:17px;accent-color:var(--primary);flex:none}
+.report-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.report-picker-bar{display:flex;align-items:center;gap:12px;margin-top:15px}
+.report-picker-bar input{flex:1;min-width:0}
+.report-picker-bar span{white-space:nowrap;color:var(--muted);font-size:.8rem}
+.report-picker-actions{display:flex;gap:8px;margin:9px 0}
+.report-students{max-height:205px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:4px 10px;background:var(--bg-soft)}
+.report-student{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--border);font-size:.86rem;cursor:pointer}
+.report-student:last-child{border:0}
+.report-student span{overflow-wrap:anywhere}
+#reportSelection,#reportProgress{font-size:.82rem;color:var(--muted)}
+#reportSelection{margin:11px 0 0}
+.report-actions{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:18px}
+@media(max-width:620px){.report-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.report-actions{align-items:stretch;flex-direction:column}.report-heading{align-items:center}}

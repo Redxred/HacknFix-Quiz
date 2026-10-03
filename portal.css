@@ -49,6 +49,7 @@ body[data-lang] .mode-card.is-exam .mode-ic { transform:rotate(6deg);box-shadow:
 body.exam-live { background-image:none; }
 body.exam-live .card { animation:none!important; }
 body.exam-live .option { animation:none!important;transition:background-color .12s,border-color .12s; }
+body.exam-live .q-text,body.exam-live .next-row,body.exam-live .progress-fill::after{animation:none!important;}
 .portal-note { padding:16px 20px;border:1px solid var(--border);border-radius:14px;color:var(--muted);font-size:.86rem;line-height:1.6; }
 .exam-dash-toolbar,.exam-control,.exam-panel-head { display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap; }
 .exam-dash-toolbar { margin:0 0 18px; }

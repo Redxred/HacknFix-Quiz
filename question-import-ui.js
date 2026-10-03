@@ -2,7 +2,7 @@
   'use strict';
   const api=window.HacknFixQuestionImport;
   function download(bank) {
-    window.HacknFixExcel.download(api.template(bank,window.HNFSubjects?.[bank]?.questions?.[0]),'hacknfix-'+bank+'-questions-template.xlsx');
+    window.HacknFixExcel.download(api.template(bank,window.HNFSubjects?.[bank]?.questions?.[0]),'gmit-'+bank+'-questions-template.xlsx');
   }
   function open({bank,client,onSaved}) {
     const table=bank==='exam'?'exam_questions':bank==='cyber'?'questions':'subject_questions';

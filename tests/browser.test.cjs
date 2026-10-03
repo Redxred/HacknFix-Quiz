@@ -5,12 +5,13 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const {execFileSync} = require('node:child_process');
+const {PDFDocument} = require('pdf-lib');
 let browser, server, base;
 before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','request.js','portal.css','gmit-theme.css','gmit-logo-white.png','portal-three-loader.js','vendor/portal-three.min.js','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
+    if (!['index.html','admin.html','config.js','request.js','portal.css','gmit-theme.css','gmit-logo-white.png','portal-three-loader.js','vendor/portal-three.min.js','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','result-report-pdf.js','result-report-ui.js','result-report.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
@@ -68,7 +69,7 @@ async function pageFor(options = {}) {
       exam_students:{name:`Exam student ${i}`,student_id:`STU-${i}`,batch:'A',email:`exam${i}@example.com`,phone:'01700000000'}
     })) : [];
     const subjectSettings = ['video','graphic','computer'].map(subject=>({subject,quiz_open:true,quiz_length:1,
-      show_leaderboard:true,timer_seconds:0,welcome_title_en:subject+' quiz',welcome_title_bn:subject+' quiz'}));
+      show_leaderboard:true,timer_seconds:options.quizTimer ?? 0,welcome_title_en:subject+' quiz',welcome_title_bn:subject+' quiz'}));
     const subjectQuestions = (options.emptySubjectBank ? [] : ['video','graphic','computer'].map(subject=>({id:subject+'-q1',subject,sort_order:1,is_active:true,
       icon:'alert',q_en:subject+' question',q_bn:subject+' প্রশ্ন',explain_en:'Good choice',explain_bn:'সঠিক উত্তর',
       options:[{en:'Correct',bn:'সঠিক',correct:true},{en:'Wrong',bn:'ভুল',correct:false}]})));
@@ -81,7 +82,7 @@ async function pageFor(options = {}) {
         const data = table === 'questions' ? (options.emptyCyberBank ? [] : [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
           options:[{bn:'সঠিক',en:'Correct',correct:true},{bn:'ভুল',en:'Wrong',correct:false}],
           explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}])
-          : table === 'settings' ? {quiz_open:true,quiz_length:1,timer_seconds:30}
+          : table === 'settings' ? {quiz_open:true,quiz_length:1,timer_seconds:options.quizTimer ?? 30}
           : table === 'exam_settings' ? settings
           : table === 'exam_questions' ? (window.mockBank ||= [])
           : table === 'subject_settings' ? subjectSettings
@@ -288,13 +289,39 @@ test('quiz language switch preserves answer, timer and score; corrupt storage is
     await page.getByRole('button',{name:'Correct',exact:true}).click();
     await page.click('#langBtn'); await page.click('#langBtn');
     assert.equal(await page.locator('#qOptions button:enabled').count(),0);
-    assert.equal(await page.locator('#qExplain img').count(),0);
+    assert.equal(await page.locator('#qExplain').count(),0);
     await page.click('#nextBtn');
     await page.waitForFunction(() => window.calls.some(c=>c.name==='submit_attempt'));
     assert.equal(await page.evaluate(()=>window.calls.find(c=>c.name==='submit_attempt').body.p_score),1);
     assert.deepEqual(errors,[]);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth > innerWidth),false);
   } finally { await page.close(); }
+});
+
+test('quiz answers stay neutral until final submission, including a timeout', async () => {
+  const cyber=await pageFor({query:'?mode=quiz'});
+  try{
+    await cyber.page.click('#skipBtn');
+    await cyber.page.getByRole('button',{name:'Wrong',exact:true}).click();
+    assert.equal(await cyber.page.locator('#qOptions .selected').count(),1);
+    assert.equal(await cyber.page.locator('#qOptions .correct, #qOptions .incorrect, #qExplain').count(),0);
+    assert.equal(await cyber.page.locator('#screen-result').isVisible(),false);
+    await cyber.page.click('#nextBtn');
+    assert.match(await cyber.page.locator('#resultScore').innerText(),/0 out of 1 correct/);
+    assert.deepEqual(cyber.errors,[]);
+  }finally{await cyber.page.close();}
+
+  const subject=await pageFor({query:'?subject=video',quizTimer:1});
+  try{
+    await subject.page.click('#skipBtn');
+    await subject.page.locator('#timeoutNote:visible').waitFor();
+    assert.match(await subject.page.locator('#timeoutNote').innerText(),/Time's up/);
+    assert.equal(await subject.page.locator('#qOptions .selected, #qOptions .correct, #qOptions .incorrect, #qExplain').count(),0);
+    assert.equal(await subject.page.locator('#qOptions button:enabled').count(),0);
+    await subject.page.click('#nextBtn');
+    assert.match(await subject.page.locator('#resultScore').innerText(),/0 out of 1 correct/);
+    assert.deepEqual(subject.errors,[]);
+  }finally{await subject.page.close();}
 });
 
 test('exam preserves timer and typed answers across translation, saves before submission and supports retry', async () => {
@@ -304,6 +331,7 @@ test('exam preserves timer and typed answers across translation, saves before su
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-1',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree'); await page.click('#examStartBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForSelector('#exOptions button');
     assert.equal(await page.locator('#questionMap button:disabled').count(),3);
     await page.waitForTimeout(1100);
@@ -315,6 +343,7 @@ test('exam preserves timer and typed answers across translation, saves before su
     assert.ok(await page.locator('#mcqTimerFill').evaluate(el=>parseFloat(el.style.width)) <= width);
     await page.locator('#exOptions button').first().click();
     await page.click('#exNextBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForFunction(()=>document.getElementById('exPrompt').textContent === 'Test written');
     assert.equal(await page.locator('#questionMap button:disabled').count(),1);
     await page.fill('#exAnswer','First written answer');
@@ -325,6 +354,7 @@ test('exam preserves timer and typed answers across translation, saves before su
     await page.waitForFunction(()=>document.getElementById('exPrompt').textContent === 'Test written two');
     await page.fill('#exAnswer','Final answer typed just before submission');
     await page.click('#exNextBtn');
+    await page.click('#examReviewSubmit');
     await page.locator('.warn-back .btn-primary').click();
     await page.waitForFunction(()=>window.failedSubmit);
     await page.locator('.warn-back .btn-primary').click();
@@ -337,6 +367,51 @@ test('exam preserves timer and typed answers across translation, saves before su
     assert.equal(await page.evaluate(()=>localStorage.getItem('hnf_exam_TEST-1')),'token');
     assert.deepEqual(errors,[]);
   } finally { await page.close(); }
+});
+
+test('exam section intro, review markers and pre-submit summary keep blank answers visible',async()=>{
+  const {page,errors}=await pageFor({query:'?mode=exam'});
+  try{
+    await registerExam(page,'TEST-REVIEW');
+    assert.equal(await page.locator('#examTransition').isVisible(),true);
+    assert.match(await page.locator('#examTransitionTitle').innerText(),/MCQ/);
+    await page.click('#examTransitionContinue');
+    await page.locator('#exOptions button').first().click();
+    await page.click('#exNextBtn');
+    assert.equal(await page.locator('#examTransition').isVisible(),true);
+    assert.match(await page.locator('#examTransitionTitle').innerText(),/Written/);
+    assert.equal(await page.locator('#examQuestionStage').isVisible(),false);
+    fs.mkdirSync(path.join(__dirname,'../test-results'),{recursive:true});
+    await page.locator('#screen-exam').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-section-mobile.png')});
+    await page.click('#examTransitionContinue');
+    await page.locator('#screen-exam').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-question-mobile.png')});
+    await page.screenshot({path:path.join(__dirname,'../test-results/gmit-exam-question-full.png'),fullPage:true});
+    await page.click('#exReviewLater');
+    assert.equal(await page.locator('#exReviewLater').getAttribute('aria-pressed'),'true');
+    await page.click('#exNextBtn');
+    await page.click('#toggleQuestionMap');
+    const map=page.locator('#questionMap button[data-question-index]');
+    assert.equal(await map.nth(0).isDisabled(),true);
+    assert.equal(await map.nth(1).evaluate(el=>el.classList.contains('marked')&&el.classList.contains('unanswered')),true);
+    assert.equal(await map.nth(2).evaluate(el=>el.classList.contains('current')&&el.classList.contains('unanswered')),true);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.locator('#screen-exam').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-map-mobile.png')});
+    await page.click('#exNextBtn');
+    assert.equal(await page.locator('#examReview').isVisible(),true);
+    assert.equal(await page.locator('.warn-back').count(),0);
+    assert.deepEqual(await page.locator('#examReviewSummary strong').allInnerTexts(),['1','2','1']);
+    await page.locator('#screen-exam').screenshot({path:path.join(__dirname,'../test-results/gmit-exam-review-mobile.png')});
+    await page.locator('#examReviewSections button').filter({hasText:'Question 2'}).click();
+    await page.fill('#exAnswer','Reviewed written answer');
+    await page.click('#exReviewLater');
+    await page.click('#openExamReview');
+    assert.deepEqual(await page.locator('#examReviewSummary strong').allInnerTexts(),['2','1','0']);
+    await page.click('#examReviewSubmit');
+    assert.equal(await page.locator('.warn-back').count(),1);
+    await page.locator('.warn-back .btn-primary').click();
+    await page.waitForSelector('#screen-exam-done:not(.hidden)');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
 });
 
 test('offline quiz and admin login validation remain usable', async () => {
@@ -364,8 +439,10 @@ test('automatic exam submission flushes text before the debounce expires', async
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-AUTO',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree'); await page.click('#examStartBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForSelector('#exOptions button');
     await page.click('#exNextBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForFunction(()=>document.getElementById('exPrompt').textContent === 'Test written');
     await page.evaluate(()=>{
       const box = document.getElementById('exAnswer');
@@ -471,6 +548,7 @@ test('written practice works offline, preserves answers across the map and shows
     await page.locator('#questionMap button').last().click();
     await page.fill('#exAnswer','My offboarding checklist');
     await page.click('#exNextBtn');
+    await page.click('#examReviewSubmit');
     await page.locator('.warn-back .btn-primary').click();
     await page.waitForSelector('#practiceReview:not(.hidden)');
     assert.equal(await page.locator('#practiceReview details').count(),16);
@@ -490,6 +568,7 @@ test('sample MCQ bank has 40 questions and practice never submits an exam RPC', 
     await page.locator('#questionMap button').last().click();
     await page.locator('#exOptions button').first().click();
     await page.click('#exNextBtn');
+    await page.click('#examReviewSubmit');
     await page.locator('.warn-back .btn-primary').click();
     await page.waitForSelector('#practiceReview:not(.hidden)');
     assert.equal(await page.locator('#practiceReview details').count(),40);
@@ -505,8 +584,10 @@ test('written question navigation does not wait for a slow network save',async (
     for(const [id,value] of Object.entries({exName:'Test Student',exId:'TEST-SLOW',exBatch:'Batch',exEmail:'test@example.com',exPhone:'01700000000'}))
       await page.fill('#'+id,value);
     await page.check('#exAgree');await page.click('#examStartBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForSelector('#exOptions button');
     await page.click('#exNextBtn');
+    await page.click('#examTransitionContinue');
     await page.waitForFunction(()=>document.getElementById('exPrompt').textContent==='Test written');
     await page.fill('#exAnswer','Save this in the background');
     await page.click('#exNextBtn');
@@ -803,6 +884,93 @@ test('all quiz and exam results export as valid Excel files beyond the loaded pa
   }finally{await page.close();}
 });
 
+test('GMIT PDF builder selects students and details for quiz, exam, and every subject', {timeout:120000}, async()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
+  try{
+    await chooseCyber(page,'#manageQuiz');await page.click('[data-tab="results"]');
+    await page.click('#quizResultsPdf');
+    await page.waitForFunction(()=>document.querySelector('#reportSelection')?.textContent.includes('1205'));
+    await page.click('#reportChosen');await page.fill('#reportSearch','রহিম');
+    await page.click('#reportSelectShown');
+    assert.match(await page.locator('#reportSelection').innerText(),/1 of 1205 selected/);
+    await page.locator('#reportFields input[value="phone"]').check();
+    const [quizFile]=await Promise.all([page.waitForEvent('download'),page.click('#reportDownload')]);
+    const quizPath=path.join(__dirname,'../test-results/gmit-quiz-selected.pdf');
+    fs.mkdirSync(path.dirname(quizPath),{recursive:true});await quizFile.saveAs(quizPath);
+    const quizPdf=await PDFDocument.load(fs.readFileSync(quizPath));
+    assert.equal(quizPdf.getPageCount(),1);
+    assert.match(quizPdf.getTitle(),/Cyber Awareness Quiz/);
+    await page.click('#workspaceHome');await chooseCyber(page,'#manageExam');
+    await page.click('[data-tab="exam-results"]');await page.click('#examResultsPdf');
+    await page.waitForFunction(()=>document.querySelector('#reportSelection')?.textContent.includes('1105'));
+    await page.click('#reportChosen');await page.fill('#reportSearch','STU-4');
+    await page.click('#reportSelectShown');
+    assert.equal(await page.locator('#reportFields input[value="studentId"]').isChecked(),true);
+    const [examFile]=await Promise.all([page.waitForEvent('download'),page.click('#reportDownload')]);
+    const examPath=path.join(__dirname,'../test-results/gmit-exam-selected.pdf');await examFile.saveAs(examPath);
+    const examPdf=await PDFDocument.load(fs.readFileSync(examPath));
+    assert.ok(examPdf.getPageCount()>=1);
+    assert.match(examPdf.getTitle(),/Final Exam/);
+    await page.evaluate(()=>{
+      for(const subject of ['video','graphic','computer'])window.subjectMock.attempts.push({id:subject+'-pdf',subject,
+        name:subject+' student',score:7,total:10,created_at:new Date().toISOString(),lang:'en'});
+    });
+    for(const [button,subject] of [['#manageVideo','Video Editing'],['#manageGraphic','Graphic Design'],['#manageComputer','Computer Basics']]){
+      await page.click('#workspaceHome');
+      if(!(await page.locator(button).isVisible()))await page.click('#cyberBack');
+      await page.click(button);await page.click('[data-tab="results"]');await page.click('#quizResultsPdf');
+      await page.waitForFunction(()=>document.querySelector('#reportSelection')?.textContent.includes('1 results'));
+      const [file]=await Promise.all([page.waitForEvent('download'),page.click('#reportDownload')]);
+      const filePath=path.join(__dirname,'../test-results/'+subject.toLowerCase().replace(/ /g,'-')+'-result.pdf');await file.saveAs(filePath);
+      assert.match((await PDFDocument.load(fs.readFileSync(filePath))).getTitle(),new RegExp(subject));
+    }
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('sample GMIT report is a valid multi-page PDF with a PNG preview', {timeout:30000}, async()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true});
+  try{
+    const [sampleFile,sample]=await Promise.all([page.waitForEvent('download'),page.evaluate(async()=>{
+      const names=['Ayesha Rahman','Rafiul Islam','রহিমা আক্তার','Tanvir Ahmed','Maliha Khan','Samiul Hasan','Farzana Akter','Imran Hossain','Tania Sultana','Mehedi Hasan','Sadia Chowdhury','Arif Mahmood'];
+      const rows=names.map((name,i)=>({id:'sample-'+i,name,studentId:'GMIT-'+String(i+1).padStart(3,'0'),batch:'Batch A',
+        score:(18+i%3)+' / 20',percent:(90+i%3*5)+'%',status:'Graded',numericPercent:90+i%3*5}));
+      const fields=[{key:'studentId',label:'Student ID'},{key:'batch',label:'Batch'},
+        {key:'score',label:'Total score'},{key:'percent',label:'Percentage'},{key:'status',label:'Status'}];
+      const logo=new Image();logo.src='gmit-logo-white.png';await logo.decode();
+      const {pages,rowHeight}=window.GMITResultPDF.pagesFor(rows,fields);
+      const config={rows,fields,subject:'Cyber Security Final Exam',count:rows.length,average:95,generated:'October 3, 2026',startIndex:0};
+      const preview=window.GMITResultPDF.renderPage(config,pages[0],0,pages.length,logo,rowHeight).toDataURL('image/png');
+      const blob=await window.GMITResultPDF.build(config);
+      window.GMITResultPDF.download(blob,'gmit-sample-results.pdf');
+      return {preview,pages:pages.length};
+    })]);
+    const dir=path.join(__dirname,'../test-results');fs.mkdirSync(dir,{recursive:true});
+    const pdfPath=path.join(dir,'gmit-sample-results.pdf');await sampleFile.saveAs(pdfPath);
+    fs.writeFileSync(path.join(dir,'gmit-sample-results.png'),Buffer.from(sample.preview.split(',')[1],'base64'));
+    assert.ok(sample.pages>1);
+    assert.equal((await PDFDocument.load(fs.readFileSync(pdfPath))).getPageCount(),sample.pages);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('GMIT PDF combines every quiz result beyond the first database page', {timeout:120000}, async()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true,apiCap:400});
+  try{
+    await chooseCyber(page,'#manageQuiz');await page.click('[data-tab="results"]');
+    await page.click('#quizResultsPdf');
+    await page.waitForFunction(()=>document.querySelector('#reportSelection')?.textContent.includes('1205'));
+    const expected=await page.evaluate(()=>window.GMITResultPDF.pagesFor(Array(1205).fill({}),Array(3).fill({})).pages.length);
+    const [file]=await Promise.all([page.waitForEvent('download'),page.click('#reportDownload')]);
+    const filePath=path.join(__dirname,'../test-results/gmit-all-quiz-results.pdf');await file.saveAs(filePath);
+    const pdf=await PDFDocument.load(fs.readFileSync(filePath));
+    assert.equal(pdf.getPageCount(),expected);
+    assert.ok(pdf.getPageCount()>100);
+    assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='range'&&c.table==='attempts').length),5);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
 test('full paper selection survives filtering and exports only selected students',async ()=>{
   const {page,errors}=await pageFor({admin:true,authenticated:true,exportData:true});
   try{
@@ -978,7 +1146,7 @@ test('lost exam start response keeps the same preassigned recovery token on retr
     await registerExam(page);await page.waitForFunction(()=>window.failedStart);
     const token=await page.evaluate(()=>localStorage.getItem('hnf_exam_TEST-RECOVERY'));
     assert.match(token,/^[0-9a-f-]{36}$/);
-    await page.click('#examStartBtn');await page.waitForSelector('#exOptions button');
+    await page.click('#examStartBtn');await page.click('#examTransitionContinue');await page.waitForSelector('#exOptions button');
     assert.deepEqual(await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_start'&&c.phase==='start').map(c=>c.body.p_resume_token)),[token,token]);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
@@ -990,7 +1158,7 @@ test('closed registration allows a stored paper to resume and failed settings re
     assert.equal(await page.locator('#examStartRow').isVisible(),false);
     await page.fill('#exId','test-recovery');
     assert.equal(await page.locator('#examStartBtn').innerText(),'Resume exam');
-    await registerExam(page);await page.waitForSelector('#exOptions button');assert.deepEqual(errors,[]);
+    await registerExam(page);await page.click('#examTransitionContinue');await page.waitForSelector('#exOptions button');assert.deepEqual(errors,[]);
   }finally{await page.close();}
   const retry=await pageFor({query:'?mode=exam',failExamLoad:true});
   try{
@@ -1003,14 +1171,14 @@ test('closed registration allows a stored paper to resume and failed settings re
 test('rapid MCQ choices coalesce to the latest answer and submission locks editing',async()=>{
   const {page,errors}=await pageFor({query:'?mode=exam',slowSave:true,slowSubmit:true});
   try{
-    await registerExam(page,'TEST-QUEUE');await page.waitForSelector('#exOptions button');
+    await registerExam(page,'TEST-QUEUE');await page.click('#examTransitionContinue');await page.waitForSelector('#exOptions button');
     await page.locator('#exOptions button').first().click();
     await page.waitForFunction(()=>window.calls.some(c=>c.name==='exam_save_answer'));
     await page.evaluate(()=>{const b=document.querySelectorAll('#exOptions button');for(let i=0;i<20;i++)b[i%2].click();});
     await page.waitForFunction(()=>window.calls.filter(c=>c.name==='exam_save_answer'&&c.phase==='end').length===2);
     assert.deepEqual(await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_save_answer'&&c.phase==='start').map(c=>c.body.p_choice)),[0,1]);
-    await page.click('#exNextBtn');await page.fill('#exAnswer','Written answer');await page.click('#exNextBtn');
-    await page.fill('#exAnswer','Last answer');await page.click('#exNextBtn');await page.locator('.warn-back .btn-primary').click();
+    await page.click('#exNextBtn');await page.click('#examTransitionContinue');await page.fill('#exAnswer','Written answer');await page.click('#exNextBtn');
+    await page.fill('#exAnswer','Last answer');await page.click('#exNextBtn');await page.click('#examReviewSubmit');await page.locator('.warn-back .btn-primary').click();
     await page.waitForFunction(()=>window.calls.some(c=>c.name==='exam_submit'));
     assert.equal(await page.locator('#exAnswer').isDisabled(),true);assert.equal(await page.locator('#exNextBtn').isDisabled(),true);
     await page.waitForSelector('#screen-exam-done:not(.hidden)');assert.deepEqual(errors,[]);

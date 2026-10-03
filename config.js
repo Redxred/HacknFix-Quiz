@@ -1,5 +1,5 @@
 // ============================================================
-//  HacknFix - Supabase connection settings
+//  GM IT Academy - Supabase connection settings
 //
 //  Fill these two in from your Supabase dashboard:
 //
@@ -34,7 +34,7 @@ window.HacknFix = (function () {
   // Loud warning if a private key ends up in a file that ships to browsers.
   if (/^sb_secret_/.test(key) || /"role"\s*:\s*"service_role"/.test(atobSafe(key))) {
     console.error(
-      "[HacknFix] That looks like a SECRET key. Never put it in config.js - " +
+      "[GM IT Academy] That looks like a SECRET key. Never put it in config.js - " +
       "it ships to every visitor. Use the Publishable key instead, and rotate " +
       "the secret one in Supabase > Project Settings > API Keys."
     );
