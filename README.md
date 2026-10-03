@@ -61,18 +61,31 @@ online presence. List and chart limits are labelled in the interface.
 
 Try the new public practice bank immediately, without registration:
 
-- `/index.html?practice=mcq` — 20 MCQs.
-- `/index.html?practice=written` — 8 written/CQ questions.
-- `/index.html?practice=all` — all 32 samples, including 4 practical tasks.
+- `/index.html?practice=mcq` — 40 MCQs.
+- `/index.html?practice=written` — 16 written/CQ questions.
+- `/index.html?practice=all` — all 64 samples, including 8 practical tasks.
 
 Practice answers stay in memory and disappear when you leave. At the end,
 students can review MCQ answers and written marking points. Practice does
 not create an exam attempt or send answers to Supabase.
 
 To put the samples in the live bank, sign in to **Final Exam → Exam
-questions → Add 32 sample questions**, or run `sample-questions.sql` in
+questions → Add 64 sample questions**, or run `sample-questions.sql` in
 Supabase. Existing samples are skipped. These questions and answer guides
 are public; replace them with your own material for a graded exam.
+
+Each subject's admin **Questions** page also has an **Add sample questions**
+button. Video Editing, Graphic Design and Basic Computer each include 25
+bilingual MCQs with explanations. Cyber Security includes 20 new bilingual
+awareness questions in addition to the original 10. Importing samples skips
+matching prompts and preserves existing answers and draft visibility.
+New questions are appended after the bank's current sort order.
+
+For an existing database, run [subject-questions.sql](subject-questions.sql)
+to add all quiz samples, or use the buttons in each subject. These SQL seeds
+and buttons add questions to the live bank; updating GitHub files alone
+does not change existing database rows. No schema migration is needed for
+the sample expansion. The offline demo banks also include the new samples.
 
 The interface uses CSS depth and hover effects, supports reduced motion,
 and has no continuously rendering 3D scene. The exam provides a question

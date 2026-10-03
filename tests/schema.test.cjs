@@ -12,7 +12,8 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     await db.exec(schema);
     await db.exec(schema);
     const counts = (await db.query('select qtype,count(*)::int as count from exam_questions group by qtype order by qtype')).rows;
-    assert.deepEqual(counts,[{qtype:'mcq',count:25},{qtype:'practical',count:6},{qtype:'written',count:10}]);
+    assert.deepEqual(counts,[{qtype:'mcq',count:45},{qtype:'practical',count:10},{qtype:'written',count:18}]);
+    assert.equal((await db.query('select count(*)::int as n from questions')).rows[0].n,30);
     await db.exec('update exam_settings set exam_open = true;');
     const start = async (id, token = null) => (await db.query(
       "select exam_start('Test Student', $1, 'Batch', 'test@example.com', '01700000000', '', $2) as result",
@@ -89,7 +90,7 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     assert.equal((await db.query('select count(*)::int as n from exam_students where id=$1',[review.student.id])).rows[0].n,1);
     assert.equal((await db.query('select count(*)::int as n from exam_attempts where id=$1',[otherAttempt.attempt])).rows[0].n,1);
     assert.ok((await db.query('select count(*)::int as n from exam_answers where attempt=$1',[otherAttempt.attempt])).rows[0].n>0);
-    assert.equal((await db.query("select count(*)::int as n from subject_questions where subject='video'")).rows[0].n,4);
+    assert.equal((await db.query("select count(*)::int as n from subject_questions where subject='video'")).rows[0].n,25);
     await db.exec('set role anon');
     await assert.rejects(db.query('select * from subject_attempts'),/permission denied/);
     const video = (await db.query("select subject_submit_attempt('video','Editor','', '',3,4,'en',40) as id")).rows[0].id;

@@ -344,13 +344,13 @@ test('admin workspaces load separately and sample import can be repeated safely'
     assert.equal(await page.locator('.tab:visible').count(),4);
     assert.equal(await page.evaluate(()=>window.calls.some(c=>c.table==='questions'||c.name==='analytics_totals')),false);
     await page.click('#importSamples');
-    await page.waitForFunction(()=>window.mockBank.length===32);
+    await page.waitForFunction(()=>window.mockBank.length===64);
     await page.waitForFunction(()=>!document.getElementById('importSamples').disabled);
     await page.click('#importSamples');
     await page.waitForFunction(()=>!document.getElementById('importSamples').disabled);
-    assert.equal(await page.evaluate(()=>window.mockBank.length),32);
+    assert.equal(await page.evaluate(()=>window.mockBank.length),64);
     await page.click('[data-qf="written"]');
-    assert.equal(await page.locator('#exQList .q-item').count(),8);
+    assert.equal(await page.locator('#exQList .q-item').count(),16);
     await page.fill('#examBankSearch','offboarding');
     assert.equal(await page.locator('#exQList .q-item').count(),1);
     await page.click('#workspaceHome');
@@ -408,7 +408,7 @@ test('written practice works offline, preserves answers across the map and shows
   const {page,errors} = await pageFor({offline:true,query:'?practice=written'});
   try{
     await page.waitForSelector('#practiceBanner');
-    assert.equal(await page.locator('#exTotal').innerText(),'8');
+    assert.equal(await page.locator('#exTotal').innerText(),'16');
     await page.fill('#exAnswer','My incident response plan');
     await page.click('#toggleQuestionMap');
     await page.locator('#questionMap button').nth(1).click();
@@ -419,18 +419,18 @@ test('written practice works offline, preserves answers across the map and shows
     await page.click('#exNextBtn');
     await page.locator('.warn-back .btn-primary').click();
     await page.waitForSelector('#practiceReview:not(.hidden)');
-    assert.equal(await page.locator('#practiceReview details').count(),8);
+    assert.equal(await page.locator('#practiceReview details').count(),16);
     assert.match(await page.locator('#practiceReview details').first().textContent(),/My incident response plan/);
     assert.equal(await page.evaluate(()=>window.calls.length),0);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });
 
-test('sample MCQ bank has 20 questions and practice never submits an exam RPC', async () => {
+test('sample MCQ bank has 40 questions and practice never submits an exam RPC', async () => {
   const {page,errors} = await pageFor({query:'?practice=mcq'});
   try{
     await page.waitForSelector('#practiceBanner');
-    assert.equal(await page.locator('#exTotal').innerText(),'20');
+    assert.equal(await page.locator('#exTotal').innerText(),'40');
     await page.locator('#exOptions button').first().click();
     await page.click('#toggleQuestionMap');
     await page.locator('#questionMap button').last().click();
@@ -438,7 +438,7 @@ test('sample MCQ bank has 20 questions and practice never submits an exam RPC', 
     await page.click('#exNextBtn');
     await page.locator('.warn-back .btn-primary').click();
     await page.waitForSelector('#practiceReview:not(.hidden)');
-    assert.equal(await page.locator('#practiceReview details').count(),20);
+    assert.equal(await page.locator('#practiceReview details').count(),40);
     assert.equal(await page.evaluate(()=>window.calls.some(c=>['exam_start','exam_save_answer','exam_submit'].includes(c.name))),false);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}

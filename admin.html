@@ -1081,10 +1081,10 @@
 
         <div class="bank-tools">
           <input id="examBankSearch" type="search" aria-label="Search exam questions" placeholder="Search questions or marking notes…">
-          <button class="btn btn-ghost btn-sm" id="importSamples" type="button">+ Add 32 sample questions</button>
+          <button class="btn btn-ghost btn-sm" id="importSamples" type="button">+ Add sample questions</button>
           <a class="btn btn-ghost btn-sm" href="index.html?practice=all" target="_blank" rel="noopener">Try sample paper ↗</a>
         </div>
-        <p class="sub">Samples: 20 MCQs, 8 written/CQ and 4 practical tasks. Samples are public practice material; edit or replace them before a graded exam. Importing again skips existing samples.</p>
+        <p class="sub" id="examSampleSummary">Samples are public practice material; edit or replace them before a graded exam. Importing again skips existing samples.</p>
         <div class="bank-count" id="examBankCount" aria-live="polite"></div>
         <div class="question-excel-tools">
           <p><strong>Add questions with Excel</strong> — one template for MCQ answers, written model answers and practical marking notes.</p>
@@ -1309,8 +1309,8 @@
 <script src="vendor/supabase.min.js?v=2.117.2"></script>
 <script src="request.js?v=1"></script>
 <script src="config.js?v=reliability-1"></script>
-<script src="sample-questions.js"></script>
-<script src="subjects.js?v=subjects-1"></script>
+<script src="sample-questions.js?v=samples-2"></script>
+<script src="subjects.js?v=samples-2"></script>
 <script src="exam-dashboard.js?v=exam-insights-1"></script>
 <script src="excel-export.js?v=question-template-2"></script>
 <script src="question-import.js?v=2"></script>
@@ -1628,7 +1628,8 @@
     $('workspaceSub').textContent = mode === 'exam' ? 'Question bank, student papers and exam settings.' : 'Questions, scores, feedback and settings for this subject.';
     $('workspacePreview').href = mode === 'exam' ? 'index.html?mode=exam' : mode === 'quiz' ? 'index.html?mode=quiz' : 'index.html?subject=' + mode;
     $('workspaceHome').textContent = mode === 'quiz' || mode === 'exam' ? '← Cyber Security' : '← All subjects';
-    $('addSubjectSamples').classList.toggle('hidden',!['video','graphic','computer'].includes(mode));
+    $('addSubjectSamples').classList.toggle('hidden',mode==='exam');
+    $('addSubjectSamples').textContent='+ Add '+(window.HNFSubjects[quizSubject()]?.questions?.length||0)+' sample questions';
     document.querySelector('[data-tab="settings"]').textContent = mode === 'quiz' ? 'Quiz settings' : 'Subject settings';
     document.querySelectorAll('.tab').forEach(btn=>{
       btn.classList.toggle('hidden', !workspacePages[mode].includes(btn.dataset.tab));
@@ -1685,17 +1686,34 @@
   $('manageQuiz').addEventListener('click',()=>openWorkspace('quiz'));
   $('manageExam').addEventListener('click',()=>openWorkspace('exam'));
   [['manageVideo','video'],['manageGraphic','graphic'],['manageComputer','computer']].forEach(([id,subject])=>$(id).addEventListener('click',()=>openWorkspace(subject)));
+  async function readSampleBank(table,subject){
+    const rows=[];
+    for(let offset=0;;){
+      let query=sb.from(table).select('*').order('id',{ascending:true}).range(offset,offset+999);
+      if(subject&&subject!=='cyber')query=query.eq('subject',subject);
+      const {data,error}=await query;
+      if(error)throw error;
+      if(!Array.isArray(data))throw new Error('Could not read the question bank. Please sign in again.');
+      if(!data.length)return rows;
+      rows.push(...data);offset+=data.length;
+    }
+  }
   $('addSubjectSamples').addEventListener('click',async()=>{
-    const subject = quizSubject(), samples = window.HNFSubjects[subject]?.questions || [];
-    if(!samples.length) return;
-    const existing = new Set(questions.map(q=>q.q_en));
-    const rows = samples.filter(q=>!existing.has(q.q_en)).map((q,i)=>({...q,subject,icon:'alert',sort_order:questions.length+i+1,is_active:true}));
-    if(!rows.length) return toast('Starter questions are already in this bank.');
-    const button = $('addSubjectSamples'); button.disabled = true;
-    const {error} = await sb.from('subject_questions').insert(rows);
-    button.disabled = false;
-    if(error) return toast('Could not add starter questions: ' + error.message,true);
-    toast('Added ' + rows.length + ' starter questions.'); loadQuestions();
+    const button=$('addSubjectSamples');if(button.disabled)return;
+    const subject=quizSubject(),table=subjectTable('questions'),view=viewVersion;
+    const samples=window.HNFSubjects[subject]?.questions||[];
+    button.disabled=true;
+    try{
+      const bank=await readSampleBank(table,subject),existing=new Set(bank.map(q=>q.q_en));
+      const last=bank.reduce((n,q)=>Math.max(n,q.sort_order||0),0);
+      const rows=samples.filter(q=>!existing.has(q.q_en)).map((q,i)=>({...q,
+        ...(subject==='cyber'?{}:{subject}),icon:'alert',sort_order:last+i+1,is_active:true}));
+      if(!rows.length)return toast('Sample questions are already in this bank.');
+      const {error}=await sb.from(table).insert(rows);if(error)throw error;
+      toast('Added '+rows.length+' sample questions.');
+      if(view===viewVersion)await loadQuestions();
+    }catch(e){toast('Could not add sample questions: '+e.message,true);}
+    finally{button.disabled=false;}
   });
   $('workspaceHome').addEventListener('click',()=>{
     if(workspace === 'quiz' || workspace === 'exam') showCyberFolder();
@@ -3935,11 +3953,11 @@
   $('examBankSearch').addEventListener('input',renderExamQuestions);
   $('importSamples').addEventListener('click',async ()=>{
     const btn = $('importSamples');
+    if(btn.disabled)return;
     btn.disabled = true;
     btn.textContent = 'Adding samples…';
     try{
-      const {data,error} = await sb.from('exam_questions').select('qtype,prompt');
-      if(error) throw error;
+      const data = await readSampleBank('exam_questions');
       const existing = new Set((data || []).map(q=>q.qtype + ':' + q.prompt));
       const samples = (window.HACKNFIX_SAMPLES?.exam || []).filter(q=>!existing.has(q.qtype + ':' + q.prompt));
       if(!samples.length){ toast('All sample questions are already in the bank.'); return; }
@@ -3948,8 +3966,14 @@
       toast('Added ' + samples.length + ' sample questions.');
       await loadExamQuestions();
     }catch(e){ toast('Could not add questions: ' + e.message,true); }
-    finally{ btn.disabled = false; btn.textContent = '+ Add 32 sample questions'; }
+    finally{ btn.disabled = false; btn.textContent = '+ Add '+(window.HACKNFIX_SAMPLES?.exam?.length||0)+' sample questions'; }
   });
+  const publicExamSamples=window.HACKNFIX_SAMPLES?.exam||[];
+  $('importSamples').textContent='+ Add '+publicExamSamples.length+' sample questions';
+  $('examSampleSummary').textContent='Samples: '+publicExamSamples.filter(q=>q.qtype==='mcq').length+' MCQs, '
+    +publicExamSamples.filter(q=>q.qtype==='written').length+' written/CQ and '
+    +publicExamSamples.filter(q=>q.qtype==='practical').length+' practical tasks. Samples are public practice material; '
+    +'edit or replace them before a graded exam. Importing again skips existing samples.';
   $('addExQBtn').addEventListener('click', ()=>openExamEditor(null));
   $('exRefreshBtn').addEventListener('click', loadExamAttempts);
   $('examExcelAll').addEventListener('click',()=>runExcel($('examExcelAll'),downloadExamAll));

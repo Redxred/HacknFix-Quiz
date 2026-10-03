@@ -1269,8 +1269,8 @@
 <script src="vendor/supabase.min.js?v=2.117.2"></script>
 <script src="request.js?v=1"></script>
 <script src="config.js?v=reliability-1"></script>
-<script src="sample-questions.js"></script>
-<script src="subjects.js?v=subjects-1"></script>
+<script src="sample-questions.js?v=samples-2"></script>
+<script src="subjects.js?v=samples-2"></script>
 <script>
 (function(){
   // ---------- i18n ----------
@@ -1597,6 +1597,7 @@
   const route = new URLSearchParams(location.search);
   const quizSubject = ['cyber','video','graphic','computer'].includes(route.get('subject')) ? route.get('subject') : 'cyber';
   const subjectInfo = window.HNFSubjects[quizSubject];
+  FALLBACK_QUESTIONS.push(...window.HNFSubjects.cyber.questions.map(q=>({icon:'alert',q:{bn:q.q_bn,en:q.q_en},options:q.options,explain:{bn:q.explain_bn,en:q.explain_en}})));
   const isSubjectQuiz = quizSubject !== 'cyber';
   document.body.dataset.subject = quizSubject;
   if(isSubjectQuiz) document.querySelector('#screen-register .welcome-icon').textContent = subjectInfo.icon;

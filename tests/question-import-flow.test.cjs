@@ -350,3 +350,29 @@ test('UAT final exam: browser registration, MCQ/written/practical, resume, submi
     assert.deepEqual(admin.errors,[]);
   }finally{await admin.page.close();}
 });
+
+for(const bank of ['cyber','video','graphic','computer'])test(bank+': add expanded samples once, preserve edited drafts and append after existing sort order',async()=>{
+  const {page,errors}=await pageFor(bank);
+  const table=bank==='cyber'?'questions':'subject_questions';
+  try{
+    const samples=await page.evaluate(subject=>window.HNFSubjects[subject].questions,bank);
+    const original=samples[0];
+    const draft={...original,...(bank==='cyber'?{}:{subject:bank}),is_active:false,explain_en:'Teacher custom explanation',sort_order:7000};
+    await query({table,insert:[draft]});
+    const countSql='select count(*)::int as n from '+table+(bank==='cyber'?'':' where subject=$1');
+    const args=bank==='cyber'?[]:[bank];
+    const before=(await db.query(countSql,args)).rows[0].n;
+    pageCap=7; // Verify sample loading checks all pages, including hidden rows.
+    await page.click('#addSubjectSamples');
+    await page.waitForFunction(()=>!document.getElementById('addSubjectSamples').disabled&&document.getElementById('toast').textContent.startsWith('Added'));
+    assert.equal((await db.query(countSql,args)).rows[0].n,before+samples.length-1);
+    const saved=(await db.query(`select is_active,explain_en,sort_order from ${table} where q_en=$1`,[original.q_en])).rows[0];
+    assert.deepEqual(saved,{is_active:false,explain_en:'Teacher custom explanation',sort_order:7000});
+    const added=(await db.query(`select sort_order from ${table} where q_en=$1`,[samples[1].q_en])).rows[0];assert.equal(added.sort_order,7001);
+    const requests=insertRequests;await page.click('#addSubjectSamples');
+    await page.waitForFunction(()=>!document.getElementById('addSubjectSamples').disabled&&document.getElementById('toast').textContent.includes('already in this bank'));
+    assert.equal(insertRequests,requests);
+    assert.equal((await db.query(countSql,args)).rows[0].n,before+samples.length-1);
+    assert.deepEqual(errors,[]);
+  }finally{pageCap=1000;await page.close();}
+});

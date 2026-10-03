@@ -2,8 +2,17 @@
 
 ## Result and scope
 
-`npm test` passed **63 tests, 0 failures**, in 99.6 seconds. The separate
+`npm test` passed **71 tests, 0 failures**, in 100.9 seconds. The separate
 50-connection PostgreSQL load test also passed.
+
+The sample expansion adds 20 bilingual Cyber Security awareness questions
+and expands each other subject to 25 bilingual questions. The public final
+exam bank now has 40 MCQs, 16 written questions and 8 practical tasks.
+Additional tests validate complete content, answer keys and guides, repeatable
+SQL generation, and adding samples through every subject's admin page.
+Existing edited answers, hidden drafts and sort order are preserved.
+The sample builder now preserves the subject schema when regenerating the
+exam seed, including upgrades from the older format without end markers.
 
 The fixes were checked with automated Edge/Chromium browser scenarios,
 PostgreSQL schema tests and a separate load test using 50 independent
@@ -52,6 +61,9 @@ settings returned HTTP 200 in approximately 1.1 seconds each.
 ## 50-student load test
 
 Raw results: [qa/load-50.json](qa/load-50.json).
+
+This load run was recorded before the sample expansion; the expansion
+does not change the exam RPCs.
 
 All 50 students started different papers concurrently, resumed the same
 paper with their tokens, saved answers, pinged, submitted and retried
