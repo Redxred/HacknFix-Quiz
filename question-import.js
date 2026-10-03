@@ -1,3 +1,4 @@
+/* Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved. */
 /* Excel question templates and validation, shared by the admin, worker and tests. */
 (function(root) {
   'use strict';

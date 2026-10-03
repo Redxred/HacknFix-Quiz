@@ -1,7 +1,8 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(root){
   'use strict';
   const subjects={cyber:'Cyber Security',video:'Video Editing',graphic:'Graphic Design',computer:'Basic Computer'};
-  const defaults={organization:'GM IT Academy',title:'CERTIFICATE OF ASSESSMENT',description:'has completed the assessment in',
+  const defaults={organization:'GM IT',title:'CERTIFICATE OF ASSESSMENT',description:'has completed the assessment in',
     signature_name:'',signature_role:'Authorized signatory',footer:'Recognizing learning, effort and achievement.',
     primary_color:'#1B2653',accent_color:'#90A3D4',text_color:'#1B2653',background_color:'#FAFBFF',
     logo_data:'',signature_data:'',show_result:true,pass_percent:40};
@@ -98,6 +99,7 @@
   }
   function settings(input){
     const value={...defaults,...input},errors=[];
+    if(value.organization==='GM IT Academy')value.organization='GM IT';
     for(const [field,max] of [['organization',100],['title',100],['description',250],['signature_name',100],['signature_role',100],['footer',200]]){
       value[field]=clean(value[field]);
       if(value[field].length>max)errors.push(field.replaceAll('_',' ')+' is too long.');

@@ -64,3 +64,19 @@ test('certificate migration is repeatable, enforces marks and keeps student reco
     assert.equal((await db.query('select count(*)::int as n from certificate_records')).rows[0].n,1);
   }finally{await db.close();}
 });
+test('GM IT rename migration updates the old certificate name and preserves custom institutes',async()=>{
+  const db=new PGlite();
+  try{
+    await db.exec('create role anon;create role authenticated;');
+    await db.exec(fs.readFileSync(path.join(__dirname,'../migrations/20261003-certificates.sql'),'utf8'));
+    await db.query("update certificate_settings set organization='GM IT Academy' where id=1");
+    const rename=fs.readFileSync(path.join(__dirname,'../migrations/20261004-gmit-name.sql'),'utf8');
+    await db.exec(rename);await db.exec(rename);
+    assert.equal((await db.query('select organization from certificate_settings where id=1')).rows[0].organization,'GM IT');
+    const column=(await db.query("select column_default from information_schema.columns where table_schema='public' and table_name='certificate_settings' and column_name='organization'")).rows[0];
+    assert.match(column.column_default,/GM IT/);
+    await db.query("update certificate_settings set organization='Custom School' where id=1");
+    await db.exec(rename);
+    assert.equal((await db.query('select organization from certificate_settings where id=1')).rows[0].organization,'Custom School');
+  }finally{await db.close();}
+});

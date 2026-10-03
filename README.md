@@ -1,4 +1,13 @@
-# GM IT Academy Exam Portal
+# GM IT Exam Portal
+
+Developed by [HacknFix](https://www.hacknfix.site/) · Pritam Nath Dipta.
+Copyright © 2026 HacknFix. All rights reserved. See [COPYRIGHT.md](COPYRIGHT.md)
+for authorship and reuse terms.
+
+The GitHub repository is private. HTML, CSS and JavaScript delivered to a
+visitor's browser remain inspectable; copyright notices state ownership but
+cannot technically prevent copying. Keep secrets and confidential logic off
+the public site.
 
 A bilingual (বাংলা / English) exam portal for Cyber Security, Video Editing,
 Graphic Design and Basic Computer students.
@@ -45,6 +54,8 @@ run once in the Supabase SQL Editor. A fresh installation can use the updated
 [supabase-schema.sql](supabase-schema.sql). Deploying the static pages does
 not install database tables. The Certificates page gives a setup link if the
 tables are missing. See [SETUP.md](SETUP.md) for the exact steps.
+Existing certificate settings that still store the old institute name can be
+updated with [migrations/20261004-gmit-name.sql](migrations/20261004-gmit-name.sql).
 
 Run locally with `npm start` (Python required), then visit
 <http://localhost:8000>. The admin panel is at `/admin.html`.
@@ -58,7 +69,7 @@ and the final exam retain separate questions, results, feedback and
 analytics can be reviewed individually. Run the latest `supabase-schema.sql`
 in Supabase to enable the new subject workspaces on the live site.
 
-The portal now uses the GM IT Academy logo and its navy/white palette in the
+The portal now uses the GM IT logo and its navy/white palette in the
 student header, exam entry screens, admin header and exam workspace. The
 certificate starts with the same logo and colors; admins can replace the logo
 and design in **Certificate design & settings**. A locally bundled Three.js
@@ -90,7 +101,7 @@ option exports only the rows currently loaded and visible.
 
 Each subject's admin **Results** page also has **Create GMIT PDF**. Choose all
 completed results or individual students, select the details to include, and
-download one paginated report with the GM IT Academy logo. The Final Exam
+download one paginated report with the GM IT logo. The Final Exam
 Results page has the same builder. See the
 [sample report](examples/gmit-sample-results.pdf) and its
 [first-page preview](examples/gmit-sample-results.png); the sample uses fictional students.

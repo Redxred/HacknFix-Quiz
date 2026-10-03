@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(){
   'use strict';
   const api=window.HNFCertificates,pdf=window.HNFCertificatePDF;
@@ -68,8 +69,8 @@
     const check=node('label',null,'cert-check wide'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.id='cert-design-show_result';check.append(checkbox,node('span','Show result based on pass percentage'));host.append(check);
     for(const [kind,label] of [['logo','Organization logo'],['signature','Signature image (optional)']]){
       const box=node('div',null,'field wide'),text=node('label',label),input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp';input.id='cert-'+kind;text.htmlFor=input.id;
-      const imageState=node('span',kind==='logo'?'GM IT Academy logo by default. Upload PNG, JPG or WebP (up to 2 MB) to replace it.':'PNG, JPG or WebP, up to 2 MB.','cert-image-state');imageState.id='cert-'+kind+'-state';
-      box.append(text,input,imageState,button(kind==='logo'?'Use GM IT logo':'Remove signature',()=>{design[kind+'_data']='';input.value='';imageState.textContent=kind==='logo'?'GM IT Academy logo selected.':'No signature selected.';dirty=true;$('certDesignStatus').textContent='Unsaved changes';drawDesign();},'btn btn-ghost btn-sm'));
+      const imageState=node('span',kind==='logo'?'GM IT logo by default. Upload PNG, JPG or WebP (up to 2 MB) to replace it.':'PNG, JPG or WebP, up to 2 MB.','cert-image-state');imageState.id='cert-'+kind+'-state';
+      box.append(text,input,imageState,button(kind==='logo'?'Use GM IT logo':'Remove signature',()=>{design[kind+'_data']='';input.value='';imageState.textContent=kind==='logo'?'GM IT logo selected.':'No signature selected.';dirty=true;$('certDesignStatus').textContent='Unsaved changes';drawDesign();},'btn btn-ghost btn-sm'));
       input.addEventListener('change',async()=>{if(!input.files[0])return;input.disabled=true;$('certSaveDesign').disabled=true;try{design[kind+'_data']=await pdf.uploadImage(input.files[0],kind);dirty=true;imageState.textContent='Image ready. Save settings to keep it.';$('certDesignStatus').textContent='Unsaved changes';drawDesign();}catch(e){imageState.textContent=e.message;notify(e.message,true);}finally{input.disabled=false;$('certSaveDesign').disabled=false;}});host.append(box);
     }
     $('certDesignForm').addEventListener('input',event=>{if(event.target.type==='file')return;dirty=true;$('certDesignStatus').textContent='Unsaved changes';drawDesign();});
@@ -80,7 +81,7 @@
       try{
         const {data,error}=await client.from('certificate_settings').update({...checked.value,updated_at:new Date().toISOString()}).eq('id',1).select('*').single();
         if(error)throw error;if(!data)throw new Error('Settings were not saved. Refresh and retry.');
-        design={...api.defaults,...data};fillDesign();notify('Certificate settings saved for all subjects.');
+        design=api.settings(data).value;fillDesign();notify('Certificate settings saved for all subjects.');
       }catch(e){$('certDesignStatus').textContent='Could not save: '+e.message;notify(e.message,true);}
       finally{save.disabled=false;}
     });
@@ -120,7 +121,7 @@
       try{
         const [response,rows]=await Promise.all([client.from('certificate_settings').select('*').eq('id',1).single(),readRows(subject)]);
         if(n!==version)return;if(response.error)throw response.error;if(!response.data)throw new Error('Certificate settings are missing.');
-        design={...api.defaults,...response.data};records=rows;available(true);fillDesign();render();status('');
+        design=api.settings(response.data).value;records=rows;available(true);fillDesign();render();status('');
       }catch(e){if(n!==version)return;status(setup(e)?'Certificate setup is required. Run the certificates SQL migration in Supabase, then retry.':('Could not load certificates: '+e.message),true);$('certSetup').classList.toggle('hidden',!setup(e));$('certRefresh').disabled=false;}
     }
     async function refresh(){const n=version;try{const rows=await readRows(subject);if(n!==version)return;records=rows;const ids=new Set(rows.map(r=>r.id));for(const id of selected)if(!ids.has(id))selected.delete(id);render();}catch(e){status('Could not refresh certificates: '+e.message,true);throw e;}}

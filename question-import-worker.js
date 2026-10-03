@@ -1,3 +1,4 @@
+/* Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved. */
 /* Parsing happens off the UI thread; the admin terminates long-running reads. */
 importScripts('vendor/xlsx.mini.min.js','question-import.js?v=2');
 self.onmessage = ({data}) => {

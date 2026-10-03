@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(){
   'use strict';
   const WIDTH=1280, HEIGHT=905;
@@ -5,7 +6,7 @@
   const safe=value=>value==null||value===''?'—':String(value);
   const image=()=>new Promise((resolve,reject)=>{
     const logo=new Image();logo.onload=()=>resolve(logo);logo.onerror=()=>reject(new Error('GMIT logo could not be loaded.'));
-    logo.src='gmit-logo-white.png';
+    logo.src='gmit-logo.svg';
   });
   function fit(ctx,value,maxWidth){
     let str=safe(value);
@@ -29,7 +30,7 @@
     const logoWidth=logo.width/Math.max(1,logo.height)*62;
     ctx.drawImage(logo,56,34,logoWidth,62);
     ctx.fillStyle='#fff';ctx.font='bold 36px Arial, sans-serif';ctx.fillText('STUDENT RESULTS',56,134);
-    ctx.textAlign='right';ctx.font='bold 21px Arial, sans-serif';ctx.fillText('GM IT ACADEMY',1224,67);
+    ctx.textAlign='right';ctx.font='bold 21px Arial, sans-serif';ctx.fillText('GM IT',1224,67);
     ctx.font='15px Arial, sans-serif';ctx.fillStyle='#bdc8ea';ctx.fillText(config.subject,1224,101);
     ctx.textAlign='left';
     ctx.fillStyle='#26335c';ctx.font='bold 19px Arial, sans-serif';ctx.fillText(config.subject,56,215);
@@ -52,7 +53,7 @@
       });
     });
     ctx.strokeStyle='#cfd7e7';ctx.beginPath();ctx.moveTo(56,858);ctx.lineTo(1224,858);ctx.stroke();
-    ctx.fillStyle='#6c7a94';ctx.font='13px Arial, sans-serif';ctx.fillText('GM IT Academy  •  Official results summary',56,883);
+    ctx.fillStyle='#6c7a94';ctx.font='13px Arial, sans-serif';ctx.fillText('GM IT  •  Official results summary  •  © 2026 HacknFix',56,883);
     ctx.textAlign='right';ctx.fillText('Page '+(index+1)+' of '+total,1224,883);
     return canvas;
   }
@@ -73,7 +74,7 @@
       const code='q\n841.89 0 0 595.28 0 0 cm\n/Image Do\nQ\n';
       object(content,`<< /Length ${encoder.encode(code).length} >>\nstream\n${code}endstream`);
     });
-    const info=3+images.length*3;object(info,`<< /Title <${titleHex}> /Producer (GM IT Academy Results) >>`);
+    const info=3+images.length*3;object(info,`<< /Title <${titleHex}> /Author (Pritam Nath Dipta - HacknFix) /Producer (GM IT Results - HacknFix) >>`);
     const xref=size;add(`xref\n0 ${info+1}\n0000000000 65535 f \n`);
     for(let i=1;i<=info;i++)add(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
     add(`trailer\n<< /Size ${info+1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
@@ -90,7 +91,7 @@
       if(onProgress)onProgress(i+1,pages.length);
       if(i%3===2)await new Promise(resolve=>setTimeout(resolve,0));
     }
-    return encodePDF(images,'GM IT Academy — '+config.subject+' results');
+    return encodePDF(images,'GM IT — '+config.subject+' results');
   }
   function download(blob,name){
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();

@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 // Public practice material. Use your own unpublished questions for graded exams.
 (function () {
   const mcq = [

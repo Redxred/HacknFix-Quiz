@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(){
   'use strict';
   const core=window.HNFCertificates;
@@ -61,7 +62,7 @@
     if(design.errors.length)throw new Error(design.errors.join(' '));
     const s=design.value,r={...row,...checked.row};
     await Promise.race([document.fonts?.ready||Promise.resolve(),new Promise(resolve=>setTimeout(resolve,2500))]);
-    const [logo,signature]=await Promise.all([imageFor(s.logo_data||'gmit-logo-white.png'),imageFor(s.signature_data)]);
+    const [logo,signature]=await Promise.all([imageFor(s.logo_data||'gmit-logo.svg'),imageFor(s.signature_data)]);
     const canvas=document.createElement('canvas');canvas.width=1000*scale;canvas.height=707*scale;
     const c=canvas.getContext('2d');c.scale(scale,scale);
     c.fillStyle=s.background_color;c.fillRect(0,0,1000,707);
@@ -107,6 +108,7 @@
     const id=row.id?'HNF-'+row.id.replaceAll('-','').toUpperCase():'PREVIEW — NOT ISSUED';
     text(c,'Certificate ID: '+id,94,632,505,10,400,1,'left');
     text(c,s.footer,500,657,840,12);
+    c.fillStyle=s.text_color;text(c,'Developed by HacknFix · Pritam Nath Dipta',500,675,800,9);
     return canvas;
   }
   function encodePDF(jpeg,width,height,title){
@@ -122,7 +124,7 @@
     add(jpeg);add('\nendstream\nendobj\n');
     const content='q\n841.89 0 0 595.28 0 0 cm\n/Image Do\nQ\n';
     object(5,`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream`);
-    object(6,`<< /Title <${titleHex}> /Producer (GM IT Academy Certificates) >>`);
+    object(6,`<< /Title <${titleHex}> /Author (Pritam Nath Dipta - HacknFix) /Producer (GM IT Certificates - HacknFix) >>`);
     const xref=size;add('xref\n0 7\n0000000000 65535 f \n');
     for(let i=1;i<=6;i++)add(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
     add(`trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF\n`);

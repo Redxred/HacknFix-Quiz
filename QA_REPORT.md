@@ -18,7 +18,7 @@ graded exam results were used to prefill and issue certificates; repeated
 issuance opened the same saved record. The certificate SQL migration ran
 twice locally without losing records, and anonymous access was denied.
 
-The GM IT Academy theme was checked on mobile and desktop. Browser tests
+The GM IT theme was checked on mobile and desktop. Browser tests
 verified the official logo loads, the Three.js scene renders on the exam entry
 screen, reduced-motion and WebGL-unavailable users get a static banner, dark mode stays readable,
 and the scene is removed during a timed exam. The default certificate was

@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 import * as THREE from 'three';
 
 // One small scene is mounted only on the visible entry banner. Exam answers,

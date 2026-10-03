@@ -1,3 +1,4 @@
+/* Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved. */
 /* Spreadsheet parsing stays off the admin UI thread. */
 importScripts('vendor/xlsx.mini.min.js','certificates-core.js?v=1');
 self.onmessage=event=>{

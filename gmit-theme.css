@@ -1,4 +1,5 @@
-/* GM IT Academy brand. The white mark is the academy's published logo. */
+/* Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved. */
+/* GM IT brand. */
 :root{
   --bg:#f4f6fc;--bg-soft:#eaf0fa;--card:#fff;--text:#172145;
   --muted:#56617c;--border:#dce3f1;--primary:#1b2653;
@@ -25,6 +26,14 @@
 }
 body{background-image:radial-gradient(ellipse at 8% 0%,#748bd321,transparent 57%);}
 body.exam-live{background-image:none;}
+.site-credit{
+  max-width:1000px;margin:0 auto;padding:18px 22px 25px;border-top:1px solid var(--border);
+  display:flex;justify-content:center;align-items:center;gap:5px 16px;flex-wrap:wrap;
+  color:var(--muted);font-size:.78rem;text-align:center;
+}
+.site-credit a{color:var(--primary-strong);font-weight:700;text-decoration:none;}
+.site-credit a:hover,.site-credit a:focus-visible{text-decoration:underline;}
+body[data-lang] .site-credit{max-width:520px;}
 .gmit-mark{
   display:grid;place-items:center;flex:none;width:116px;height:48px;padding:3px 5px;
   border-radius:10px;background:#1b2653;box-shadow:0 5px 12px #1b265329;

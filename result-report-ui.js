@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(){
   'use strict';
   const quizFields=[
@@ -53,7 +54,7 @@
       back=document.createElement('div');back.className='modal-back report-back';
       const dialog=back;
       back.innerHTML=`<div class="modal report-modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
-        <div class="report-heading"><div><div class="report-eyebrow">GM IT ACADEMY · REPORT BUILDER</div><h2 id="reportTitle">Student results PDF</h2><p class="sub" id="reportSubject"></p></div><button class="btn btn-ghost btn-sm" id="reportClose" type="button" aria-label="Close">Close</button></div>
+        <div class="report-heading"><div><div class="report-eyebrow">GM IT · REPORT BUILDER</div><h2 id="reportTitle">Student results PDF</h2><p class="sub" id="reportSubject"></p></div><button class="btn btn-ghost btn-sm" id="reportClose" type="button" aria-label="Close">Close</button></div>
         <div class="report-step"><h3>1. Choose students</h3><div class="report-modes"><label><input type="radio" name="reportMode" id="reportAll" checked> All completed results</label><label><input type="radio" name="reportMode" id="reportChosen"> Selected students</label></div><div id="reportPicker" hidden><div class="report-picker-bar"><input id="reportSearch" type="search" placeholder="Search name, ID, batch, email or phone" aria-label="Search students"><span id="reportShown"></span></div><div class="report-picker-actions"><button type="button" class="btn btn-ghost btn-sm" id="reportSelectShown">Select shown</button><button type="button" class="btn btn-ghost btn-sm" id="reportClear">Clear selection</button></div><div class="report-students" id="reportStudents"></div></div><p id="reportSelection" role="status">Loading results…</p></div>
         <div class="report-step"><h3>2. Choose details</h3><p class="sub">Student names and page numbers are always included.</p><div id="reportFields" class="report-fields"></div></div>
         <div class="report-actions"><span id="reportProgress" role="status"></span><button class="btn btn-primary" type="button" id="reportDownload" disabled>Download one PDF</button></div></div>`;

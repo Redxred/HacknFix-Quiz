@@ -1,6 +1,8 @@
 {
   "name": "hacknfix",
   "private": true,
+  "author": "Pritam Nath Dipta (HacknFix)",
+  "license": "UNLICENSED",
   "scripts": {
     "start": "python -m http.server 8000 --bind 127.0.0.1",
     "brand:build": "node scripts/build-brand-images.cjs",

@@ -1,4 +1,7 @@
-# HacknFix — backend setup
+# GM IT — backend setup
+
+Developed by HacknFix · Pritam Nath Dipta. Copyright © 2026 HacknFix.
+All rights reserved. See [COPYRIGHT.md](COPYRIGHT.md).
 
 Your quiz now has a real backend. Questions, participant results and site
 settings all live in a Supabase (hosted Postgres) database, and you control
@@ -117,11 +120,14 @@ browsers block parts of the setup; serve them over `http://` as above.
 
 ### Certificates for every subject
 
-New certificate designs start with the GM IT Academy logo and navy/white
-colors. You can upload a different logo or return to the academy logo at any
+New certificate designs start with the GM IT logo and navy/white
+colors. You can upload a different logo or return to the GM IT logo at any
 time. If your existing design used the original untouched HacknFix defaults,
 running the updated certificate migration changes those defaults to the GM IT
 palette while preserving customized designs and saved student marks.
+For an existing certificate table, run
+[migrations/20261004-gmit-name.sql](migrations/20261004-gmit-name.sql)
+once to change its stored organization name and database default to GM IT.
 
 1. In the subject workspace, open **Certificates**. If the page says setup
    is required, run the certificate migration above and click **Refresh**.

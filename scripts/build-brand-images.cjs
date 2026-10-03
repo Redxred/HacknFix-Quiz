@@ -3,7 +3,8 @@ const path = require('node:path');
 const {chromium} = require('playwright');
 
 const root = path.resolve(__dirname, '..');
-const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'gmit-logo-white.png')).toString('base64');
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
+const logo = 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(root, 'gmit-logo.svg')).toString('base64');
 
 (async () => {
   const browser = await chromium.launch({channel:process.env.BROWSER_CHANNEL || 'msedge',headless:true});
@@ -22,10 +23,10 @@ const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'gmit-lo
       p{font:400 29px Arial,sans-serif;color:#dbe6ff;margin:16px 0 0}
       .rule{width:95px;height:7px;border-radius:6px;background:#9db9ff;margin-top:35px}
       .footer{position:absolute;bottom:42px;left:76px;font:600 21px Arial,sans-serif;color:#cbd8fb}
-    </style><main><div class="logo"><img src="${logo}" alt="GM IT Academy"></div>
+    </style><main><div class="logo"><img src="${logo}" alt="GM IT"></div>
       <div class="eyebrow">Cyber Security Awareness Quiz</div>
       <h1>আপনি কতটা সাইবার সচেতন?</h1><p>How cyber aware are you?</p><div class="rule"></div>
-      <div class="footer">GM IT Academy</div></main></html>`);
+      <div class="footer">GM IT · Developed by HacknFix</div></main></html>`);
     await page.locator('.logo img').evaluate(img=>img.decode());
     await page.screenshot({path:path.join(root,'og-image.png')});
 
@@ -34,7 +35,7 @@ const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'gmit-lo
       *{box-sizing:border-box}html,body{width:512px;height:512px;margin:0}
       body{display:grid;place-items:center;border-radius:104px;overflow:hidden;background:linear-gradient(145deg,#344b82,#1b2653 68%,#101a3b)}
       img{display:block;width:405px;height:230px;object-fit:contain}
-    </style><img src="${logo}" alt="GM IT Academy"></html>`);
+    </style><img src="${logo}" alt="GM IT"></html>`);
     await page.locator('img').evaluate(img=>img.decode());
     await page.screenshot({path:path.join(root,'icon-512.png')});
   } finally { await browser.close(); }

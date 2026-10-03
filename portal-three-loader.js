@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 (function(){
   'use strict';
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');

@@ -1,3 +1,4 @@
+// Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
 // Small dependency-free XLSX writer. Cells are written as numbers or inline
 // strings, so student text can never become an Excel formula on opening.
 (function () {

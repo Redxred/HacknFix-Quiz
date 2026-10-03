@@ -1,3 +1,4 @@
+/* Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved. */
 /* Bound API requests, including response bodies, so a dropped connection can
    release loading controls. Writes are never retried automatically. */
 (function () {
