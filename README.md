@@ -120,6 +120,31 @@ reload, duplicate detection and student quiz rendering for every subject.
 It also covers final exam question types, invalid files and failed-save retry.
 These tests do not write to the live Supabase project.
 
+### Reliability update and 50-student QA
+
+For an existing installation, run
+[migrations/20261003-exam-recovery.sql](migrations/20261003-exam-recovery.sql)
+in the **Supabase SQL Editor** before using the new exam recovery behavior.
+This preserves student records and allows the same paper to resume after
+registration closes or an initial start response is lost. New installations
+can use the updated `supabase-schema.sql` directly.
+
+API requests have a 15-second timeout. Quiz and admin loading failures
+offer retry controls. Starting a configured quiz waits for its actual
+questions and settings; an empty or failed bank cannot start demo questions.
+The database client is bundled locally, and fonts load without blocking
+the page. Rapid exam answer changes are coalesced, pending answers are
+flushed before submission, and answer controls are locked while submitting.
+
+See [QA_REPORT.md](QA_REPORT.md) for automated browser acceptance scenarios,
+database checks and the successful 50-connection local load test. Live
+capacity also depends on the Supabase project and students' network.
+
+To repeat the load test, create a disposable **local**, empty UTF-8 PostgreSQL
+database named `hacknfix_qa` and set `QA_POSTGRES_URL`, then run
+`npm run test:load`. The script refuses remote or nonempty databases and
+writes its report to `test-results/load-50.json`.
+
 After editing `sample-questions.js`, run `npm run samples:build` to update
 both SQL seed files.
 After editing the starter questions in `subjects.js`, run

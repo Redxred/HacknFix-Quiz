@@ -4,3 +4,9 @@ worker to read .xlsx workbooks. Kept locally so imports do not need a CDN.
 Source: https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js
 Documentation: https://docs.sheetjs.com/docs/getting-started/installation/standalone/
 License: SHEETJS-LICENSE.txt (Apache 2.0).
+
+Supabase JavaScript client 2.117.2, UMD browser build. Bundled locally to
+keep page startup independent of the JavaScript CDN.
+
+Source: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js
+License: SUPABASE-LICENSE.txt (MIT).

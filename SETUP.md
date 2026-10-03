@@ -482,10 +482,20 @@ Two details worth knowing:
 
 ## If the internet drops
 
-`index.html` still contains a copy of the original 10 questions. If Supabase
-can't be reached, the quiz falls back to them, saves the score locally, and
-shows a note explaining what happened. Your event doesn't die because the
-venue wifi did.
+When Supabase is configured, starting a quiz waits for its questions and
+settings. A failed load shows a retry button. An empty bank shows that no
+questions are available. Requests time out after 15 seconds so controls
+can recover. Demo questions are available when the connection is not configured.
+
+Exam answers save as you work. Submission waits for pending saves and offers
+retry when the connection fails. Use the same browser and student ID to resume
+a paper after a refresh; the recovery token stays in that browser's storage.
+
+For an existing installation, run
+[migrations/20261003-exam-recovery.sql](migrations/20261003-exam-recovery.sql)
+in the Supabase SQL Editor. It preserves existing data and enables recovery
+from a lost initial start response and resuming after registration closes.
+Updating files on GitHub alone does not apply this database migration.
 
 ## Things to know
 
@@ -495,10 +505,11 @@ ever need it to be cheat-proof — a competition with prizes, say — the fix is
 to stop sending the `correct` flags to the browser and grade inside a
 database function instead. Ask and I'll wire that up.
 
-**Free tier limits.** Plenty for an event: 500MB database, 50,000 monthly
-active users. Supabase pauses projects after a week of no activity — just
-open the dashboard to wake it up. Do that the day before you demo, not the
-morning of.
+**Hosting capacity.** The local PostgreSQL load test completed 50 concurrent
+exam sessions successfully. Check your Supabase project's current resource
+limits and status before an event, and verify access from the venue network.
+The local result does not measure the live hosting plan or internet latency.
+See [QA_REPORT.md](QA_REPORT.md) for the tested scope.
 
 **Adding a question in bulk.** If you'd rather paste many questions at once
 than use the form, the `questions` table takes plain SQL inserts — copy the

@@ -49,7 +49,7 @@ window.HacknFix = (function () {
 
   let client = null;
   if (configured && window.supabase) {
-    client = window.supabase.createClient(url, key);
+    client = window.supabase.createClient(url, key, { global: { fetch: window.HNFNetwork.fetch } });
   }
 
   // A database row -> the shape the quiz frontend already understands.

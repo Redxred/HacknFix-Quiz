@@ -900,9 +900,6 @@ declare
   v_opts     jsonb;
 begin
   select * into v_cfg from public.exam_settings where id = 1;
-  if not coalesce(v_cfg.exam_open, false) then
-    raise exception 'exam_closed';
-  end if;
 
   -- All five fields are required. Trim first so a row of spaces is not
   -- accepted as a name.
@@ -965,6 +962,11 @@ begin
     );
   end if;
 
+  -- Closing registration must not prevent an existing student from resuming.
+  if not coalesce(v_cfg.exam_open, false) then
+    raise exception 'exam_closed';
+  end if;
+
   -- Not resuming. If one sitting per student is on, a finished attempt
   -- blocks a second one.
   if coalesce(v_cfg.one_attempt_per_student, true) and exists (
@@ -982,8 +984,8 @@ begin
     + v_cfg.practical_minutes * 60);
   v_deadline := now() + make_interval(secs => v_seconds);
 
-  insert into public.exam_attempts (student, deadline, user_agent, config)
-  values (v_student, v_deadline, left(coalesce(p_user_agent, ''), 400), to_jsonb(v_cfg))
+  insert into public.exam_attempts (student, deadline, user_agent, config, token)
+  values (v_student, v_deadline, left(coalesce(p_user_agent, ''), 400), to_jsonb(v_cfg), coalesce(p_resume_token,gen_random_uuid()))
   returning id, token into v_id, v_token;
 
   -- Draw the paper: each section, random pick from the active pool,

@@ -37,7 +37,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   :root{
     --bg:#F3F6F1;
@@ -1071,6 +1071,7 @@
     </div>
 
     <div class="closed-note hidden" id="examClosedNote"></div>
+    <button class="btn btn-ghost hidden" id="retryExamLoad" type="button">Retry / আবার চেষ্টা করুন</button>
 
     <div id="examStartRow">
       <button class="btn btn-primary" id="examStartBtn" type="button" data-t="examStartBtn">পরীক্ষা শুরু করুন</button>
@@ -1191,6 +1192,7 @@
     </div>
 
     <div class="closed-note hidden" id="closedNote"></div>
+    <button class="btn btn-ghost hidden" id="retryQuizLoad" type="button">Retry / আবার চেষ্টা করুন</button>
 
     <div id="startRow">
       <button class="btn btn-primary" id="startBtn" type="button" data-t="startBtn">কুইজ শুরু করুন</button>
@@ -1264,8 +1266,9 @@
 <!-- ============ FEEDBACK FORM ============ -->
 <div id="fbHost"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<script src="vendor/supabase.min.js?v=2.117.2"></script>
+<script src="request.js?v=1"></script>
+<script src="config.js?v=reliability-1"></script>
 <script src="sample-questions.js"></script>
 <script src="subjects.js?v=subjects-1"></script>
 <script>
@@ -1634,6 +1637,7 @@
   let finalDuration = null; // seconds, frozen when the quiz finishes
 
   const sb = window.HacknFix && window.HacknFix.client;
+  let quizLoading=!!sb, quizLoadFailed=false, quizFinished=false;
 
   // ---------- i18n: the exam half ----------
   // Kept out of the big UI literal above so the two parts can be edited
@@ -2100,6 +2104,8 @@
   }
   function stopStats(){ clearInterval(statsTimer); statsTimer = null; }
   $('startBtn').addEventListener('click', ()=>{
+    if(quizLoading||quizLoadFailed||!SETTINGS.quiz_open||!QUESTIONS.length)return;
+    quizFinished=false;
     const name = $('inpName').value.trim();
     const phone = $('inpPhone').value.trim();
     const email = $('inpEmail').value.trim();
@@ -2115,6 +2121,8 @@
   });
 
   $('skipBtn').addEventListener('click', ()=>{
+    if(quizLoading||quizLoadFailed||!SETTINGS.quiz_open||!QUESTIONS.length)return;
+    quizFinished=false;
     user = {name: (lang==='bn' ? 'গেস্ট' : 'Guest'), phone:'', email:''};
     qIndex = 0; score = 0; quizStartedAt = Date.now();
     runQuestions = buildShuffledRun();
@@ -2282,6 +2290,8 @@
   }
 
   function finishQuiz(){
+    if(quizFinished)return;
+    quizFinished=true;
     stopTimer();
     // Freeze the clock here, so re-rendering the result (e.g. on a language
     // switch) keeps reporting the same figure.
@@ -2534,6 +2544,7 @@
   }
 
   $('retakeBtn').addEventListener('click', ()=>{
+    quizFinished = false;
     qIndex = 0; score = 0; quizStartedAt = Date.now();
     myAttemptId = null; serverBoard = null;
     runQuestions = buildShuffledRun();
@@ -2584,28 +2595,33 @@
 
   async function loadFromServer(){
     if(!sb){
+      quizLoading=false;
       splashStep(100, 'loadOffline');
       applyClosedState(); updateNotes();
       return;
     }
     splashStep(45, 'loadQuestions');
+    quizLoading=true;quizLoadFailed=false;applyClosedState();
     try{
     const [qRes, sRes] = await Promise.all([
         (isSubjectQuiz ? sb.from('subject_questions').select('*').eq('subject',quizSubject) : sb.from('questions').select('*')).eq('is_active', true).order('sort_order', {ascending:true}),
         isSubjectQuiz ? sb.from('subject_settings').select('*').eq('subject',quizSubject).single() : sb.from('settings').select('*').eq('id', 1).single()
       ]);
       if(qRes.error) throw qRes.error;
-      if(!sRes.error) applySettings(sRes.data);
+      if(sRes.error) throw sRes.error;
+      if(!sRes.data) throw new Error('Quiz settings are unavailable.');
+      applySettings(sRes.data);
 
       const rows = qRes.data || [];
-      // Only swap in the live set if the admin actually has questions,
-      // otherwise a blank table would leave visitors with nothing to answer.
-      if(rows.length || isSubjectQuiz) QUESTIONS = rows.map(window.HacknFix.rowToQuestion);
+      // An empty configured bank must not expose fallback demo questions.
+      QUESTIONS = rows.map(window.HacknFix.rowToQuestion);
       online = true;
     }catch(e){
       console.warn('Could not load from Supabase:', e.message || e);
       online = false;
+      quizLoadFailed=true;
     }
+    quizLoading=false;
     splashStep(100, online ? 'loadReady' : 'loadOffline');
     applyLang();          // picks up admin-edited welcome text
     applyClosedState();
@@ -2613,13 +2629,19 @@
   }
 
   function applyClosedState(){
-    const empty = isSubjectQuiz && online && !QUESTIONS.length;
-    const closed = !SETTINGS.quiz_open || empty;
+    const empty = online && !QUESTIONS.length;
+    const closed = !SETTINGS.quiz_open || empty || quizLoading || quizLoadFailed;
+    $('startBtn').disabled = closed;
+    $('skipBtn').disabled = closed;
     $('startRow').classList.toggle('hidden', closed);
     const note = $('closedNote');
     note.classList.toggle('hidden', !closed);
     note.textContent = empty ? (lang === 'bn' ? 'এই বিষয়ে এখনো সক্রিয় প্রশ্ন নেই। অনুগ্রহ করে পরে আবার আসুন।' : 'No active questions are available for this subject yet. Please check back later.') : (UI[lang].closedMsg || UI[lang].closedDefault);
+    if(quizLoading)note.textContent=lang==='bn'?'প্রশ্ন ও সেটিং লোড হচ্ছে…':'Loading questions and settings…';
+    if(quizLoadFailed)note.textContent=lang==='bn'?'লোড করা যায়নি। আবার চেষ্টা করুন।':'Questions could not be loaded. Check your connection and retry.';
+    $('retryQuizLoad').classList.toggle('hidden',!quizLoadFailed);
   }
+  $('retryQuizLoad').addEventListener('click',loadFromServer);
 
   function updateNotes(){
     const note = $('offlineNote');
@@ -3095,18 +3117,25 @@
   async function loadExamSettings(){
     const sb = examSb();
     if(!sb) return;
+    $('retryExamLoad').disabled = true;
     try{
       const { data, error } = await sb.from('exam_settings').select('*').eq('id',1).single();
       if(error) throw error;
+      if(!data) throw new Error('Exam settings are unavailable');
       EXAM.settings = data;
+      $('retryExamLoad').classList.add('hidden');
       paintExamChrome();
     }catch(e){
       // Older database that has not had the exam half installed yet.
       console.warn('Exam settings unavailable:', e.message || e);
       EXAM.settings = null;
       paintExamChrome();
+      $('retryExamLoad').classList.remove('hidden');
+    }finally{
+      $('retryExamLoad').disabled = false;
     }
   }
+  $('retryExamLoad').addEventListener('click',loadExamSettings);
 
   function paintExamChrome(){
     const s = EXAM.settings;
@@ -3133,7 +3162,11 @@
     tag.textContent = s.exam_open ? UI[lang].examOpenNow : UI[lang].examShut;
 
     const closed = !s.exam_open;
-    $('examStartRow').classList.toggle('hidden', closed);
+    let canResume=false;
+    try{canResume=!!localStorage.getItem('hnf_exam_'+examField('exId').toUpperCase());}catch(e){}
+    $('examStartRow').classList.toggle('hidden', closed&&!canResume);
+    if(!EXAM.starting)$('examStartBtn').textContent=closed&&canResume
+      ? (lang==='bn'?'পরীক্ষা চালিয়ে যান':'Resume exam') : UI[lang].examStartBtn;
     const note = $('examClosedNote');
     note.classList.toggle('hidden', !closed);
     note.textContent = s.exam_closed_msg || UI[lang].examShut;
@@ -3202,6 +3235,7 @@
   }
 
   async function startExam(){
+    if(EXAM.starting)return;
     if(!validateExamForm()) return examToast(UI[lang].errFix, true);
     if(!$('exAgree').checked) return examToast(UI[lang].errAgree, true);
 
@@ -3209,12 +3243,19 @@
     if(!sb) return examToast(UI[lang].examErrOffline, true);
 
     const btn = $('examStartBtn');
+    EXAM.starting=true;
     btn.disabled = true;
     btn.textContent = UI[lang].examStarting;
 
     try{
       let resumeToken = null;
       try{ resumeToken = localStorage.getItem('hnf_exam_' + examField('exId').toUpperCase()); }catch(e){}
+      // Keep a token before sending the first request, so a lost response can
+      // resume the same paper. This is honored by the updated exam_start RPC.
+      if(!resumeToken && crypto.randomUUID){
+        resumeToken=crypto.randomUUID();
+        try{localStorage.setItem('hnf_exam_'+examField('exId').toUpperCase(),resumeToken);}catch(e){}
+      }
       const { data, error } = await sb.rpc('exam_start', {
         p_name:       examField('exName'),
         p_student_id: examField('exId'),
@@ -3259,6 +3300,7 @@
     }catch(e){
       examToast(examError(e), true);
     }finally{
+      EXAM.starting=false;
       btn.disabled = false;
       btn.textContent = UI[lang].examStartBtn;
     }
@@ -3273,6 +3315,9 @@
     const q = currentQ();
     if(!q) return;
     const L = UI[lang];
+    $('exAnswer').disabled=EXAM.submitting||EXAM.done;
+    $('exNextBtn').disabled=EXAM.submitting||EXAM.done;
+    $('exPrevBtn').disabled=EXAM.submitting||EXAM.done;
     const n = EXAM.idx + 1, total = EXAM.questions.length;
 
     $('exProgress').style.width = (n/total*100) + '%';
@@ -3339,6 +3384,7 @@
       b.className = 'option' + (q.choice === i ? ' selected' : '');
       b.textContent = o.text;
       b.addEventListener('click', ()=>{
+        if(EXAM.submitting||EXAM.done)return;
         q.choice = i;
         host.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
         b.classList.add('selected');
@@ -3375,8 +3421,18 @@
 
   // ---------- saving ----------
   function saveAnswer(q, patch){
+    if(!q.unsaved&&!q.pendingSave&&q.lastSaved&&JSON.stringify(q.lastSaved)===JSON.stringify(patch))return Promise.resolve(true);
     q.unsaved = patch;
-    const pending = EXAM.saveQueue.then(()=>persistAnswer(q, patch));
+    if(q.pendingSave)return q.pendingSave;
+    const pending = EXAM.saveQueue.then(async()=>{
+      while(q.unsaved){
+        const latest=q.unsaved;
+        if(!await persistAnswer(q,latest))return false;
+        q.lastSaved=latest;
+      }
+      return true;
+    }).finally(()=>{q.pendingSave=null;});
+    q.pendingSave=pending;
     EXAM.saveQueue = pending.catch(()=>{});
     return pending;
   }
@@ -3404,6 +3460,7 @@
       return true;
     }catch(e){
       if((e.message||'').indexOf('time_up') !== -1){
+        if(q.unsaved===patch)delete q.unsaved;
         if(!EXAM.submitting) setTimeout(()=>finishExam(true, 'time'), 0);
         return true;
       }
@@ -3414,6 +3471,7 @@
   }
 
   function queueTextSave(){
+    if(EXAM.submitting||EXAM.done)return;
     const q = currentQ();
     if(!q || q.qtype === 'mcq') return;
     q.text = $('exAnswer').value;
@@ -3557,6 +3615,10 @@
   async function finishExam(auto, reason){
     if(EXAM.done || EXAM.submitting) return;
     EXAM.submitting = true;
+    // Freeze the captured answer while saves and submission are pending.
+    $('exAnswer').disabled=true;
+    $('exOptions').querySelectorAll('button').forEach(b=>b.disabled=true);
+    $('exNextBtn').disabled=true;$('exPrevBtn').disabled=true;
 
     // Disarm first, so submitting does not trip its own alarms (leaving
     // fullscreen at the end is not a violation).
@@ -3979,6 +4041,7 @@
   // Typing the student id in lowercase should still match the record.
   $('exId').addEventListener('input', e=>{
     e.target.value = e.target.value.toUpperCase();
+    paintExamChrome();
   });
   $('exPhone').addEventListener('input', e=>{
     e.target.value = e.target.value.replace(/\D/g,'').slice(0,11);
@@ -3993,11 +4056,11 @@
   if(!sb) $('fbOpenBtn').classList.add('hidden');
   applyLang();
   splashStep(15, 'loadStart');
-  loadFromServer();
-  loadExamSettings();
   const practice = route.get('practice');
-  if(['all','mcq','written'].includes(practice)) startPractice(practice);
+  if(['all','mcq','written'].includes(practice)){ startPractice(practice); hideSplash(); }
   else{
+    loadFromServer();
+    if(!isSubjectQuiz)loadExamSettings();
     if(isSubjectQuiz || route.get('subject') === 'cyber' || route.get('mode')) visitReady = trackVisit();
     if(route.get('subject') === 'cyber') showScreen('screen-choose');
     if(isSubjectQuiz) showScreen('screen-register');

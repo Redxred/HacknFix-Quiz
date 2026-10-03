@@ -11,9 +11,18 @@ const XLSX=require('../vendor/xlsx.mini.min.js');
 const api=require('../question-import.js');
 let db,browser,server,base,failInsert=false,commitThenFail=false,failRead=false,insertRequests=0,pageCap=2;
 const root=path.join(__dirname,'..');
-const tables=new Set(['questions','subject_questions','exam_questions','settings','subject_settings','exam_settings']);
+const tables=new Set(['questions','subject_questions','exam_questions','settings','subject_settings','exam_settings',
+  'attempts','subject_attempts','feedback','subject_feedback','visits','subject_visits','exam_attempts','exam_answers','exam_students','exam_violations']);
 const safeName=s=>{if(!/^[a-z_]+$/.test(s))throw Error('Unsafe test identifier');return '"'+s+'"';};
 async function query(body) {
+  if(body.rpc){
+    // Test-only transport executes the actual stored procedures. Identifiers
+    // are validated and values remain parameterized.
+    const args=Object.values(body.args||{}),names=Object.keys(body.args||{});
+    const rows=(await db.query(`select * from ${safeName(body.rpc)}(${names.map((n,i)=>safeName(n)+' => $'+(i+1)).join(',')})`,args)).rows;
+    const list=/leaderboard|quiz_stats|analytics_(totals|daily)/.test(body.rpc);
+    return {data:list?rows:rows[0]?.[body.rpc]??null,error:null};
+  }
   if(!tables.has(body.table))return {data:[],error:null,count:0};
   if(body.insert) {
     insertRequests++;
@@ -28,12 +37,26 @@ async function query(body) {
   const args=[], clauses=(body.filters||[]).map(([op,col,value])=>{
     args.push(value);return `${safeName(col)} ${{eq:'=',neq:'<>',gt:'>',gte:'>=',lte:'<='}[op]} $${args.length}`;
   });
+  const where=clauses.length?' where '+clauses.join(' and '):'';
+  if(body.update){
+    const patch=Object.entries(body.update).map(([col,value])=>{args.push(typeof value==='object'?JSON.stringify(value):value);return safeName(col)+'=$'+args.length;});
+    const rows=(await db.query(`update ${safeName(body.table)} set ${patch.join(',')}${where} returning *`,args)).rows;
+    return {data:rows,error:null};
+  }
+  if(body.deleting){
+    const rows=(await db.query(`delete from ${safeName(body.table)}${where} returning id`,args)).rows;
+    return {data:rows,error:null};
+  }
   let sql=`select * from ${safeName(body.table)}`+(clauses.length?' where '+clauses.join(' and '):'');
   if(body.orders.length)sql+=' order by '+body.orders.map(([col,o])=>safeName(col)+(o?.ascending===false?' desc':' asc')).join(',');
   // A short API page verifies the importer does not assume pages always have 1,000 rows.
   if(body.range)sql+=` limit ${Math.min(pageCap,body.range[1]-body.range[0]+1)} offset ${body.range[0]}`;
   else if(body.limit)sql+=' limit '+Number(body.limit);
   const rows=(await db.query(sql,args)).rows;
+  if(body.table==='exam_attempts')for(const row of rows){
+    row.exam_students=(await db.query('select * from exam_students where id=$1',[row.student])).rows[0];
+    if(body.columns?.includes('exam_answers'))row.exam_answers=(await db.query('select id,answered_at from exam_answers where attempt=$1',[row.id])).rows;
+  }
   return {data:body.head?null:body.single?rows[0]||null:rows,error:null,count:rows.length};
 }
 before(async()=>{
@@ -60,14 +83,17 @@ async function pageFor(bank,student=false) {
   const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];
   page.setDefaultTimeout(10000);page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
   await page.route('https://**/*',route=>route.fulfill({body:'',contentType:'text/javascript'}));
+  await page.route('**/vendor/supabase.min.js*',route=>route.fulfill({body:'',contentType:'text/javascript'}));
   await page.addInitScript(()=>{
     localStorage.setItem('cq_lang','en');
     const client={
       from(table) {
         const state={table,filters:[],orders:[]};
         const chain=new Proxy({}, {get:(_,key)=>key==='then'?(resolve,reject)=>fetch('/_test_db',{method:'POST',body:JSON.stringify(state)}).then(r=>r.json()).then(resolve,reject)
-          :key==='select'?(cols,opts)=>{state.head=!!opts?.head;return chain;}
+          :key==='select'?(cols,opts)=>{state.columns=cols;state.head=!!opts?.head;return chain;}
           :key==='insert'?rows=>{state.insert=rows;return chain;}
+          :key==='update'?patch=>{state.update=patch;return chain;}
+          :key==='delete'?()=>{state.deleting=true;return chain;}
           :key==='single'?()=>{state.single=true;return chain;}
           :key==='range'?(a,b)=>{state.range=[a,b];return chain;}
           :key==='limit'?n=>{state.limit=n;return chain;}
@@ -75,12 +101,12 @@ async function pageFor(bank,student=false) {
           :['eq','neq','gt','gte','lte'].includes(key)?(c,v)=>{state.filters.push([key,c,v]);return chain;}:()=>chain});
         return chain;
       },
-      async rpc(name){return {data:name.includes('daily')||name.includes('leaderboard')?[]:name.includes('quiz_stats')?[{total_attempts:0}]:{},error:null};},
+      async rpc(name,args){return fetch('/_test_db',{method:'POST',body:JSON.stringify({rpc:name,args})}).then(r=>r.json());},
       auth:{async getSession(){return {data:{session:{user:{email:'test@example.com'}}}}}}
     };
     window.supabase={createClient:()=>client};
   });
-  await page.goto(base+(student?'/index.html?'+(bank==='cyber'?'mode=quiz':'subject='+bank):'/admin.html'));
+  await page.goto(base+(student?'/index.html?'+(bank==='exam'?'mode=exam':bank==='cyber'?'mode=quiz':'subject='+bank):'/admin.html'));
   if(!student) {
     if(bank==='cyber'||bank==='exam'){await page.click('#manageCyber');await page.click(bank==='exam'?'#manageExam':'#manageQuiz');}
     else await page.click('#manage'+({video:'Video',graphic:'Graphic',computer:'Computer'}[bank]));
@@ -221,4 +247,106 @@ test('all optional template fields persist and preview correctly',async()=>{
     const q=(await db.query("select * from subject_questions where q_en='Optional field check'")).rows[0];
     assert.equal(q.sort_order,1234);assert.equal(q.icon,'key');assert.equal(q.is_active,false);assert.deepEqual(errors,[]);
   } finally{await page.close();}
+});
+
+for(const bank of ['cyber','video','graphic','computer'])test('UAT '+bank+': settings, edit, hide/show, quiz retake, feedback, results and dashboards persist',async()=>{
+  pageCap=1000;
+  const {page,errors}=await pageFor(bank);
+  const table=bank==='cyber'?'questions':'subject_questions';
+  try{
+    const question=page.locator('#qList .q-item').filter({hasText:bank+' imported question'});
+    await question.getByRole('button',{name:'Edit',exact:true}).click();
+    await page.fill('#edQen','UAT '+bank+' question');await page.click('#edSave');
+    await page.waitForSelector('#edSave',{state:'detached'});
+    const changed=page.locator('#qList .q-item').filter({hasText:'UAT '+bank+' question'});
+    await changed.getByRole('button',{name:'Hide',exact:true}).click();
+    await changed.getByRole('button',{name:'Show',exact:true}).click();
+    await changed.getByRole('button',{name:'Hide',exact:true}).waitFor();
+    assert.equal((await db.query(`select is_active from ${table} where q_en=$1`,['UAT '+bank+' question'])).rows[0].is_active,true);
+    await page.click('[data-tab="settings"]');
+    await page.waitForFunction(()=>!document.getElementById('saveSettingsBtn').disabled);
+    await page.fill('#setTitleEn','QA '+bank+' title');await page.fill('#setLength','1');await page.fill('#setTimer','0');await page.click('#saveSettingsBtn');
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.startsWith('Saved'));
+    const settingsTable=bank==='cyber'?'settings':'subject_settings';
+    const stored=(await db.query(`select welcome_title_en from ${settingsTable}`+(bank==='cyber'?'':' where subject=$1'),bank==='cyber'?[]:[bank])).rows[0];
+    assert.equal(stored.welcome_title_en,'QA '+bank+' title');
+    for(const tab of ['dashboard','questions','results','feedback','settings']){
+      await page.click(`[data-tab="${tab}"]`);
+      await page.waitForFunction(()=>!document.querySelector('section[aria-busy="true"]'));
+      assert.equal(await page.locator('#pageRetry').isVisible(),false);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+  const before=(await db.query('select count(*)::int as n from '+(bank==='cyber'?'attempts':'subject_attempts')+(bank==='cyber'?'':' where subject=$1'),bank==='cyber'?[]:[bank])).rows[0].n;
+  const student=await pageFor(bank,true);
+  try{
+    await student.page.click('#skipBtn');await student.page.locator('#qOptions button').filter({hasText:'Right'}).click();await student.page.click('#nextBtn');
+    await student.page.waitForSelector('#screen-result:not(.hidden)');
+    await student.page.click('#retakeBtn');await student.page.locator('#qOptions button').filter({hasText:'Right'}).click();await student.page.click('#nextBtn');
+    await student.page.waitForSelector('#screen-result:not(.hidden)');
+    await student.page.click('#fbOpenBtn');await student.page.fill('#fbMsg','UAT feedback '+bank);await student.page.fill('#fbName','QA Learner');
+    await student.page.locator('#fbStars button').last().click();await student.page.click('#fbSend');
+    await student.page.waitForSelector('#fbSend',{state:'detached'});assert.deepEqual(student.errors,[]);
+  }finally{await student.page.close();}
+  const after=(await db.query('select count(*)::int as n from '+(bank==='cyber'?'attempts':'subject_attempts')+(bank==='cyber'?'':' where subject=$1'),bank==='cyber'?[]:[bank])).rows[0].n;
+  assert.equal(after,before+2);
+  const admin=await pageFor(bank);
+  try{
+    await admin.page.click('[data-tab="results"]');await admin.page.locator('#attemptRows tr').first().waitFor();
+    const [download]=await Promise.all([admin.page.waitForEvent('download'),admin.page.click('#quizExcelAll')]);
+    const workbook=XLSX.read(fs.readFileSync(await download.path()),{type:'buffer'});assert.ok(workbook.SheetNames.length);
+    await admin.page.click('[data-tab="feedback"]');
+    const card=admin.page.locator('#fbList .fb-card').filter({hasText:'UAT feedback '+bank});
+    await card.getByRole('button',{name:'Mark read',exact:true}).click();await card.getByRole('button',{name:'Mark unread',exact:true}).waitFor();
+    await admin.page.setViewportSize({width:1440,height:1000});assert.equal(await admin.page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    assert.deepEqual(admin.errors,[]);
+  }finally{await admin.page.close();}
+});
+
+test('UAT final exam: browser registration, MCQ/written/practical, resume, submit, grade, Excel, delete',async()=>{
+  await db.exec(`update exam_questions set is_active=true;
+    update exam_settings set exam_open=true,mcq_count=1,written_count=1,practical_count=1,
+    require_fullscreen=false,end_on_exit=false,detect_tab_switch=false,block_copy=false,mcq_seconds=120;`);
+  const {page,errors}=await pageFor('exam',true);
+  let paperId;
+  try{
+    for(const [id,value] of Object.entries({exName:'UAT Exam Student',exId:'UAT-FULL',exBatch:'QA',exEmail:'qa@example.com',exPhone:'01700000000'}))await page.fill('#'+id,value);
+    await page.check('#exAgree');await page.click('#examStartBtn');await page.waitForSelector('#exOptions button');
+    await page.locator('#exOptions button').filter({hasText:'HTTPS'}).click();await page.click('#exNextBtn');
+    await page.fill('#exAnswer','UAT written answer\nবাংলা উত্তর');await page.click('#exNextBtn');
+    await page.fill('#exAnswer','<form>UAT practical code</form>');
+    await page.waitForFunction(()=>document.getElementById('exSaveState').classList.contains('saved'));
+    paperId=(await db.query("select a.id from exam_attempts a join exam_students s on s.id=a.student where s.student_id='UAT-FULL'")).rows[0].id;
+    // Refresh and close new registration. The saved paper must still resume.
+    await db.exec('update exam_settings set exam_open=false');await page.reload();await page.waitForFunction(()=>!document.getElementById('splash'));
+    for(const [id,value] of Object.entries({exName:'UAT Exam Student',exId:'UAT-FULL',exBatch:'QA',exEmail:'qa@example.com',exPhone:'01700000000'}))await page.fill('#'+id,value);
+    await page.check('#exAgree');await page.click('#examStartBtn');await page.waitForSelector('#screen-exam:not(.hidden)');
+    assert.equal(await page.inputValue('#exAnswer'),'<form>UAT practical code</form>');
+    await page.click('#exNextBtn');await page.locator('.warn-back .btn-primary').click();await page.waitForSelector('#screen-exam-done:not(.hidden)');
+    assert.equal((await db.query('select status from exam_attempts where id=$1',[paperId])).rows[0].status,'submitted');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+  const admin=await pageFor('exam');
+  try{
+    await admin.page.click('[data-tab="exam-results"]');
+    const row=admin.page.locator('#exAttemptRows tr').filter({hasText:'UAT Exam Student'});await row.getByRole('button',{name:'Mark',exact:true}).click();
+    await admin.page.click('#mkFinalize');await admin.page.waitForFunction(()=>document.getElementById('toast').textContent.includes('needs a mark'));
+    for(const [type,mark] of [['written','5'],['practical','8']]){
+      const answer=admin.page.locator('#mkAnswers .mk-ans.'+type);
+      await answer.locator('.mk-mark').fill(mark);await answer.locator('.mk-fb').fill('UAT checked');
+      await answer.getByRole('button',{name:'Save',exact:true}).click();await answer.locator('.mk-state.done').waitFor();
+    }
+    await admin.page.fill('#mkNote','UAT acceptance complete');await admin.page.click('#mkFinalize');await admin.page.waitForSelector('#mkFinalize',{state:'detached'});
+    await row.getByRole('button',{name:'Review',exact:true}).waitFor();
+    const att=(await db.query('select * from exam_attempts where id=$1',[paperId])).rows[0];
+    assert.equal(att.status,'graded');assert.equal(att.mcq_score,1);assert.equal(att.written_score,5);assert.equal(att.practical_score,8);assert.equal(att.grader_note,'UAT acceptance complete');
+    const [download]=await Promise.all([admin.page.waitForEvent('download'),row.getByRole('button',{name:'Download full paper Excel for UAT Exam Student'}).click()]);
+    const book=XLSX.read(fs.readFileSync(await download.path()),{type:'buffer'});
+    assert.ok(JSON.stringify(XLSX.utils.sheet_to_json(book.Sheets.Answers)).includes('UAT written answer'));
+    admin.page.once('dialog',d=>d.accept());await row.getByRole('button',{name:'Delete result for UAT Exam Student'}).click();
+    await row.waitFor({state:'detached'});
+    assert.equal((await db.query('select count(*)::int as n from exam_answers where attempt=$1',[paperId])).rows[0].n,0);
+    assert.deepEqual(admin.errors,[]);
+  }finally{await admin.page.close();}
 });

@@ -10,7 +10,7 @@ before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','vendor/xlsx.mini.min.js'].includes(name)) { res.writeHead(404).end(); return; }
+    if (!['index.html','admin.html','config.js','request.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
@@ -26,12 +26,15 @@ async function pageFor(options = {}) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route('https://**/*', route => route.fulfill({ body: '', contentType: 'text/javascript' }));
+  if(!options.realClient)await page.route('**/vendor/supabase.min.js*',route=>route.fulfill({body:'',contentType:'text/javascript'}));
   await page.addInitScript(({options}) => {
     localStorage.setItem('cq_lang', 'en');
+    if(options.realClient)return;
     localStorage.setItem('cq_board', '{broken');
     window.calls = [];
     window.failedSubmit = false;
-    const settings = { exam_open:true, mcq_seconds:30, max_violations:3,
+    if(options.storedToken)localStorage.setItem('hnf_exam_TEST-RECOVERY',options.storedToken);
+    const settings = { exam_open:!options.closedExam, mcq_seconds:30, max_violations:3,
       mcq_count:20,written_count:3,practical_count:2,written_minutes:30,practical_minutes:30,
       require_fullscreen:false, block_copy:false,
       detect_tab_switch:!!options.autoExit, end_on_exit:!!options.autoExit };
@@ -74,9 +77,9 @@ async function pageFor(options = {}) {
       from(table) {
         window.calls.push({name:'from',table});
         let inserted = null, update = null, deleting = false, head = false, single = false, operations = [], sort = null, limit = null, range = null;
-        const data = table === 'questions' ? [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
+        const data = table === 'questions' ? (options.emptyCyberBank ? [] : [{id:'q1', icon:'alert',q_bn:'প্রশ্ন',q_en:'Question',is_active:true,
           options:[{bn:'সঠিক',en:'Correct',correct:true},{bn:'ভুল',en:'Wrong',correct:false}],
-          explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}]
+          explain_bn:'ব্যাখ্যা',explain_en:'<img src=x onerror="window.injected=true">'}])
           : table === 'settings' ? {quiz_open:true,quiz_length:1,timer_seconds:30}
           : table === 'exam_settings' ? settings
           : table === 'exam_questions' ? (window.mockBank ||= [])
@@ -87,7 +90,16 @@ async function pageFor(options = {}) {
           : table === 'attempts' ? quizExportRows
           : table === 'exam_violations' && options.dashboard ? [{attempt:'active-2',kind:'tab-switch',detail:'Window hidden',at:stamp(-1),exam_attempts:{exam_students:{name:'Rafi'}}}] : [];
         const chain = new Proxy({}, {get:(_, key) => key === 'then'
-          ? resolve => {
+          ? async resolve => {
+              if(update&&options.slowUpdate)await new Promise(r=>setTimeout(r,1000));
+              if(options.slowQuiz&&['questions','settings'].includes(table))await new Promise(r=>setTimeout(r,2300));
+              if(options.slowSubject&&operations.some(([,k,v])=>k==='subject'&&v==='video'))await new Promise(r=>setTimeout(r,1700));
+              if(options.failQuizLoad&&!window.quizRecovered&&['questions','settings','subject_settings'].includes(table)){
+                resolve({data:null,error:{message:'Connection lost'}});return;
+              }
+              if(options.failExamLoad&&!window.examRecovered&&table==='exam_settings'){
+                resolve({data:null,error:{message:'Connection lost'}});return;
+              }
               if(inserted){
                 window.mockBank.push(...inserted.map((q,i)=>({...q,id:'sample-'+i})));
                 window.calls.push({name:'insert',table,count:inserted.length});
@@ -130,6 +142,8 @@ async function pageFor(options = {}) {
       },
       async rpc(name, body) {
         window.calls.push({name,body,phase:'start'});
+        if(name==='exam_start'&&options.failStart&&!window.failedStart){window.failedStart=true;return {data:null,error:{message:'Start response lost'}};}
+        if(name==='exam_submit'&&options.slowSubmit)await new Promise(r=>setTimeout(r,1200));
         if(name === 'exam_save_answer') await new Promise(resolve => setTimeout(resolve, options.slowSave ? 1500 : 50));
         if(name === 'exam_submit' && options.failSubmit && !window.failedSubmit) {
           window.failedSubmit = true;
@@ -169,7 +183,7 @@ async function pageFor(options = {}) {
     if(options.offline) delete window.supabase;
   }, {options});
   await page.goto(base + (options.admin ? '/admin.html' : '/') + (options.query || ''));
-  if(!options.admin) await page.waitForFunction(() => !document.getElementById('splash'));
+  if(!options.admin&&!options.early) await page.waitForFunction(() => !document.getElementById('splash'));
   return {page,errors};
 }
 
@@ -844,4 +858,151 @@ test('Excel download reports a page failure without producing a partial file',as
     assert.equal(await page.locator('#quizExcelAll').isEnabled(),true);
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
+});
+
+test('pending, failed and empty configured quiz banks cannot start fallback questions; retry recovers',async()=>{
+  const slow=await pageFor({slowQuiz:true,early:true,query:'?mode=quiz'});
+  try{
+    assert.equal(await slow.page.locator('#skipBtn').isDisabled(),true);
+    await slow.page.waitForFunction(()=>!document.getElementById('skipBtn').disabled);
+    await slow.page.click('#skipBtn');assert.equal(await slow.page.locator('#qText').innerText(),'Question');
+    assert.deepEqual(slow.errors,[]);
+  }finally{await slow.page.close();}
+  for(const options of [{failQuizLoad:true},{emptyCyberBank:true}]){
+    const {page,errors}=await pageFor({...options,query:'?mode=quiz'});
+    try{
+      assert.equal(await page.locator('#skipBtn').isDisabled(),true);
+      if(options.failQuizLoad){
+        await page.evaluate(()=>window.quizRecovered=true);await page.click('#retryQuizLoad');
+        await page.waitForFunction(()=>!document.getElementById('skipBtn').disabled);
+        await page.click('#skipBtn');assert.equal(await page.locator('#qText').innerText(),'Question');
+      }
+      assert.deepEqual(errors,[]);
+    }finally{await page.close();}
+  }
+});
+
+test('admin ignores delayed bank/settings responses after switching subjects and blocks unloaded settings',async()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,slowSubject:true});
+  try{
+    await page.click('#manageVideo');await page.click('[data-tab="questions"]');
+    await page.click('#workspaceHome');await page.click('#manageGraphic');await page.click('[data-tab="questions"]');
+    await page.waitForFunction(()=>document.getElementById('qList').textContent.includes('graphic question'));
+    await page.waitForTimeout(1800);
+    assert.doesNotMatch(await page.locator('#qList').innerText(),/video question/);
+    await page.click('#workspaceHome');await page.click('#manageVideo');await page.click('[data-tab="settings"]');
+    assert.equal(await page.locator('#saveSettingsBtn').isDisabled(),true);
+    await page.click('#workspaceHome');await page.click('#manageComputer');await page.click('[data-tab="settings"]');
+    await page.waitForFunction(()=>!document.getElementById('saveSettingsBtn').disabled);
+    await page.waitForTimeout(1800);
+    await page.click('#saveSettingsBtn');
+    const update=await page.evaluate(()=>window.calls.filter(c=>c.name==='update'&&c.table==='subject_settings').at(-1));
+    assert.equal(update.body.welcome_title_en,'computer quiz');
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('admin failed settings load offers persistent retry and prevents saving',async()=>{
+  const {page,errors}=await pageFor({admin:true,authenticated:true,failQuizLoad:true});
+  try{
+    await page.click('#manageVideo');await page.click('[data-tab="settings"]');
+    await page.waitForSelector('#pageRetry:not(.hidden)');
+    assert.equal(await page.locator('#saveSettingsBtn').isDisabled(),true);
+    await page.evaluate(()=>window.quizRecovered=true);await page.click('#pageRetry');
+    await page.waitForFunction(()=>!document.getElementById('saveSettingsBtn').disabled);
+    assert.equal(await page.locator('#pageRetry').isVisible(),false);assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+async function registerExam(page,id='TEST-RECOVERY'){
+  for(const [key,value] of Object.entries({exName:'QA Student',exId:id,exBatch:'QA',exEmail:'qa@example.com',exPhone:'01700000000'}))await page.fill('#'+key,value);
+  await page.check('#exAgree');await page.click('#examStartBtn');
+}
+test('lost exam start response keeps the same preassigned recovery token on retry',async()=>{
+  const {page,errors}=await pageFor({query:'?mode=exam',failStart:true});
+  try{
+    await registerExam(page);await page.waitForFunction(()=>window.failedStart);
+    const token=await page.evaluate(()=>localStorage.getItem('hnf_exam_TEST-RECOVERY'));
+    assert.match(token,/^[0-9a-f-]{36}$/);
+    await page.click('#examStartBtn');await page.waitForSelector('#exOptions button');
+    assert.deepEqual(await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_start'&&c.phase==='start').map(c=>c.body.p_resume_token)),[token,token]);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('closed registration allows a stored paper to resume and failed settings reads can retry',async()=>{
+  const {page,errors}=await pageFor({query:'?mode=exam',closedExam:true,storedToken:'saved-token'});
+  try{
+    assert.equal(await page.locator('#examStartRow').isVisible(),false);
+    await page.fill('#exId','test-recovery');
+    assert.equal(await page.locator('#examStartBtn').innerText(),'Resume exam');
+    await registerExam(page);await page.waitForSelector('#exOptions button');assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+  const retry=await pageFor({query:'?mode=exam',failExamLoad:true});
+  try{
+    await retry.page.waitForSelector('#retryExamLoad:not(.hidden)');
+    await retry.page.evaluate(()=>window.examRecovered=true);await retry.page.click('#retryExamLoad');
+    await retry.page.waitForSelector('#examStartRow:not(.hidden)');assert.deepEqual(retry.errors,[]);
+  }finally{await retry.page.close();}
+});
+
+test('rapid MCQ choices coalesce to the latest answer and submission locks editing',async()=>{
+  const {page,errors}=await pageFor({query:'?mode=exam',slowSave:true,slowSubmit:true});
+  try{
+    await registerExam(page,'TEST-QUEUE');await page.waitForSelector('#exOptions button');
+    await page.locator('#exOptions button').first().click();
+    await page.waitForFunction(()=>window.calls.some(c=>c.name==='exam_save_answer'));
+    await page.evaluate(()=>{const b=document.querySelectorAll('#exOptions button');for(let i=0;i<20;i++)b[i%2].click();});
+    await page.waitForFunction(()=>window.calls.filter(c=>c.name==='exam_save_answer'&&c.phase==='end').length===2);
+    assert.deepEqual(await page.evaluate(()=>window.calls.filter(c=>c.name==='exam_save_answer'&&c.phase==='start').map(c=>c.body.p_choice)),[0,1]);
+    await page.click('#exNextBtn');await page.fill('#exAnswer','Written answer');await page.click('#exNextBtn');
+    await page.fill('#exAnswer','Last answer');await page.click('#exNextBtn');await page.locator('.warn-back .btn-primary').click();
+    await page.waitForFunction(()=>window.calls.some(c=>c.name==='exam_submit'));
+    assert.equal(await page.locator('#exAnswer').isDisabled(),true);assert.equal(await page.locator('#exNextBtn').isDisabled(),true);
+    await page.waitForSelector('#screen-exam-done:not(.hidden)');assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('practice modes work without requesting quiz/exam data',async()=>{
+  for(const mode of ['mcq','written','all']){
+    const {page,errors}=await pageFor({query:'?practice='+mode});
+    try{assert.equal(await page.evaluate(()=>window.calls.some(c=>c.name==='from'||c.name==='exam_start')),false);assert.deepEqual(errors,[]);}
+    finally{await page.close();}
+  }
+});
+
+test('bundled Supabase client uses the bounded transport and recovers a real REST request',async()=>{
+  const {page,errors}=await pageFor({realClient:true,query:'?mode=quiz'});
+  try{
+    await page.waitForSelector('#retryQuizLoad:not(.hidden)');
+    const requests=[];
+    await page.route('https://*.supabase.co/**',async route=>{
+      const name=new URL(route.request().url()).pathname.split('/').at(-1);requests.push(name);
+      const data=name==='questions'?[{id:'real-client-q',q_en:'Real REST question',q_bn:'প্রশ্ন',options:[{en:'Yes',bn:'হ্যাঁ',correct:true},{en:'No',bn:'না',correct:false}]}]
+        :name==='settings'?{quiz_open:true,quiz_length:1,timer_seconds:0}:[];
+      await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
+    });
+    await page.click('#retryQuizLoad');await page.waitForFunction(()=>!document.getElementById('skipBtn').disabled);
+    await page.click('#skipBtn');assert.equal(await page.locator('#qText').innerText(),'Real REST question');
+    assert.ok(requests.includes('questions'));assert.ok(requests.includes('settings'));assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('closing question editors during an outstanding save does not crash the admin page',async()=>{
+  for(const bank of ['quiz','exam']){
+    const {page,errors}=await pageFor({admin:true,authenticated:true,slowUpdate:true});
+    try{
+      await chooseCyber(page,bank==='quiz'?'#manageQuiz':'#manageExam');
+      await page.click('[data-tab="'+(bank==='quiz'?'questions':'exam-questions')+'"]');
+      if(bank==='exam'){
+        await page.click('#importSamples');await page.waitForFunction(()=>!document.getElementById('importSamples').disabled);
+        await page.locator('#exQList').getByRole('button',{name:'Edit',exact:true}).first().click();
+        await page.click('#exEdSave');await page.click('#exEdCancel');
+      }else{
+        await page.locator('#qList').getByRole('button',{name:'Edit',exact:true}).first().click();
+        await page.click('#edSave');await page.click('#edCancel');
+      }
+      await page.waitForTimeout(1200);assert.deepEqual(errors,[]);
+    }finally{await page.close();}
+  }
 });

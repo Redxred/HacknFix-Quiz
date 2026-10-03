@@ -27,6 +27,16 @@ test('schema installs twice and protects exam attempts and marks', async () => {
     assert.equal(resumed.attempt, paper.attempt);
     assert.equal(resumed.resumed, true);
     assert.deepEqual(resumed.config, paper.config);
+    await db.exec('update exam_settings set exam_open=false');
+    assert.equal((await start('TEST-1',paper.token)).attempt,paper.attempt);
+    await assert.rejects(start('NEW-CLOSED'),/exam_closed/);
+    await assert.rejects(start('TEST-1','00000000-0000-0000-0000-000000000000'),/bad_attempt/);
+    await db.exec('update exam_settings set exam_open=true');
+    const recoveryToken='11111111-1111-4111-8111-111111111111';
+    const recovery=await start('LOST-RESPONSE',recoveryToken);
+    assert.equal(recovery.token,recoveryToken);
+    await db.exec(fs.readFileSync(path.join(__dirname,'../migrations/20261003-exam-recovery.sql'),'utf8'));
+    assert.equal((await start('LOST-RESPONSE',recoveryToken)).attempt,recovery.attempt);
     const violation = (await db.query("select exam_log_violation($1,$2,'test') as result",[paper.attempt,paper.token])).rows[0].result;
     assert.equal(violation.max,paper.config.max_violations);
     const mcq = paper.questions.find(q => q.qtype === 'mcq');

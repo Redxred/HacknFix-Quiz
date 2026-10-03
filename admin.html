@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="question-import.css?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
   :root{
     --bg:#F3F6F1;
@@ -721,6 +721,8 @@
     </nav>
 
     <!-- ---------- DASHBOARD ---------- -->
+    <div id="pageLoadStatus" role="status" aria-live="polite"></div>
+    <button class="btn btn-ghost hidden" id="pageRetry" type="button">Retry loading this page</button>
     <section id="tab-dashboard" class="viz hidden">
       <div class="setup-note hidden" id="analyticsSetup"></div>
 
@@ -1304,8 +1306,9 @@
 <div id="toast"></div>
 <div id="modalHost"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<script src="vendor/supabase.min.js?v=2.117.2"></script>
+<script src="request.js?v=1"></script>
+<script src="config.js?v=reliability-1"></script>
 <script src="sample-questions.js"></script>
 <script src="subjects.js?v=subjects-1"></script>
 <script src="exam-dashboard.js?v=exam-insights-1"></script>
@@ -1323,9 +1326,11 @@
   const excelSlug = value => String(value || 'student').replace(/[^A-Za-z0-9._-]+/g,'-').slice(0,50) || 'student';
   // Pages are ordered by timestamp and id so ties do not skip a result.
   async function allResultRows(table, columns, dateColumn){
+    const subject=quizSubject();
+    const filter=query=>table.startsWith('subject_')?query.eq('subject',subject):query;
     const fetched = [], pageSize = 1000, until = new Date().toISOString();
     for(let offset=0;;){
-      const {data,error} = await subjectFilter(sb.from(table).select(columns))
+      const {data,error} = await filter(sb.from(table).select(columns))
         .lte(dateColumn,until).order(dateColumn,{ascending:false})
         .order('id',{ascending:false}).range(offset,offset+pageSize-1);
       if(error) throw error;
@@ -1566,7 +1571,19 @@
   });
 
   // Load only the selected workspace page; the home screen starts no polls.
-  let workspace = null;
+  let workspace = null, viewVersion = 0, viewTarget = null;
+  const readVersions = new Map();
+  function currentRead(key){
+    const view = viewVersion, n = (readVersions.get(key)||0)+1;
+    readVersions.set(key,n);
+    return () => view === viewVersion && readVersions.get(key) === n;
+  }
+  function pageError(message){
+    $('pageLoadStatus').textContent = message;
+    $('pageLoadStatus').dataset.failed = 'true';
+    $('pageRetry').classList.remove('hidden');
+  }
+  $('pageRetry').addEventListener('click',()=>openTab(viewTarget));
   const quizSubject = () => ['video','graphic','computer'].includes(workspace) ? workspace : 'cyber';
   const subjectTable = name => quizSubject() === 'cyber' ? name : 'subject_' + name;
   const subjectFilter = query => quizSubject() === 'cyber' ? query : query.eq('subject',quizSubject());
@@ -1582,7 +1599,10 @@
     computer:['dashboard','questions','results','feedback','settings']
   };
   function showAdminHome(){
+    viewVersion++; viewTarget = null;
+    document.querySelectorAll('section[aria-busy]').forEach(el=>el.setAttribute('aria-busy','false'));
     workspace = null;
+    $('pageLoadStatus').textContent = ''; $('pageRetry').classList.add('hidden');
     stopDashLive();
     examDashboard.leave();
     $('adminHome').classList.remove('hidden');
@@ -1598,6 +1618,7 @@
   }
   function openWorkspace(mode){
     workspace = mode;
+    questions=[];attempts=[];settings=null;feedback=[];
     $('adminHome').classList.add('hidden');
     $('adminCyber').classList.add('hidden');
     $('workspaceHead').classList.remove('hidden');
@@ -1616,6 +1637,18 @@
   }
   async function openTab(target){
     if(!workspace || !workspacePages[workspace].includes(target)) return;
+    const version = ++viewVersion; viewTarget = target;
+    $('pageLoadStatus').textContent = 'Loading…';
+    $('pageLoadStatus').dataset.failed = '';
+    $('pageRetry').classList.add('hidden');
+    document.querySelectorAll('section[aria-busy]').forEach(el=>el.setAttribute('aria-busy','false'));
+    $('tab-'+target).setAttribute('aria-busy','true');
+    if(target==='questions'){questions=[];$('qList').textContent='Loading questions…';}
+    if(target==='results'){attempts=[];renderAttempts();}
+    if(target==='feedback'){feedback=[];renderFeedback();}
+    if(target==='settings'||target==='exam-settings'){
+      $('tab-'+target).querySelectorAll('input,textarea,select,button').forEach(el=>el.disabled=true);
+    }
     document.querySelectorAll('.tab').forEach(btn=>{
       btn.classList.toggle('active', btn.dataset.tab === target);
       btn.setAttribute('aria-current', btn.dataset.tab === target ? 'page' : 'false');
@@ -1627,7 +1660,7 @@
       if(target === 'exam-dashboard') await examDashboard.enter();
       if(target === 'dashboard'){
         await Promise.all([loadDashboard(), loadAttempts()]);
-        if(workspace !== 'exam' && !$('tab-dashboard').classList.contains('hidden')) startDashLive();
+        if(version === viewVersion && workspace !== 'exam' && !$('tab-dashboard').classList.contains('hidden')) startDashLive();
       }
       if(target === 'questions') await loadQuestions();
       if(target === 'results') await loadAttempts();
@@ -1635,10 +1668,17 @@
       if(target === 'settings') await loadSettings();
       if(target === 'exam-questions' || target === 'exam-settings'){
         await loadExamSettingsAdmin();
-        await loadExamQuestions();
+        if(version === viewVersion) await loadExamQuestions();
       }
       if(target === 'exam-results') await loadExamAttempts();
-    }catch(e){ toast('Could not load this page. Please try again.',true); }
+    }catch(e){ if(version===viewVersion) pageError('Could not load this page: '+(e.message||e)); }
+    finally{
+      if(version===viewVersion){
+        $('tab-'+target).setAttribute('aria-busy','false');
+        $('tab-'+target).classList.remove('refreshing');
+        if(!$('pageLoadStatus').dataset.failed) $('pageLoadStatus').textContent='';
+      }
+    }
   }
   $('manageCyber').addEventListener('click',showCyberFolder);
   $('cyberBack').addEventListener('click',showAdminHome);
@@ -1666,26 +1706,34 @@
   });
 
   async function loadQuestions(){
+    const isCurrent = currentRead('questions');
     const { data, error } = await subjectFilter(sb.from(subjectTable('questions'))
       .select('*')).order('sort_order', {ascending:true});
-    if(error){ toast('Could not load questions: ' + error.message, true); return; }
+    if(!isCurrent()) return;
+    if(error){ pageError('Could not load questions: ' + error.message); return; }
     questions = data || [];
     renderQuestions();
     renderQuestionStats();
   }
 
   async function loadAttempts(){
+    const isCurrent = currentRead('attempts');
     const { data, error } = await subjectFilter(sb.from(subjectTable('attempts'))
       .select('*')).order('created_at', {ascending:false}).limit(1000);
-    if(error){ toast('Could not load results: ' + error.message, true); return; }
+    if(!isCurrent()) return;
+    if(error){ pageError('Could not load results: ' + error.message); return; }
     attempts = data || [];
     renderAttempts();
     renderScoreTile();
   }
 
   async function loadSettings(){
+    const isCurrent = currentRead('settings');
     const { data, error } = await (quizSubject() === 'cyber' ? sb.from('settings').select('*').eq('id',1).single() : sb.from('subject_settings').select('*').eq('subject',quizSubject()).single());
-    if(error){ toast('Could not load settings: ' + error.message, true); return; }
+    if(!isCurrent()) return;
+    if(error){ pageError('Could not load settings: ' + error.message); return; }
+    if(!data)return pageError('Settings are unavailable. Retry loading this page.');
+    $('tab-settings').querySelectorAll('input,textarea,select,button').forEach(el=>el.disabled=false);
     settings = data;
     fillSettingsForm();
     renderQuestionStats();
@@ -1817,6 +1865,7 @@
 
   // ---------------- question editor ----------------
   function openEditor(q){
+    const editorSubject=quizSubject(), editorTable=subjectTable('questions');
     const isNew = !q;
     const draft = q ? JSON.parse(JSON.stringify(q)) : {
       sort_order: questions.length + 1,
@@ -1957,9 +2006,11 @@
     $('edCancel').addEventListener('click', close);
     back.addEventListener('click', e=>{ if(e.target === back) close(); });
 
-    $('edSave').addEventListener('click', async ()=>{
+    const editorSave=back.querySelector('#edSave');
+    editorSave.addEventListener('click', async ()=>{
+      if(editorSave.disabled) return;
       const payload = {
-        ...(quizSubject() === 'cyber' ? {} : {subject:quizSubject()}),
+        ...(editorSubject === 'cyber' ? {} : {subject:editorSubject}),
         sort_order: parseInt($('edOrder').value, 10) || 0,
         icon: $('edIcon').value,
         q_bn: $('edQbn').value.trim(),
@@ -1980,11 +2031,11 @@
       if(payload.options.filter(o=>o.correct).length !== 1)
         return toast('Mark exactly one option as correct', true);
 
-      $('edSave').disabled = true;
+      editorSave.disabled = true;
       const { error } = isNew
-        ? await sb.from(subjectTable('questions')).insert(payload)
-        : await sb.from(subjectTable('questions')).update(payload).eq('id', q.id);
-      $('edSave').disabled = false;
+        ? await sb.from(editorTable).insert(payload)
+        : await sb.from(editorTable).update(payload).eq('id', q.id);
+      editorSave.disabled = false;
 
       if(error) return toast(error.message, true);
       toast(isNew ? 'Question added' : 'Question saved');
@@ -2153,6 +2204,8 @@
   $('setTimer').addEventListener('input', markTimerPreset);
 
   $('saveSettingsBtn').addEventListener('click', async ()=>{
+    const savedView=viewVersion;
+    if(!settings)return pageError('Load settings before saving.');
     const len = parseInt($('setLength').value, 10);
     if(!len || len < 1) return toast('Questions per attempt must be at least 1', true);
 
@@ -2172,6 +2225,7 @@
 
     $('saveSettingsBtn').disabled = true;
     const { error } = await (quizSubject() === 'cyber' ? sb.from('settings').update(payload).eq('id',1) : sb.from('subject_settings').update(payload).eq('subject',quizSubject()));
+    if(savedView!==viewVersion)return;
     $('saveSettingsBtn').disabled = false;
 
     if(error) return toast(error.message, true);
@@ -2230,6 +2284,7 @@
 
   // ---------------- loading ----------------
   async function loadDashboard(silent){
+    const isCurrent=currentRead('dashboard');
     if(!sb) return;
     const host = $('tab-dashboard');
     // Hold the previous render at reduced opacity rather than flashing a
@@ -2243,6 +2298,7 @@
       subjectFilter(sb.from(subjectTable('visits')).select('*')).order('first_seen', { ascending:false }).limit(3000)
     ]);
 
+    if(!isCurrent()) return;
     host.classList.remove('refreshing');
 
     if(isMissingSchema(tRes.error) || isMissingSchema(dRes.error) || isMissingSchema(vRes.error)){
@@ -2251,8 +2307,9 @@
     }
     showAnalyticsSetup(false);
 
-    if(tRes.error) return toast('Could not load analytics: ' + tRes.error.message, true);
-    if(dRes.error) return toast('Could not load analytics: ' + dRes.error.message, true);
+    if(tRes.error) return pageError('Could not load analytics: ' + tRes.error.message);
+    if(dRes.error) return pageError('Could not load analytics: ' + dRes.error.message);
+    if(vRes.error) return pageError('Could not load visits: ' + vRes.error.message);
 
     // analytics_totals() returns a single row, but through RPC it arrives
     // as a one-element array.
@@ -2265,12 +2322,14 @@
   }
 
   async function loadFeedback(){
+    const isCurrent = currentRead('feedback');
     if(!sb) return;
     const { data, error } = await subjectFilter(sb.from(subjectTable('feedback'))
       .select('*')).order('created_at', { ascending:false }).limit(1000);
+    if(!isCurrent()) return;
     if(error){
       if(isMissingSchema(error)) return showAnalyticsSetup(true);
-      return toast('Could not load feedback: ' + error.message, true);
+      return pageError('Could not load feedback: ' + error.message);
     }
     feedback = data || [];
     renderFeedback();
@@ -2965,12 +3024,15 @@
 
   // ---------------- question bank ----------------
   async function loadExamQuestions(){
+    const isCurrent = currentRead('exam-questions');
     const { data, error } = await sb.from('exam_questions')
       .select('*').order('qtype', {ascending:true}).order('sort_order', {ascending:true});
 
+    if(!isCurrent()) return;
     if(error){
       // The one error worth handling specially: the admin has not run the
       // updated schema yet, so none of this exists.
+      pageError('Could not load exam questions: '+error.message);
       examInstalled = false;
       $('examMissing').classList.remove('hidden');
       $('examQCard').classList.add('hidden');
@@ -3263,7 +3325,9 @@
     $('exEdCancel').addEventListener('click', close);
     back.addEventListener('click', e=>{ if(e.target === back) close(); });
 
-    $('exEdSave').addEventListener('click', async ()=>{
+    const editorSave=back.querySelector('#exEdSave');
+    editorSave.addEventListener('click', async ()=>{
+      if(editorSave.disabled) return;
       const qtype = $('exEdType').value;
       const payload = {
         qtype,
@@ -3289,11 +3353,11 @@
         if(!confirm('No marking notes on this one.\n\nYou can still save it, but you will be marking from memory. Save anyway?')) return;
       }
 
-      $('exEdSave').disabled = true;
+      editorSave.disabled = true;
       const { error } = isNew
         ? await sb.from('exam_questions').insert(payload)
         : await sb.from('exam_questions').update(payload).eq('id', q.id);
-      $('exEdSave').disabled = false;
+      editorSave.disabled = false;
 
       if(error) return toast(error.message, true);
       toast(isNew ? 'Question added' : 'Question saved');
@@ -3387,6 +3451,7 @@
     finally{ examSelectionBusy = false; updateExamSelection(); }
   }
   async function loadExamAttempts(){
+    const isCurrent = currentRead('exam-attempts');
     $('exRefreshBtn').disabled = true;
     $('exResultsScope').textContent = 'Loading exam results…';
     $('exResultsError').classList.add('hidden');
@@ -3396,18 +3461,22 @@
         .order('started_at', {ascending:false})
         .limit(500);
       if(error) throw error;
+      if(!isCurrent()) return;
       examAttempts = data || [];
       renderExamAttempts();
       await loadExamStats();
     }catch(e){
+      if(!isCurrent()) return;
       $('exResultsError').textContent = 'Could not load results. '+(e.message||e)+' Use Refresh to try again.';
       $('exResultsError').classList.remove('hidden');
       $('exResultsScope').textContent = examAttempts.length ? 'Showing previously loaded results.' : 'Results unavailable.';
-    }finally{ $('exRefreshBtn').disabled = false; }
+    }finally{ if(isCurrent()) $('exRefreshBtn').disabled = false; }
   }
 
   async function loadExamStats(){
+    const isCurrent = currentRead('exam-stats');
     const { data, error } = await sb.rpc('exam_stats');
+    if(!isCurrent()) return;
     if(error || !data) return;
     $('stExStudents').textContent = data.students;
     $('stExSitting').textContent  = data.in_progress;
@@ -3535,7 +3604,9 @@
 
   // ---------------- marking one paper ----------------
   async function openExamPaper(a){
+    const isCurrent = currentRead('exam-paper');
     const { data, error } = await sb.rpc('exam_review', {p_attempt: a.id});
+    if(!isCurrent()) return;
     if(error || !data) return toast(error ? error.message : 'Could not load that paper', true);
 
     const att = data.attempt, stu = data.student;
@@ -3676,16 +3747,19 @@
         state.textContent = an.graded ? 'marked' : 'not marked';
 
         const save = mkBtn('Save', 'btn-primary', async ()=>{
+          if(save.disabled) return;
           const val = Math.max(0, Math.min(parseInt(mark.value,10) || 0, an.max_marks));
           mark.value = val;
+          save.disabled = true;
           const { error } = await sb.rpc('exam_grade', {
             p_answer: an.answer_id, p_awarded: val, p_feedback: fb.value
           });
+          save.disabled = false;
           if(error) return toast(error.message, true);
           an.graded = true; an.awarded = val;
           state.className = 'mk-state done';
           state.textContent = 'marked';
-          refreshMarkTotals();
+          if(back.isConnected) refreshMarkTotals();
           toast('Saved');
         });
         save.disabled = !canGrade;
@@ -3714,10 +3788,14 @@
     $('mkExcel').addEventListener('click',()=>runExcel($('mkExcel'),()=>downloadExamOne(a)));
     back.addEventListener('click', e=>{ if(e.target === back) close(); });
 
-    $('mkFinalize').addEventListener('click', async ()=>{
+    const finalize=back.querySelector('#mkFinalize');
+    finalize.addEventListener('click', async ()=>{
+      if(finalize.disabled) return;
+      finalize.disabled = true;
       const { error } = await sb.rpc('exam_finalize', {
-        p_attempt: att.id, p_note: $('mkNote').value
+        p_attempt: att.id, p_note: back.querySelector('#mkNote').value
       });
+      finalize.disabled = false;
       if(error){
         if((error.message||'').includes('ungraded_answers'))
           return toast('Every written and practical answer needs a mark first', true);
@@ -3757,8 +3835,11 @@
 
   // ---------------- settings ----------------
   async function loadExamSettingsAdmin(){
+    const isCurrent = currentRead('exam-settings');
     const { data, error } = await sb.from('exam_settings').select('*').eq('id',1).single();
-    if(error){ examInstalled = false; return; }
+    if(!isCurrent()) return;
+    if(error||!data){ examInstalled = false; pageError('Could not load exam settings. Retry loading this page.'); return; }
+    $('tab-exam-settings').querySelectorAll('input,textarea,select,button').forEach(el=>el.disabled=false);
     examSettings = data;
 
     $('exsOpen').checked           = data.exam_open;
@@ -3799,6 +3880,8 @@
   }
 
   async function saveExamSettings(){
+    if(!examSettings) return pageError('Load exam settings before saving.');
+    const savedView = viewVersion;
     const n = (id, lo, hi, dflt) => {
       const v = parseInt($(id).value, 10);
       return isNaN(v) ? dflt : Math.max(lo, Math.min(v, hi));
@@ -3840,6 +3923,7 @@
 
     $('exsSaveBtn').disabled = true;
     const { error } = await sb.from('exam_settings').update(payload).eq('id', 1);
+    if(savedView !== viewVersion) return;
     $('exsSaveBtn').disabled = false;
     if(error) return toast(error.message, true);
     toast('Exam settings saved');

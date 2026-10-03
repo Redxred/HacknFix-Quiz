@@ -1,0 +1,52 @@
+{
+  "tested_at": "2026-10-02T20:18:48.734Z",
+  "environment": "Local PostgreSQL; 50 independent concurrent database connections. Not a production hosting benchmark.",
+  "server": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+  "students": 50,
+  "saved": {
+    "papers": 50,
+    "answers": 1250,
+    "written": 250,
+    "quizzes": 50,
+    "subject_quizzes": 150
+  },
+  "elapsed_ms": 1284,
+  "metrics": {
+    "start": {
+      "requests": 50,
+      "p50_ms": 119.64,
+      "p95_ms": 145.89,
+      "max_ms": 147.59
+    },
+    "resume": {
+      "requests": 50,
+      "p50_ms": 8.49,
+      "p95_ms": 10.96,
+      "max_ms": 13.75
+    },
+    "save": {
+      "requests": 2000,
+      "p50_ms": 5.92,
+      "p95_ms": 9.97,
+      "max_ms": 28.07
+    },
+    "ping": {
+      "requests": 50,
+      "p50_ms": 5.76,
+      "p95_ms": 7.78,
+      "max_ms": 8.02
+    },
+    "submit": {
+      "requests": 50,
+      "p50_ms": 6.58,
+      "p95_ms": 7.66,
+      "max_ms": 8.84
+    },
+    "submit_retry": {
+      "requests": 50,
+      "p50_ms": 5.03,
+      "p95_ms": 6.33,
+      "max_ms": 6.48
+    }
+  }
+}
