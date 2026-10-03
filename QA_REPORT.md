@@ -33,6 +33,12 @@ PostgreSQL connections. Browser checks cover mobile (390 × 844) and desktop
 layouts. Acceptance scenarios were executed by automation; the owner has
 not performed a separate sign-off.
 
+The deployed Vercel certificate assets matched the tested commit by SHA-256.
+A read-only check of live Supabase returned `PGRST205` for
+`public.certificate_settings`: the new certificate migration has not yet been
+installed there. Live certificate saves remain unavailable until that SQL is
+run in the project's SQL Editor.
+
 The database-backed browser tests use the application's actual SQL functions
 and tables in local PGlite, with a test transport and simulated admin session.
 The load test uses a separate PostgreSQL 18.4 server and the public `anon`
