@@ -11,8 +11,8 @@ before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','request.js','portal.css','gmit-theme.css','gmit-logo.svg','portal-three-loader.js','vendor/portal-three.min.js','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','result-report-pdf.js','result-report-ui.js','result-report.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
-    res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8');
+    if (!['index.html','admin.html','config.js','request.js','portal.css','gmit-theme.css','gmit-logo-white.png','portal-three-loader.js','vendor/portal-three.min.js','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','result-report-pdf.js','result-report-ui.js','result-report.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
+    res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.png')?'image/png':'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -952,7 +952,7 @@ test('sample GMIT report is a valid multi-page PDF with a PNG preview', {timeout
         score:(18+i%3)+' / 20',percent:(90+i%3*5)+'%',status:'Graded',numericPercent:90+i%3*5}));
       const fields=[{key:'studentId',label:'Student ID'},{key:'batch',label:'Batch'},
         {key:'score',label:'Total score'},{key:'percent',label:'Percentage'},{key:'status',label:'Status'}];
-      const logo=new Image();logo.src='gmit-logo.svg';await logo.decode();
+      const logo=new Image();logo.src='gmit-logo-white.png';await logo.decode();
       const {pages,rowHeight}=window.GMITResultPDF.pagesFor(rows,fields);
       const config={rows,fields,subject:'Cyber Security Final Exam',count:rows.length,average:95,generated:'October 4, 2026',startIndex:0};
       const preview=window.GMITResultPDF.renderPage(config,pages[0],0,pages.length,logo,rowHeight).toDataURL('image/png');

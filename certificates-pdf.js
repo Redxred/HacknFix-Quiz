@@ -62,7 +62,7 @@
     if(design.errors.length)throw new Error(design.errors.join(' '));
     const s=design.value,r={...row,...checked.row};
     await Promise.race([document.fonts?.ready||Promise.resolve(),new Promise(resolve=>setTimeout(resolve,2500))]);
-    const [logo,signature]=await Promise.all([imageFor(s.logo_data||'gmit-logo.svg'),imageFor(s.signature_data)]);
+    const [logo,signature]=await Promise.all([imageFor(s.logo_data||'gmit-logo-white.png'),imageFor(s.signature_data)]);
     const canvas=document.createElement('canvas');canvas.width=1000*scale;canvas.height=707*scale;
     const c=canvas.getContext('2d');c.scale(scale,scale);
     c.fillStyle=s.background_color;c.fillRect(0,0,1000,707);

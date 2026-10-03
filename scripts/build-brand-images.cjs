@@ -4,7 +4,7 @@ const {chromium} = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 // Copyright © 2026 HacknFix. Developed by Pritam Nath Dipta. All rights reserved.
-const logo = 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(root, 'gmit-logo.svg')).toString('base64');
+const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'gmit-logo-white.png')).toString('base64');
 
 (async () => {
   const browser = await chromium.launch({channel:process.env.BROWSER_CHANNEL || 'msedge',headless:true});

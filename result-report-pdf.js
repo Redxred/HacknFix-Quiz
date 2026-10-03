@@ -6,7 +6,7 @@
   const safe=value=>value==null||value===''?'—':String(value);
   const image=()=>new Promise((resolve,reject)=>{
     const logo=new Image();logo.onload=()=>resolve(logo);logo.onerror=()=>reject(new Error('GMIT logo could not be loaded.'));
-    logo.src='gmit-logo.svg';
+    logo.src='gmit-logo-white.png';
   });
   function fit(ctx,value,maxWidth){
     let str=safe(value);
