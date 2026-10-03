@@ -2,8 +2,21 @@
 
 ## Result and scope
 
-`npm test` passed **71 tests, 0 failures**, in 100.9 seconds. The separate
+`npm test` passed **84 tests, 0 failures**, in 105.4 seconds. The suite includes
+a 50-student certificate upload and batch PDF test. The separate
 50-connection PostgreSQL load test also passed.
+
+The certificate system was tested in a local Postgres-backed browser flow for
+all four subjects. Tests cover shared branding with uploaded logo, manual
+marks, Excel template download and upload, exact duplicate skipping, conflict
+and invalid-row rejection, retry after a saved request loses its response,
+individual PDFs, selected PDFs in ZIP, edit/delete, and mobile/desktop layout.
+The generated PDF was parsed to confirm A4 size and its embedded image, and
+visually inspected for Bangla text and all marks. A 50-student marks upload
+and 50-PDF ZIP completed without missing records. Quiz results and fully
+graded exam results were used to prefill and issue certificates; repeated
+issuance opened the same saved record. The certificate SQL migration ran
+twice locally without losing records, and anonymous access was denied.
 
 The sample expansion adds 20 bilingual Cyber Security awareness questions
 and expands each other subject to 25 bilingual questions. The public final
@@ -57,6 +70,7 @@ settings returned HTTP 200 in approximately 1.1 seconds each.
 | Loading/recovery | Slow requests, failed settings reads, retry, empty banks, late responses, pending editor save, lost start response, slow autosave and slow/failed submission. |
 | Public UI | English/Bangla switches preserve answers, timers and scores; corrupt local storage recovery; offline demo and practice; mobile overflow checks. |
 | Authentication | Empty/invalid login errors, simulated authenticated navigation and a real bundled Supabase client over intercepted REST. Live admin login requires the owner's credentials and was not exercised. |
+| Certificates | Four subjects, manual/Excel marks, shared design and logo, individual PDF and ZIP, 50-student batch, result prefill, malformed files, missing-table recovery, mobile layout and SQL security. |
 
 ## 50-student load test
 
@@ -98,6 +112,10 @@ requests when students change answers rapidly.
    pushes do not apply SQL migrations. Database administrator access was
    unavailable in this workspace, so the live migration remains to be applied.
 3. For a fresh database, use the updated `supabase-schema.sql` instead.
+4. Run [migrations/20261003-certificates.sql](migrations/20261003-certificates.sql)
+   in the Supabase SQL Editor for an existing installation. This creates the
+   certificate settings and records tables. The local tests installed and
+   verified it; the live Supabase migration still needs database access.
 4. Run `npm ci` and `npm test`. Browser tests use installed Microsoft Edge by
    default. With Playwright Chromium installed, use `BROWSER_CHANNEL=chromium`.
 5. For the load test, create an empty local UTF-8 PostgreSQL database named

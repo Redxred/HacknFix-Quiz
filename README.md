@@ -19,6 +19,33 @@ never leave the database, so there is nothing in the page to read.
 
 See [SETUP.md](SETUP.md) to get it running.
 
+### Student certificates
+
+Each subject has an admin **Certificates** page. Add a student's MCQ,
+CQ/written and practical obtained marks and maximum marks manually, or
+download the **marks Excel template**, fill its **Marks** sheet and upload up
+to 500 students at a time. A workbook can contain all four subjects. The
+preview calculates totals and identifies invalid rows, identical duplicates
+and conflicts before saving. Unused sections may be blank or zero.
+
+The admin can preview or download one student's A4 PDF, or select students
+and download a ZIP with a separate PDF for each. Each certificate shows the
+student's name, ID, subject, assessment, section marks, total, percentage,
+issue date and a unique certificate ID. **Certificate design & settings**
+controls the shared logo, optional signature, institute, heading, colors,
+footer, signatory and pass mark for every subject. Save design changes before
+downloading PDFs. The admin can then send the downloaded PDF to the student.
+Quiz Results can prefill MCQ marks; graded Final Exam Results can prefill all
+three sections. These buttons save a certificate only after the admin reviews
+and confirms the marks.
+
+Existing Supabase projects need
+[migrations/20261003-certificates.sql](migrations/20261003-certificates.sql)
+run once in the Supabase SQL Editor. A fresh installation can use the updated
+[supabase-schema.sql](supabase-schema.sql). Deploying the static pages does
+not install database tables. The Certificates page gives a setup link if the
+tables are missing. See [SETUP.md](SETUP.md) for the exact steps.
+
 Run locally with `npm start` (Python required), then visit
 <http://localhost:8000>. The admin panel is at `/admin.html`.
 

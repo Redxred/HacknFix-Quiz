@@ -9,6 +9,7 @@
 <!-- no share tags here: the admin panel should never get a preview card -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="question-import.css?v=1">
+<link rel="stylesheet" href="certificates.css?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -718,11 +719,13 @@
       <button class="tab" data-tab="exam-questions" type="button">Exam questions</button>
       <button class="tab" data-tab="exam-results" type="button">Exam results<span class="badge hidden" id="exBadge">0</span></button>
       <button class="tab" data-tab="exam-settings" type="button">Exam settings</button>
+      <button class="tab" data-tab="certificates" type="button">Certificates</button>
     </nav>
 
     <!-- ---------- DASHBOARD ---------- -->
     <div id="pageLoadStatus" role="status" aria-live="polite"></div>
     <button class="btn btn-ghost hidden" id="pageRetry" type="button">Retry loading this page</button>
+    <section id="tab-certificates" class="hidden"><div id="certificateRoot"></div></section>
     <section id="tab-dashboard" class="viz hidden">
       <div class="setup-note hidden" id="analyticsSetup"></div>
 
@@ -1315,10 +1318,14 @@
 <script src="excel-export.js?v=question-template-2"></script>
 <script src="question-import.js?v=2"></script>
 <script src="question-import-ui.js?v=2"></script>
+<script src="certificates-core.js?v=1"></script>
+<script src="certificates-pdf.js?v=1"></script>
+<script src="certificates-ui.js?v=1"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
   const sb = window.HacknFix && window.HacknFix.client;
+  const certificates=window.HNFCertificateUI.create(sb,toast);
 
   const ICON_KEYS = ['social','gift','call','lock','link','wifi','key','phone','job','alert'];
 
@@ -1592,13 +1599,14 @@
   $('quizQuestionImport').addEventListener('click',()=>window.HacknFixQuestionImportUI.open({bank:quizSubject(),client:sb,onSaved:loadQuestions}));
   $('examQuestionImport').addEventListener('click',()=>window.HacknFixQuestionImportUI.open({bank:'exam',client:sb,onSaved:loadExamQuestions}));
   const workspacePages = {
-    quiz:['dashboard','questions','results','feedback','settings'],
-    exam:['exam-dashboard','exam-questions','exam-results','exam-settings'],
-    video:['dashboard','questions','results','feedback','settings'],
-    graphic:['dashboard','questions','results','feedback','settings'],
-    computer:['dashboard','questions','results','feedback','settings']
+    quiz:['dashboard','questions','results','feedback','settings','certificates'],
+    exam:['exam-dashboard','exam-questions','exam-results','exam-settings','certificates'],
+    video:['dashboard','questions','results','feedback','settings','certificates'],
+    graphic:['dashboard','questions','results','feedback','settings','certificates'],
+    computer:['dashboard','questions','results','feedback','settings','certificates']
   };
   function showAdminHome(){
+    certificates.leave();
     viewVersion++; viewTarget = null;
     document.querySelectorAll('section[aria-busy]').forEach(el=>el.setAttribute('aria-busy','false'));
     workspace = null;
@@ -1657,7 +1665,9 @@
     Object.values(workspacePages).flat().forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==target));
     stopDashLive();
     examDashboard.leave();
+    certificates.leave();
     try{
+      if(target === 'certificates') await certificates.enter(quizSubject());
       if(target === 'exam-dashboard') await examDashboard.enter();
       if(target === 'dashboard'){
         await Promise.all([loadDashboard(), loadAttempts()]);
@@ -2133,6 +2143,13 @@
         if(error) return toast(error.message, true);
         toast('Attempt deleted');
         loadAttempts();
+      }));
+      act.append(mkBtn('Certificate','btn-ghost',async()=>{
+        const subject=quizSubject();
+        await openTab('certificates');
+        await certificates.fromResult({subject,student_id:'QUIZ-'+a.id,student_name:a.name||'Guest',email:a.email||'',
+          assessment:subject==='cyber'?'Awareness Quiz':'Subject Quiz',mcq_score:a.score,mcq_total:a.total,
+          written_score:0,written_total:0,practical_score:0,practical_total:0,issued_on:new Date().toISOString().slice(0,10),source_kind:'quiz',source_id:a.id});
       }));
       tr.append(act);
 
@@ -3595,6 +3612,14 @@
       remove.setAttribute('aria-label','Delete result for '+(s.name||s.student_id||'student'));
       remove.disabled = deletingExamIds.has(a.id);
       actions.append(remove);
+      const certificate=mkBtn('Certificate','btn-ghost',async()=>{
+        if(a.status!=='graded')return toast('Finish marking the paper before generating a certificate.',true);
+        await openTab('certificates');
+        await certificates.fromResult({subject:'cyber',student_id:s.student_id,student_name:s.name,batch:s.batch||'',email:s.email||'',
+          assessment:'Final Exam',mcq_score:a.mcq_score,mcq_total:a.mcq_total,written_score:a.written_score,written_total:a.written_total,
+          practical_score:a.practical_score,practical_total:a.practical_total,issued_on:new Date().toISOString().slice(0,10),source_kind:'exam',source_id:a.id});
+      });
+      certificate.disabled=a.status!=='graded';certificate.title=certificate.disabled?'Finish marking all answers first':'Generate a certificate using these marks';actions.append(certificate);
 
       const selectionCell = document.createElement('td');
       selectionCell.className = 'exam-result-select';

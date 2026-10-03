@@ -50,6 +50,13 @@ your questions.
 > Cyber Security questions or results. The new quizzes save shared results
 > only after this migration is applied.
 
+> **Adding certificates to an existing project?** Open the Supabase **SQL
+> Editor**, paste and run the entire
+> [certificate migration](migrations/20261003-certificates.sql). It creates
+> the shared certificate design and per-student marks tables without removing
+> existing results. The migration is safe to run again. A new project using
+> the latest `supabase-schema.sql` already contains these tables.
+
 ## Step 3 — Connect your pages to it
 
 1. In Supabase, go to **Project Settings** → **API**.
@@ -107,6 +114,35 @@ browsers block parts of the setup; serve them over `http://` as above.
 ---
 
 ## Using the admin panel
+
+### Certificates for every subject
+
+1. In the subject workspace, open **Certificates**. If the page says setup
+   is required, run the certificate migration above and click **Refresh**.
+2. Open **Certificate design & settings**. Set your institute name, heading,
+   description, logo, optional signature, colors, signatory and pass mark.
+   Click **Save certificate settings**. One design is shared by all subjects.
+3. To add one student, click **Add student marks** and enter the student ID,
+   name, subject, assessment and obtained/maximum MCQ, CQ/written and
+   practical marks. A section not assessed can be zero or blank. Click
+   **Save marks & preview certificate**.
+4. For many students, click **Download marks template**. Fill only the
+   **Marks** sheet and save it as `.xlsx`. The **Examples** sheet shows how to
+   fill a row; do not paste examples into Marks. You may include any mix of
+   Cyber Security, Video Editing, Graphic Design and Basic Computer students.
+   Click **Upload marks Excel**, review the totals and errors, then save.
+   Uploads accept up to 500 rows and 5 MB. Fix all marked rows before saving;
+   an invalid file saves nothing. Exact duplicates are skipped. Edit a saved
+   record to change its marks.
+5. Use **Preview**, **PDF** or **Download selected PDFs (.zip)** to obtain
+   certificates. Send the downloaded PDF to the student using your preferred
+   channel. The portal does not send email automatically.
+
+In Quiz Results, the **Certificate** button copies the student's MCQ result
+into the marks form. In Final Exam Results, it becomes available after
+grading and copies MCQ, written and practical results. Review the details and
+save to issue the certificate. Reopening an already issued result shows its
+saved certificate.
 
 After signing in, choose **Awareness Quiz** or **Final Exam**. Use
 **Workspaces** to return to this choice. Quiz controls and final-exam

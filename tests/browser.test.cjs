@@ -10,7 +10,7 @@ before(async () => {
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url,'http://localhost').pathname;
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
-    if (!['index.html','admin.html','config.js','request.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
+    if (!['index.html','admin.html','config.js','request.js','portal.css','sample-questions.js','subjects.js','exam-dashboard.js','excel-export.js','question-import.js','question-import-ui.js','question-import-worker.js','question-import.css','certificates-core.js','certificates-pdf.js','certificates-ui.js','certificates-worker.js','certificates.css','vendor/xlsx.mini.min.js','vendor/supabase.min.js'].includes(name)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
     res.end(fs.readFileSync(path.join(__dirname, '..', name)));
   });
@@ -341,7 +341,7 @@ test('admin workspaces load separately and sample import can be repeated safely'
     await chooseCyber(page,'#manageExam');
     await page.click('[data-tab="exam-questions"]');
     await page.waitForSelector('#examQCard');
-    assert.equal(await page.locator('.tab:visible').count(),4);
+    assert.equal(await page.locator('.tab:visible').count(),5);
     assert.equal(await page.evaluate(()=>window.calls.some(c=>c.table==='questions'||c.name==='analytics_totals')),false);
     await page.click('#importSamples');
     await page.waitForFunction(()=>window.mockBank.length===64);
@@ -355,7 +355,7 @@ test('admin workspaces load separately and sample import can be repeated safely'
     assert.equal(await page.locator('#exQList .q-item').count(),1);
     await page.click('#workspaceHome');
     await chooseCyber(page,'#manageQuiz');
-    assert.equal(await page.locator('.tab:visible').count(),5);
+    assert.equal(await page.locator('.tab:visible').count(),6);
     await page.click('[data-tab="questions"]');
     await page.waitForSelector('#qList .q-item');
     assert.equal(await page.locator('#workspaceTitle').innerText(),'Cyber Security / Awareness');

@@ -9,12 +9,17 @@ const {chromium}=require('playwright');
 const {PGlite}=require('@electric-sql/pglite');
 const XLSX=require('../vendor/xlsx.mini.min.js');
 const api=require('../question-import.js');
-let db,browser,server,base,failInsert=false,commitThenFail=false,failRead=false,insertRequests=0,pageCap=2;
+const cert=require('../certificates-core.js');
+const {PDFDocument,PDFName,PDFDict,PDFRawStream}=require('pdf-lib');
+let db,browser,server,base,failInsert=false,commitThenFail=false,failRead=false,failCertificateSetup=false,insertRequests=0,pageCap=2;
 const root=path.join(__dirname,'..');
 const tables=new Set(['questions','subject_questions','exam_questions','settings','subject_settings','exam_settings',
-  'attempts','subject_attempts','feedback','subject_feedback','visits','subject_visits','exam_attempts','exam_answers','exam_students','exam_violations']);
+  'attempts','subject_attempts','feedback','subject_feedback','visits','subject_visits','exam_attempts','exam_answers','exam_students','exam_violations','certificate_records','certificate_settings']);
 const safeName=s=>{if(!/^[a-z_]+$/.test(s))throw Error('Unsafe test identifier');return '"'+s+'"';};
+// PostgREST serializes SQL DATE as YYYY-MM-DD; PGlite returns a Date object.
+function restRows(rows,table){if(table==='certificate_records')for(const row of rows)row.issued_on=String(row.issued_on instanceof Date?row.issued_on.toISOString():row.issued_on).slice(0,10);return rows;}
 async function query(body) {
+  if(failCertificateSetup&&body.table==='certificate_settings')return {data:null,error:{code:'PGRST205',message:'Could not find the table certificate_settings'}};
   if(body.rpc){
     // Test-only transport executes the actual stored procedures. Identifiers
     // are validated and values remain parameterized.
@@ -28,10 +33,10 @@ async function query(body) {
     insertRequests++;
     if(failInsert){failInsert=false;throw Error('Simulated save failure');}
     const rows=Array.isArray(body.insert)?body.insert:[body.insert],cols=Object.keys(rows[0]),args=[];
-    const sql=rows.map(row=>'('+cols.map(c=>{args.push(typeof row[c]==='object'?JSON.stringify(row[c]):row[c]);return '$'+args.length;}).join(',')+')').join(',');
-    await db.query(`insert into ${safeName(body.table)} (${cols.map(safeName).join(',')}) values ${sql}`,args);
+    const sql=rows.map(row=>'('+cols.map(c=>{args.push(row[c]!==null&&typeof row[c]==='object'?JSON.stringify(row[c]):row[c]);return '$'+args.length;}).join(',')+')').join(',');
+    const saved=restRows((await db.query(`insert into ${safeName(body.table)} (${cols.map(safeName).join(',')}) values ${sql} returning *`,args)).rows,body.table);
     if(commitThenFail){commitThenFail=false;throw Error('Simulated response lost after commit');}
-    return {data:null,error:null};
+    return {data:body.single?saved[0]:saved,error:null};
   }
   if(failRead && body.range){failRead=false;throw Error('Simulated bank read failure');}
   const args=[], clauses=(body.filters||[]).map(([op,col,value])=>{
@@ -39,9 +44,9 @@ async function query(body) {
   });
   const where=clauses.length?' where '+clauses.join(' and '):'';
   if(body.update){
-    const patch=Object.entries(body.update).map(([col,value])=>{args.push(typeof value==='object'?JSON.stringify(value):value);return safeName(col)+'=$'+args.length;});
-    const rows=(await db.query(`update ${safeName(body.table)} set ${patch.join(',')}${where} returning *`,args)).rows;
-    return {data:rows,error:null};
+    const patch=Object.entries(body.update).map(([col,value])=>{args.push(value!==null&&typeof value==='object'?JSON.stringify(value):value);return safeName(col)+'=$'+args.length;});
+    const rows=restRows((await db.query(`update ${safeName(body.table)} set ${patch.join(',')}${where} returning *`,args)).rows,body.table);
+    return {data:body.single?rows[0]||null:rows,error:null};
   }
   if(body.deleting){
     const rows=(await db.query(`delete from ${safeName(body.table)}${where} returning id`,args)).rows;
@@ -52,7 +57,7 @@ async function query(body) {
   // A short API page verifies the importer does not assume pages always have 1,000 rows.
   if(body.range)sql+=` limit ${Math.min(pageCap,body.range[1]-body.range[0]+1)} offset ${body.range[0]}`;
   else if(body.limit)sql+=' limit '+Number(body.limit);
-  const rows=(await db.query(sql,args)).rows;
+  const rows=restRows((await db.query(sql,args)).rows,body.table);
   if(body.table==='exam_attempts')for(const row of rows){
     row.exam_students=(await db.query('select * from exam_students where id=$1',[row.student])).rows[0];
     if(body.columns?.includes('exam_answers'))row.exam_answers=(await db.query('select id,answered_at from exam_answers where attempt=$1',[row.id])).rows;
@@ -375,4 +380,149 @@ for(const bank of ['cyber','video','graphic','computer'])test(bank+': add expand
     assert.equal((await db.query(countSql,args)).rows[0].n,before+samples.length-1);
     assert.deepEqual(errors,[]);
   }finally{pageCap=1000;await page.close();}
+});
+
+async function verifyCertificatePDF(bytes,name){
+  const book=await PDFDocument.load(bytes);assert.equal(book.getPageCount(),1);
+  const page=book.getPage(0),size=page.getSize();assert.equal(size.width,841.89);assert.equal(size.height,595.28);
+  assert.equal(book.getTitle(),'Certificate — '+name);
+  const resources=page.node.Resources().lookup(PDFName.of('XObject'),PDFDict);
+  const image=resources.lookup(PDFName.of('Image'),PDFRawStream);
+  assert.equal(image.dict.lookup(PDFName.of('Width')).asNumber(),3000);
+  assert.equal(image.dict.lookup(PDFName.of('Height')).asNumber(),2121);
+  return image;
+}
+async function fillCertificate(page,bank,id,name){
+  await page.fill('#cert-student_id',id);await page.fill('#cert-student_name',name);await page.selectOption('#cert-subject',bank);
+  await page.fill('#cert-batch','QA');await page.fill('#cert-email','student@example.com');await page.fill('#cert-assessment','Final assessment');
+  for(const [field,value] of Object.entries({mcq_score:20,mcq_total:20,written_score:30,written_total:30,practical_score:50,practical_total:50}))await page.fill('#cert-'+field,String(value));
+}
+for(const bank of ['cyber','video','graphic','computer'])test('certificates '+bank+': branding, individual PDF, Excel upload/retry, ZIP, edit and delete',async()=>{
+  const {page,errors}=await pageFor(bank);
+  try{
+    await page.click('[data-tab="certificates"]');await page.waitForFunction(()=>!document.getElementById('certAdd').disabled);
+    if(bank==='cyber'){
+      await page.locator('#certSettings summary').click();await page.fill('#cert-design-organization','QA Training Institute');await page.fill('#cert-design-signature_name','QA Instructor');
+      await page.locator('#cert-design-primary_color').evaluate(input=>{input.value='#164765';input.dispatchEvent(new Event('input',{bubbles:true}));});
+      const logo=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=160;c.height=60;const x=c.getContext('2d');x.fillStyle='#164765';x.fillRect(0,0,160,60);x.fillStyle='#fff';x.font='bold 30px Arial';x.fillText('HNF QA',10,42);return c.toDataURL('image/png').split(',')[1];});
+      await page.setInputFiles('#cert-logo',{name:'logo.png',mimeType:'image/png',buffer:Buffer.from(logo,'base64')});
+      await page.waitForFunction(()=>document.getElementById('cert-logo-state').textContent.includes('Image ready'));
+      await page.click('#certSaveDesign');await page.waitForFunction(()=>document.getElementById('certDesignStatus').textContent==='Saved design');
+      assert.equal((await db.query('select organization from certificate_settings')).rows[0].organization,'QA Training Institute');
+      await page.locator('#certSettings summary').click();
+    }else assert.equal(await page.inputValue('#cert-design-organization'),'QA Training Institute');
+    await page.click('#certAdd');await fillCertificate(page,bank,'CERT-'+bank+'-001','শুভ রহমান');
+    await page.getByRole('button',{name:'Save marks & preview certificate',exact:true}).click();
+    try{await page.waitForSelector('dialog[open] .cert-preview canvas');}catch(e){throw new Error(e.message+'\nUI: '+await page.locator('dialog[open]').innerText()+'\nErrors: '+errors.join(', '));}
+    if(bank==='cyber'){
+      await page.locator('dialog[open] .cert-preview canvas').screenshot({path:path.join(root,'test-results/certificate-preview.png')});
+      await page.screenshot({path:path.join(root,'test-results/certificate-mobile.png'),fullPage:true});
+    }
+    const [download]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Download PDF',exact:true}).click()]);
+    const bytes=fs.readFileSync(await download.path()),image=await verifyCertificatePDF(bytes,'শুভ রহমান');
+    if(bank==='cyber'){fs.writeFileSync(path.join(root,'test-results/certificate.pdf'),bytes);fs.writeFileSync(path.join(root,'test-results/certificate.jpg'),image.contents);}
+    await page.locator('dialog[open]').getByRole('button',{name:'Close',exact:true}).click();
+    const record=(await db.query('select * from certificate_records where student_id=$1',['CERT-'+bank.toUpperCase()+'-001'])).rows[0];
+    assert.deepEqual(cert.totals(record),{score:100,total:100,percent:100});
+    const [template]=await Promise.all([page.waitForEvent('download'),page.click('#certTemplate')]);
+    const wb=XLSX.read(fs.readFileSync(await template.path()),{type:'buffer'});assert.equal(XLSX.utils.sheet_to_json(wb.Sheets.Marks).length,0);
+    const other=bank==='cyber'?'video':'cyber';
+    const values=[['CERT-'+bank+'-001','শুভ রহমান',bank,20,20,30,30,50,50,'QA','student@example.com','Final assessment',cert.today()],
+      ['CERT-'+bank+'-002','Student Two',bank,19,20,28,30,49,50,'QA','two@example.com','Final assessment',cert.today()],
+      ['MIX-'+bank,'Other Subject Student',other,10,20,20,30,30,50,'QA','','Final assessment',cert.today()]];
+    wb.Sheets.Marks=XLSX.utils.aoa_to_sheet([cert.headers,...values]);const buffer=Buffer.from(XLSX.write(wb,{type:'buffer',bookType:'xlsx'}));
+    await page.click('#certUpload');await page.setInputFiles('#certMarksFile',{name:'marks.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+    await page.waitForFunction(()=>!document.getElementById('certMarksFile').disabled);
+    assert.match(await page.locator('dialog[open]').innerText(),/2 new student\(s\), 1 duplicate/);
+    commitThenFail=true;await page.click('#certImportSave');await page.waitForFunction(()=>document.querySelector('dialog[open] .cert-status').textContent.startsWith('Could not confirm'));
+    await page.click('#certImportSave');await page.waitForFunction(()=>document.querySelector('dialog[open] .cert-status').textContent.startsWith('All marks are already saved'));
+    assert.equal((await db.query('select count(*)::int as n from certificate_records where student_id=$1',['CERT-'+bank.toUpperCase()+'-002'])).rows[0].n,1);
+    assert.equal((await db.query('select subject from certificate_records where student_id=$1',['MIX-'+bank.toUpperCase()])).rows[0].subject,other);
+    await page.locator('dialog[open]').getByRole('button',{name:'Close',exact:true}).click();
+    await page.fill('#certSearch','CERT-'+bank);await page.check('#certSelectAll');
+    const [archiveDownload]=await Promise.all([page.waitForEvent('download'),page.click('#certBatch')]);
+    const archive=XLSX.CFB.read(fs.readFileSync(await archiveDownload.path()),{type:'buffer'}),files=archive.FullPaths.filter(p=>p.endsWith('.pdf'));assert.equal(files.length,2);
+    for(const file of files){const content=Buffer.from(archive.FileIndex[archive.FullPaths.indexOf(file)].content);const title=(await PDFDocument.load(content)).getTitle();await verifyCertificatePDF(content,title.replace('Certificate — ',''));}
+    const first=page.locator('#certRows tr').filter({hasText:'CERT-'+bank.toUpperCase()+'-001'});await first.getByRole('button',{name:'Edit marks',exact:true}).click();
+    await page.fill('#cert-mcq_score','19');await page.getByRole('button',{name:'Save marks & preview certificate',exact:true}).click();
+    await page.waitForSelector('dialog[open] .cert-preview canvas');await page.locator('dialog[open]').getByRole('button',{name:'Close',exact:true}).click();
+    assert.equal(Number((await db.query('select mcq_score from certificate_records where id=$1',[record.id])).rows[0].mcq_score),19);
+    const second=page.locator('#certRows tr').filter({hasText:'CERT-'+bank.toUpperCase()+'-002'});page.once('dialog',d=>d.accept());await second.getByRole('button',{name:'Delete',exact:true}).click();await second.waitFor({state:'detached'});
+    await page.setViewportSize({width:1440,height:1000});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('50 student marks upload and batch PDF download complete without missing certificates',{timeout:120000},async()=>{
+  const {page,errors}=await pageFor('graphic');
+  try{
+    await page.click('[data-tab="certificates"]');await page.waitForFunction(()=>!document.getElementById('certAdd').disabled);
+    const wb=XLSX.utils.book_new(),data=Array.from({length:50},(_,i)=>[
+      'BULK-GRAPHIC-'+String(i+1).padStart(3,'0'),'QA Student '+(i+1),'graphic',18,20,24,30,45,50,'Batch 50','','Batch assessment',cert.today()]);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cert.headers,...data]),'Marks');
+    const buffer=Buffer.from(XLSX.write(wb,{type:'buffer',bookType:'xlsx'}));
+    await page.click('#certUpload');await page.setInputFiles('#certMarksFile',{name:'50-students.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+    await page.waitForFunction(()=>!document.getElementById('certMarksFile').disabled);
+    assert.match(await page.locator('dialog[open]').innerText(),/50 new student\(s\)/);
+    await page.click('#certImportSave');await page.waitForFunction(()=>document.querySelector('dialog[open] .cert-status').textContent.startsWith('Saved 50'),{timeout:30000});
+    await page.locator('dialog[open]').getByRole('button',{name:'Close',exact:true}).click();
+    assert.equal((await db.query("select count(*)::int as n from certificate_records where student_id like 'BULK-GRAPHIC-%'")).rows[0].n,50);
+    await page.fill('#certSearch','BULK-GRAPHIC-');await page.check('#certSelectAll');
+    assert.match(await page.locator('#certCount').innerText(),/50 of/);
+    const [download]=await Promise.all([page.waitForEvent('download',{timeout:90000}),page.click('#certBatch')]);
+    const zip=XLSX.CFB.read(fs.readFileSync(await download.path()),{type:'buffer'});
+    const files=zip.FullPaths.filter(p=>p.endsWith('.pdf'));assert.equal(files.length,50);
+    const first=Buffer.from(zip.FileIndex[zip.FullPaths.indexOf(files[0])].content);
+    await verifyCertificatePDF(first,(await PDFDocument.load(first)).getTitle().replace('Certificate — ',''));
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+
+test('certificate setup failure stays recoverable and an invalid Excel row never saves a partial batch',async()=>{
+  const {page,errors}=await pageFor('graphic');
+  try{
+    failCertificateSetup=true;
+    await page.click('[data-tab="certificates"]');await page.waitForSelector('#certSetup:not(.hidden)');assert.equal(await page.locator('#certAdd').isDisabled(),true);
+    failCertificateSetup=false;await page.click('#certRefresh');await page.waitForFunction(()=>!document.getElementById('certAdd').disabled);
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cert.headers,
+      ['INVALID-1','Invalid','graphic',21,20,0,0,0,0],['VALID-1','Valid','graphic',18,20,0,0,0,0]]),'Marks');
+    await page.click('#certUpload');await page.setInputFiles('#certMarksFile',{name:'invalid.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(XLSX.write(wb,{type:'buffer',bookType:'xlsx'}))});
+    await page.waitForFunction(()=>!document.getElementById('certMarksFile').disabled);assert.equal(await page.locator('#certImportSave').isDisabled(),true);assert.match(await page.locator('dialog[open]').innerText(),/Row 2.*MCQ/);
+    assert.equal((await db.query("select count(*)::int as n from certificate_records where student_id in ('INVALID-1','VALID-1')")).rows[0].n,0);assert.deepEqual(errors,[]);
+  }finally{
+    failCertificateSetup=false;
+    await page.close();
+  }
+});
+
+test('quiz results prefill certificate marks and graded exams generate only one saved certificate',async()=>{
+  const id=(await db.query("select subject_submit_attempt('video','Quiz Certificate Student','','',3,4,'en') as id")).rows[0].id;
+  const quiz=await pageFor('video');
+  try{
+    await quiz.page.click('[data-tab="results"]');await quiz.page.locator('#attemptRows tr').filter({hasText:'Quiz Certificate Student'}).getByRole('button',{name:'Certificate',exact:true}).click();
+    await quiz.page.waitForSelector('#cert-student_name');assert.equal(await quiz.page.inputValue('#cert-mcq_score'),'3');assert.equal(await quiz.page.inputValue('#cert-mcq_total'),'4');
+    await quiz.page.getByRole('button',{name:'Save marks & preview certificate',exact:true}).click();await quiz.page.waitForSelector('dialog[open] .cert-preview canvas');
+    assert.equal((await db.query('select source_id from certificate_records where source_id=$1',[id])).rows[0].source_id,id);assert.deepEqual(quiz.errors,[]);
+  }finally{await quiz.page.close();}
+  for(const type of ['mcq','written','practical'])await query({table:'exam_questions',insert:[{qtype:type,prompt:'Certificate '+type,marks:10,model_answer:type==='mcq'?'':'Expected answer',options:type==='mcq'?[{text:'Right',correct:true},{text:'Wrong',correct:false}]:[],is_active:true}]});
+  await db.exec('update exam_settings set exam_open=true,mcq_count=1,written_count=1,practical_count=1');
+  const paper=(await db.query("select exam_start('Certificate Exam Student','CERT-EXAM-LIVE','QA','qa@example.com','01700000000','') as result")).rows[0].result;
+  for(const q of paper.questions){
+    if(q.qtype==='mcq'){const options=(await db.query('select shown_options from exam_answers where attempt=$1 and question=$2',[paper.attempt,q.id])).rows[0].shown_options;await db.query('select exam_save_answer($1,$2,$3,$4,null)',[paper.attempt,paper.token,q.id,options.findIndex(o=>o.correct)]);}
+    else await db.query('select exam_save_answer($1,$2,$3,null,$4)',[paper.attempt,paper.token,q.id,'My answer']);
+  }
+  await db.query('select exam_submit($1,$2)',[paper.attempt,paper.token]);
+  const exam=await pageFor('exam');
+  try{
+    await exam.page.click('[data-tab="exam-results"]');const student=exam.page.locator('#exAttemptRows tr').filter({hasText:'Certificate Exam Student'});
+    assert.equal(await student.getByRole('button',{name:'Certificate',exact:true}).isDisabled(),true);
+    const answers=(await db.query("select id,max_marks from exam_answers where attempt=$1 and qtype<>'mcq'",[paper.attempt])).rows;
+    for(const answer of answers)await db.query("select exam_grade($1,$2,'QA')",[answer.id,answer.max_marks]);await db.query("select exam_finalize($1,'Complete')",[paper.attempt]);
+    await exam.page.click('#exRefreshBtn');await student.getByRole('button',{name:'Certificate',exact:true}).click();await exam.page.waitForSelector('#cert-student_name');
+    assert.equal(await exam.page.inputValue('#cert-student_id'),'CERT-EXAM-LIVE');
+    await exam.page.getByRole('button',{name:'Save marks & preview certificate',exact:true}).click();await exam.page.waitForSelector('dialog[open] .cert-preview canvas');
+    await exam.page.locator('dialog[open]').getByRole('button',{name:'Close',exact:true}).click();
+    await exam.page.click('[data-tab="exam-results"]');await student.getByRole('button',{name:'Certificate',exact:true}).click();await exam.page.waitForSelector('dialog[open] .cert-preview canvas');
+    assert.equal((await db.query('select count(*)::int as n from certificate_records where source_id=$1',[paper.attempt])).rows[0].n,1);assert.deepEqual(exam.errors,[]);
+  }finally{await exam.page.close();}
 });
